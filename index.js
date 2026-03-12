@@ -1947,7 +1947,7 @@ function pokerEndHand(room) {
     if (allCards.length >= 5) {
       const best = getBestHand(allCards);
       p.bestScore = best.score;
-      p.handName = POKER_POKER_HAND_NAMES[best.score[0]];
+      p.handName = POKER_HAND_NAMES[best.score[0]];
     } else {
       // Not enough community cards (e.g. everyone folded early)
       p.bestScore = [0];
