@@ -1343,6 +1343,15 @@ self.addEventListener('fetch', e => {
 </script>
 </head>
 <body>
+<style>
+.arcade-back { position:fixed; top:12px; left:14px; z-index:999;
+  font-family:'Cinzel',serif; font-size:0.58rem; letter-spacing:0.12em;
+  color:rgba(201,168,76,0.6); text-decoration:none; padding:5px 10px;
+  border:1px solid rgba(201,168,76,0.2); border-radius:4px;
+  background:rgba(0,0,0,0.4); transition:all 0.2s; }
+.arcade-back:hover { color:#e8c97a; border-color:rgba(201,168,76,0.5); background:rgba(0,0,0,0.7); }
+</style>
+<a class="arcade-back" href="/">← ARCADE</a>
 <div id="exit-modal">
   <div class="exit-modal-box">
     <h3>¿Salir de la partida?</h3>
@@ -1650,6 +1659,7 @@ function confirmExit() {
   document.getElementById('chat-messages').innerHTML = '';
   document.getElementById('roomCode').value = '';
   renderStatsInLobby();
+  window.location.href = '/';
 }
 
 function startGameUI() {

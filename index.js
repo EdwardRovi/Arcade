@@ -18,19 +18,9 @@ const httpServer = http.createServer((req, res) => {
 });
 
 // ─── SHARED ───────────────────────────────────────────────────────────────────
-function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-
 function sendTo(player, msg) {
   if (player.ws && player.ws.readyState === 1) player.ws.send(JSON.stringify(msg));
 }
-
 function genCode(prefix, store) {
   let code;
   do { code = prefix + Math.random().toString(36).substring(2, 5).toUpperCase(); }
@@ -42,8 +32,6 @@ function genCode(prefix, store) {
 // ███ MUS
 // ═══════════════════════════════════════════════════════════════════════════════
 const musRooms = {};
-
-
 // ─── GAME STATE ────────────────────────────────────────────────────────────────
 const SUITS = ['oros', 'copas', 'espadas', 'bastos'];
 const VALUES = [1, 3, 4, 5, 6, 7, 10, 11, 12]; // sin 2, 8 y 9
@@ -56,7 +44,13 @@ function makeDeck() {
   return deck;
 }
 
-function musShuffle(arr) { return shuffle(arr); }
+function musShuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
 // Valor de las cartas para el Mus
 // Para grande/chica: rey=12, caballo=11, sota=10, 3,2,1,7,6,5,4 (orden descendente para grande)
@@ -162,7 +156,7 @@ function puntoPoints(hand) {
 
 // ─── ROOM MANAGEMENT ──────────────────────────────────────────────────────────
 
-function createMusRoom(code, maxPlayers) {
+function musCreateRoom(code, maxPlayers) {
   maxPlayers = maxPlayers === 2 ? 2 : 4;
   return {
     code,
@@ -267,9 +261,9 @@ function musDealCards(room) {
 
   // Si no hay suficientes cartas para repartir 4 a cada jugador, crear mazo nuevo
   if (available.length < room.players.length * 4) {
-    room.deck = shuffle(makeDeck());
+    room.deck = musShuffle(makeDeck());
   } else {
-    room.deck = shuffle(available);
+    room.deck = musShuffle(available);
   }
   room.discards = [];
 
@@ -297,12 +291,12 @@ function musDealCards(room) {
 function musNextPhase(room) {
   // Si estamos en punto, el siguiente paso es terminar el reparto
   if (room.phase === 'punto') {
-    musResolveRound(room);
+    resolveRound(room);
     return;
   }
   room.phaseIndex++;
   if (room.phaseIndex >= room.phaseOrder.length) {
-    musResolveRound(room);
+    resolveRound(room);
     return;
   }
   room.phase = room.phaseOrder[room.phaseIndex];
@@ -323,7 +317,7 @@ function announceAndDelay(room, msg, callback) {
 }
 
 // Registra un evento de puntuacion para el resumen del reparto
-function addRoundLog(room, entry) {
+function musAddRoundLog(room, entry) {
   if (!room.roundLog) room.roundLog = [];
   room.roundLog.push(entry);
 }
@@ -331,7 +325,7 @@ function addRoundLog(room, entry) {
 // Añade puntos a roundScores y guarda en log (la comprobación de victoria se hace al final en orden)
 function addPointsAndCheckWin(room, team, pts, logEntry) {
   room.roundScores[team] += pts;
-  if (logEntry) addRoundLog(room, logEntry);
+  if (logEntry) musAddRoundLog(room, logEntry);
   return false; // win check happens in resolveRound in phase order
 }
 
@@ -459,7 +453,7 @@ function resolvePuntoFinal(room, betAmount) {
   trackPhaseResult(room, 'punto', winnerTeam);
   musBroadcast(room, { type: 'log', msg: `🎯 Punto: Se añaden fichas al final del reparto` });
   addPointsAndCheckWin(room, winnerTeam, gain, { phase: 'Punto', team: winnerTeam, pts: gain, reason });
-  musResolveRound(room);
+  resolveRound(room);
 }
 
 function resolvePunto(room) {
@@ -473,7 +467,7 @@ function resolvePunto(room) {
   musSendState(room);
 }
 
-function musResolveRound(room) {
+function resolveRound(room) {
   // ── Sumar puntos EN ORDEN DE FASE: Grande → Chica → Pares → Juego/Punto → Órdago
   // Si un equipo llega a 25 durante esta suma, gana aunque el rival tuviera más puntos en fases posteriores
   const phaseOrder = ['Grande', 'Chica', 'Pares', 'Juego', 'Punto', 'Órdago'];
@@ -853,7 +847,7 @@ function musHandleBetAction(room, playerId, action, amount) {
           const gain = bet.previousAmount || 1;
           musBroadcast(room, { type: 'log', msg: 'Nadie quiso. Se añaden fichas al final del reparto.' });
           addPointsAndCheckWin(room, bet.byTeam, gain, { phase: 'Punto', team: bet.byTeam, pts: gain, reason: `Equipo ${bet.byTeam+1} gana ${gain} tanto(s) — rival rechazó` });
-          musResolveRound(room);
+          resolveRound(room);
         } else {
           const gain = bet.previousAmount || 1;
           addPointsAndCheckWin(room, bet.byTeam, gain, { phase: phase.charAt(0).toUpperCase()+phase.slice(1), team: bet.byTeam, pts: gain, reason: `Equipo ${bet.byTeam+1} gana ${gain} tanto(s) — rival rechazó` });
@@ -917,11 +911,11 @@ function musHandleBetAction(room, playerId, action, amount) {
       }
       const winScore = 25 - room.scores[winnerTeam];
       room.roundScores[winnerTeam] += winScore;
-      addRoundLog(room, { phase: 'Órdago', team: winnerTeam, pts: winScore, reason: `Equipo ${winnerTeam+1} gana el órdago en ${phase.toUpperCase()} — ¡partida ganada!` });
+      musAddRoundLog(room, { phase: 'Órdago', team: winnerTeam, pts: winScore, reason: `Equipo ${winnerTeam+1} gana el órdago en ${phase.toUpperCase()} — ¡partida ganada!` });
       // Track ordago won/lost for all players
       room.players.forEach(p => { const s = ensureStat(room, p); if (p.team === winnerTeam) s.ordagoWon++; else s.ordagoLost++; });
       musBroadcast(room, { type: 'log', msg: '🏆 Órdago aceptado — ¡se juega todo!' });
-      musResolveRound(room);
+      resolveRound(room);
       return;
     }
 
@@ -1032,11 +1026,20 @@ function musHandleBetAction(room, playerId, action, amount) {
   }
 }
 
+// ─── WEBSOCKET SERVER ─────────────────────────────────────────────────────────
+function musStartGame(room) {
+  room.state = 'playing';
+  room.dealer = 0;
+  room.round = 0;
+  room.scores = [0, 0];
+  musBroadcast(room, { type: 'log', msg: '🎮 ¡Comienza la partida de Mus a 25 tantos!' });
+  musDealCards(room);
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // ███ CAÍDA
 // ═══════════════════════════════════════════════════════════════════════════════
 const caidaRooms = {};
-
 // ─── DECK ─────────────────────────────────────────────────────────────────────
 const CAIDA_SUITS = ['oros', 'copas', 'espadas', 'bastos'];
 const CAIDA_VALUES = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
@@ -1050,6 +1053,14 @@ function caidaMakeDeck() {
   for (const s of CAIDA_SUITS) for (const v of CAIDA_VALUES) d.push(makeCard(s, v));
   return d;
 }
+function caidaShuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function isFigure(val) { return val >= 10; }
 
@@ -1106,7 +1117,6 @@ function compareCantos(a, b) {
 
 // ─── ROOMS ────────────────────────────────────────────────────────────────────
 
-
 function caidaCreateRoom(code, maxPlayers) {
   maxPlayers = [2, 3, 4].includes(maxPlayers) ? maxPlayers : 4;
   return {
@@ -1149,7 +1159,7 @@ function caidaAddLog(room, msg) { caidaBroadcast(room, { type: 'log', msg }); }
 function caidaAddRoundLog(room, entry) { room.roundLog.push(entry); }
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
-function buildStateFor(room, player) {
+function caidaBuildStateFor(room, player) {
   const myIdx = room.players.indexOf(player);
   return {
     roomCode: room.code, maxPlayers: room.maxPlayers,
@@ -1185,23 +1195,23 @@ function buildStateFor(room, player) {
   };
 }
 function caidaSendState(room) {
-  room.players.forEach(p => caidaSendTo(p, { type: 'state', state: buildStateFor(room, p) }));
+  room.players.forEach(p => caidaSendTo(p, { type: 'state', state: caidaBuildStateFor(room, p) }));
 }
 
 // ─── GAME START ───────────────────────────────────────────────────────────────
-function startGame(room) {
+function caidaStartGame(room) {
   const n = room.players.length;
   room.teamMode = n === 4;
   room.players.forEach((p, i) => { p.team = room.teamMode ? i % 2 : i; p.collected = []; p.canto = null; });
   room.scores = room.players.map(() => 0);
   room.round = 0; room.dealer = 0;
   caidaAddLog(room, `🎮 ¡Comienza la Caída! ${n} jugadores`);
-  dealRound(room);
+  caidaDealRound(room);
 }
 
 // ─── DEAL ROUND ───────────────────────────────────────────────────────────────
-function dealRound(room) {
-  room.deck = shuffle(caidaMakeDeck());
+function caidaDealRound(room) {
+  room.deck = caidaShuffle(caidaMakeDeck());
   room.tableCards = [];
   room.lastPlayedCard = null; room.lastPlayedBy = -1; room.lastCollectorIdx = -1;
   room.isLastTanda = false;
@@ -1218,7 +1228,7 @@ function dealRound(room) {
 }
 
 // ─── PUESTO ───────────────────────────────────────────────────────────────────
-function startPuesto(room, direction) {
+function caidaStartPuesto(room, direction) {
   room.puestoDirection = direction;
   room.puestoRevealed = [];
   room.puestoState = 'revealing';
@@ -1227,11 +1237,11 @@ function startPuesto(room, direction) {
   room.puestoTarget = room.puestoTargets[0];
   caidaAddLog(room, `🎯 Puesto ${direction === 'asc' ? '1→4' : '4→1'} — buscando el ${room.puestoTarget}...`);
   caidaSendState(room);
-  setTimeout(() => revealNextPuestoCard(room), 800);
+  setTimeout(() => caidaRevealNextPuestoCard(room), 800);
 }
 
-function revealNextPuestoCard(room) {
-  if (room.deck.length === 0) { finishPuesto(room, false, 'nodeck'); return; }
+function caidaRevealNextPuestoCard(room) {
+  if (room.deck.length === 0) { caidaFinishPuesto(room, false, 'nodeck'); return; }
 
   // Draw a card, but skip if this value already appeared in revealed cards
   // (can't have repeated values in the puesto display)
@@ -1253,7 +1263,7 @@ function revealNextPuestoCard(room) {
   if (!card) {
     caidaAddLog(room, `⚠️ No quedan cartas sin repetir — repartidor pierde el puesto`);
     room.tableCards = [...room.puestoRevealed];
-    setTimeout(() => finishPuesto(room, false, 'noUnique'), 800);
+    setTimeout(() => caidaFinishPuesto(room, false, 'noUnique'), 800);
     return;
   }
 
@@ -1272,7 +1282,7 @@ function revealNextPuestoCard(room) {
     caidaAddRoundLog(room, { event: 'Puesto', player: room.players[room.dealer].name, pts, detail: `${card.display} = ${target}` });
     caidaAddLog(room, `✅ ¡PUESTO! La ${ordinal} carta es ${target} — +${pts} pts para ${room.players[room.dealer].name}`);
     room.tableCards = [...room.puestoRevealed];
-    setTimeout(() => finishPuesto(room, true, 'hit'), 800);
+    setTimeout(() => caidaFinishPuesto(room, true, 'hit'), 800);
   } else {
     room.puestoTargetIdx++;
     if (room.puestoTargetIdx >= room.puestoTargets.length) {
@@ -1281,17 +1291,17 @@ function revealNextPuestoCard(room) {
       caidaAddRoundLog(room, { event: 'Puesto fallido', player: room.players[manoIdx].name, pts: 1, detail: 'Sin acertar' });
       caidaAddLog(room, `❌ Puesto fallido — +1 para la mano (${room.players[manoIdx].name})`);
       room.tableCards = [...room.puestoRevealed];
-      setTimeout(() => finishPuesto(room, false, 'miss'), 800);
+      setTimeout(() => caidaFinishPuesto(room, false, 'miss'), 800);
     } else {
       room.puestoTarget = room.puestoTargets[room.puestoTargetIdx];
       caidaAddLog(room, `  ↳ No es ${target}, buscando el ${room.puestoTarget}...`);
       caidaSendState(room);
-      setTimeout(() => revealNextPuestoCard(room), 1200);
+      setTimeout(() => caidaRevealNextPuestoCard(room), 1200);
     }
   }
 }
 
-function finishPuesto(room, hit, reason) {
+function caidaFinishPuesto(room, hit, reason) {
   room.puestoState = 'done';
   // Fill table to 4 cards, ensuring no repeated values
   while (room.tableCards.length < 4 && room.deck.length > 0) {
@@ -1312,11 +1322,11 @@ function finishPuesto(room, hit, reason) {
   const tableLog = room.tableCards.map((c, i) => `${ordinals[i]||i+1}: ${c.display}`).join(', ');
   caidaAddLog(room, `🃏 Mesa: ${tableLog}`);
   caidaSendState(room);
-  setTimeout(() => dealTanda(room), 1200);
+  setTimeout(() => caidaDealTanda(room), 1200);
 }
 
 // ─── TANDA ────────────────────────────────────────────────────────────────────
-function dealTanda(room) {
+function caidaDealTanda(room) {
   const n = room.players.length;
 
   // Reveal pending canto results from previous tanda
@@ -1345,15 +1355,15 @@ function dealTanda(room) {
   room.state = 'cantos';
   room.currentTurn = (room.dealer + 1) % n;
 
-  if (room.players.every(p => p.hand.length === 0)) { endRound(room); return; }
+  if (room.players.every(p => p.hand.length === 0)) { caidaEndRound(room); return; }
 
   caidaAddLog(room, `🃏 Tanda${room.isLastTanda ? ' final' : ''} repartida`);
   caidaSendState(room);
-  resolveCantos(room);
+  caidaResolveCantos(room);
 }
 
 // ─── CANTOS ───────────────────────────────────────────────────────────────────
-function resolveCantos(room) {
+function caidaResolveCantos(room) {
   const n = room.players.length;
   const manoIdx = (room.dealer + 1) % n;
   const withCanto = room.players.map((p, i) => ({ p, i, canto: p.canto })).filter(x => x.canto);
@@ -1372,7 +1382,7 @@ function resolveCantos(room) {
     caidaAddLog(room, `🃏 ¡TIBILÍN! ${winner.p.name} — +10 pts. ¡Gana el reparto!`);
     room.cantoResults = [{ player: winner.p.name, canto: winner.canto.desc, pts: 10, won: true }];
     room.cantosDone = true;
-    endRound(room); return;
+    caidaEndRound(room); return;
   }
 
   let best = null;
@@ -1408,7 +1418,7 @@ function resolveCantos(room) {
 }
 
 // ─── PLAY CARD ────────────────────────────────────────────────────────────────
-function playCard(room, playerIdx, cardIndex) {
+function caidaPlayCard(room, playerIdx, cardIndex) {
   const player = room.players[playerIdx];
   const card = player.hand[cardIndex];
   if (!card) return;
@@ -1495,7 +1505,7 @@ function playCard(room, playerIdx, cardIndex) {
   if (handsEmpty) {
     if (room.deck.length > 0) {
       caidaSendState(room);
-      setTimeout(() => dealTanda(room), 800);
+      setTimeout(() => caidaDealTanda(room), 800);
     } else {
       if (room.pendingCantoLog && room.pendingCantoLog.length > 0) {
         caidaAddLog(room, `🎺 Cantos del reparto:`);
@@ -1503,7 +1513,7 @@ function playCard(room, playerIdx, cardIndex) {
         room.pendingCantoLog = [];
       }
       caidaSendState(room);
-      setTimeout(() => endRound(room), 600);
+      setTimeout(() => caidaEndRound(room), 600);
     }
   } else {
     caidaSendState(room);
@@ -1511,7 +1521,7 @@ function playCard(room, playerIdx, cardIndex) {
 }
 
 // ─── END ROUND ────────────────────────────────────────────────────────────────
-function endRound(room) {
+function caidaEndRound(room) {
   const n = room.players.length;
 
   if (room.tableCards.length > 0) {
@@ -1592,16 +1602,22 @@ function endRound(room) {
 // ███ PÓKER
 // ═══════════════════════════════════════════════════════════════════════════════
 const pokerRooms = {};
-
-// ─── POKER DECK ───────────────────────────────────────────────────────────────
+// ─── DECK ─────────────────────────────────────────────────────────────────────
 const POKER_SUITS = ['♠','♥','♦','♣'];
 const POKER_RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
 const POKER_RANK_VAL = {'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14};
 
 function pokerMakeDeck() {
   const d = [];
-  for (const s of POKER_SUITS) for (const r of POKER_RANKS) d.push({ suit: s, rank: r, val: POKER_RANK_VAL[r] });
+  for (const s of POKER_SUITS) for (const r of POKER_RANKS) d.push({ suit: s, rank: r, val: POKER_POKER_RANK_VAL[r] });
   return d;
+}
+function pokerShuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
 // ─── HAND EVALUATION ─────────────────────────────────────────────────────────
@@ -1666,8 +1682,7 @@ const POKER_HAND_NAMES = ['Carta alta','Par','Doble par','Trío','Escalera','Col
 
 // ─── ROOMS ────────────────────────────────────────────────────────────────────
 
-
-function createPokerRoom(code, maxPlayers) {
+function pokerCreateRoom(code, maxPlayers) {
   return {
     code, maxPlayers: Math.min(9, Math.max(2, maxPlayers||6)),
     players: [],
@@ -1757,7 +1772,7 @@ function pokerStartHand(room) {
   }
 
   room.round++;
-  room.deck = shuffle(pokerMakeDeck());
+  room.deck = pokerShuffle(pokerMakeDeck());
   room.community = [];
   room.pot = 0;
   room.currentBet = 0;
@@ -1932,7 +1947,7 @@ function pokerEndHand(room) {
     if (allCards.length >= 5) {
       const best = getBestHand(allCards);
       p.bestScore = best.score;
-      p.handName = POKER_HAND_NAMES[best.score[0]];
+      p.handName = POKER_POKER_HAND_NAMES[best.score[0]];
     } else {
       // Not enough community cards (e.g. everyone folded early)
       p.bestScore = [0];
@@ -2059,103 +2074,102 @@ wss.on('connection', (ws) => {
   const playerId = `p${++globalCounter}`;
   let playerRoom = null;
   let playerData = null;
-  let playerGame = null; // 'mus' | 'caida' | 'poker'
-
-  function getStore() {
-    if (playerGame === 'mus') return musRooms;
-    if (playerGame === 'caida') return caidaRooms;
-    if (playerGame === 'poker') return pokerRooms;
-    return null;
-  }
+  let playerGame = null;
 
   ws.on('message', (raw) => {
     let msg;
     try { msg = JSON.parse(raw); } catch { return; }
-
     const game = msg.game;
 
     // ── CREATE ROOM ──────────────────────────────────────────────────────────
     if (msg.type === 'createRoom') {
       if (!game) return;
       playerGame = game;
-      const store = getStore();
-
       if (game === 'mus') {
-        const maxP = [2, 4].includes(msg.maxPlayers) ? msg.maxPlayers : 4;
+        const maxP = msg.maxPlayers === 2 ? 2 : 4;
         const code = genCode('M', musRooms);
-        musRooms[code] = createMusRoom(code, maxP);
+        musRooms[code] = musCreateRoom(code, maxP);
         const room = musRooms[code];
-        const p = { id: playerId, ws, name: msg.name || 'Jugador', team: null, hand: [], discardCount: 0, ready: false };
+        const p = { id: playerId, ws, name: msg.name || 'Jugador', team: 0, hand: [], ready: false };
         room.players.push(p);
         playerRoom = room; playerData = p;
         sendTo(p, { type: 'joined', roomCode: code, playerId });
-        musAddLog(room, `👤 ${p.name} creó la sala`);
         musSendState(room);
-
-      } else if (game === 'caida') {
-        const maxP = [2, 3, 4].includes(msg.maxPlayers) ? msg.maxPlayers : 4;
+        return;
+      }
+      if (game === 'caida') {
+        const maxP = [2,3,4].includes(msg.maxPlayers) ? msg.maxPlayers : 4;
         const code = genCode('C', caidaRooms);
         caidaRooms[code] = caidaCreateRoom(code, maxP);
         const room = caidaRooms[code];
-        const p = { id: playerId, ws, name: msg.name || 'Jugador', hand: [], collected: [], score: 0 };
+        const p = { id: playerId, ws, name: msg.name || 'Jugador', hand: [], collected: [], score: 0, canto: null };
         room.players.push(p);
         playerRoom = room; playerData = p;
         sendTo(p, { type: 'joined', roomCode: code, playerId });
-        caidaAddLog(room, `👤 ${p.name} creó la sala`);
+        caidaBroadcast(room, { type: 'log', msg: `👤 ${p.name} creó la sala` });
         caidaSendState(room);
-
-      } else if (game === 'poker') {
+        return;
+      }
+      if (game === 'poker') {
         const code = genCode('P', pokerRooms);
-        pokerRooms[code] = createPokerRoom(code, msg.maxPlayers || 6);
+        pokerRooms[code] = pokerCreateRoom(code, msg.maxPlayers || 6);
         const room = pokerRooms[code];
-        const p = { id: playerId, ws, name: msg.name || 'Jugador', chips: 1000, hand: [], folded: false, eliminated: false, bet: 0, totalBet: 0 };
+        const p = { id: playerId, ws, name: msg.name || 'Jugador', chips: 1000, hand: [], folded: false, eliminated: false, bet: 0, totalBet: 0, actedThisStreet: false, allIn: false };
         room.players.push(p);
         playerRoom = room; playerData = p;
         sendTo(p, { type: 'joined', roomCode: code, playerId });
         pokerSendState(room);
+        return;
       }
-      return;
     }
 
     // ── JOIN ROOM ────────────────────────────────────────────────────────────
     if (msg.type === 'joinRoom') {
       if (!game) return;
       playerGame = game;
-      const store = getStore();
+      const store = game === 'mus' ? musRooms : game === 'caida' ? caidaRooms : pokerRooms;
       const room = store[msg.code];
       if (!room) { ws.send(JSON.stringify({ type: 'error', msg: 'Sala no encontrada' })); return; }
+      if (room.players.length >= room.maxPlayers) { ws.send(JSON.stringify({ type: 'error', msg: 'Sala llena' })); return; }
+      if (room.state !== 'waiting') { ws.send(JSON.stringify({ type: 'error', msg: 'Partida en curso' })); return; }
 
       if (game === 'mus') {
-        if (room.players.length >= room.maxPlayers) { ws.send(JSON.stringify({ type: 'error', msg: 'Sala llena' })); return; }
-        if (room.state !== 'waiting') { ws.send(JSON.stringify({ type: 'error', msg: 'Partida en curso' })); return; }
-        const p = { id: playerId, ws, name: msg.name || 'Jugador', team: null, hand: [], discardCount: 0, ready: false };
+        const seatIdx = room.players.length;
+        const team = seatIdx % 2;
+        const p = { id: playerId, ws, name: msg.name || 'Jugador', team, hand: [], ready: false };
         room.players.push(p);
         playerRoom = room; playerData = p;
         sendTo(p, { type: 'joined', roomCode: room.code, playerId });
-        musAddLog(room, `👤 ${p.name} se unió`);
+        musBroadcast(room, { type: 'log', msg: `👤 ${p.name} se unió al equipo ${team+1}` });
         musSendState(room);
-
-      } else if (game === 'caida') {
-        if (room.players.length >= room.maxPlayers) { ws.send(JSON.stringify({ type: 'error', msg: 'Sala llena' })); return; }
-        if (room.state !== 'waiting') { ws.send(JSON.stringify({ type: 'error', msg: 'Partida en curso' })); return; }
-        const p = { id: playerId, ws, name: msg.name || 'Jugador', hand: [], collected: [], score: 0 };
-        room.players.push(p);
-        playerRoom = room; playerData = p;
-        sendTo(p, { type: 'joined', roomCode: room.code, playerId });
-        caidaAddLog(room, `👤 ${p.name} se unió`);
-        caidaSendState(room);
-
-      } else if (game === 'poker') {
-        if (room.players.length >= room.maxPlayers) { ws.send(JSON.stringify({ type: 'error', msg: 'Sala llena' })); return; }
-        if (room.state !== 'waiting') { ws.send(JSON.stringify({ type: 'error', msg: 'Partida en curso' })); return; }
-        const p = { id: playerId, ws, name: msg.name || 'Jugador', chips: 1000, hand: [], folded: false, eliminated: false, bet: 0, totalBet: 0 };
-        room.players.push(p);
-        playerRoom = room; playerData = p;
-        sendTo(p, { type: 'joined', roomCode: room.code, playerId });
-        pokerAddLog(room, `👤 ${p.name} se unió`);
-        pokerSendState(room);
+        if (room.players.length === room.maxPlayers) {
+          musBroadcast(room, { type: 'log', msg: `✅ ¡${room.maxPlayers} jugadores! Comenzando en 3s...` });
+          setTimeout(() => musStartGame(room), 3000);
+        }
+        return;
       }
-      return;
+      if (game === 'caida') {
+        const p = { id: playerId, ws, name: msg.name || 'Jugador', hand: [], collected: [], score: 0, canto: null };
+        room.players.push(p);
+        playerRoom = room; playerData = p;
+        sendTo(p, { type: 'joined', roomCode: room.code, playerId });
+        caidaBroadcast(room, { type: 'log', msg: `👤 ${p.name} se unió` });
+        caidaSendState(room);
+        if (room.players.length === room.maxPlayers) {
+          caidaBroadcast(room, { type: 'log', msg: `✅ ¡${room.maxPlayers} jugadores! Comenzando en 3s...` });
+          setTimeout(() => caidaStartGame(room), 3000);
+        }
+        return;
+      }
+      if (game === 'poker') {
+        const p = { id: playerId, ws, name: msg.name || 'Jugador', chips: 1000, hand: [], folded: false, eliminated: false, bet: 0, totalBet: 0, actedThisStreet: false, allIn: false };
+        room.players.push(p);
+        playerRoom = room; playerData = p;
+        sendTo(p, { type: 'joined', roomCode: room.code, playerId });
+        pokerBroadcast(room, { type: 'log', msg: `👤 ${p.name} se unió` });
+        pokerSendState(room);
+        return;
+      }
     }
 
     if (!playerRoom || !playerData) return;
@@ -2163,110 +2177,273 @@ wss.on('connection', (ws) => {
     // ── MUS MESSAGES ─────────────────────────────────────────────────────────
     if (playerGame === 'mus') {
       const room = playerRoom;
-      const pidx = room.players.indexOf(playerData);
-
-      if (msg.type === 'ready') {
-        playerData.ready = true;
-        musAddLog(room, `✅ ${playerData.name} listo`);
-        if (room.players.length === room.maxPlayers && room.players.every(p => p.ready)) {
-          musStartGame(room);
-        } else {
-          musSendState(room);
-        }
-        return;
-      }
-      if (msg.type === 'listoNuevaPartida') {
-        if (!room.readyForNewGame) room.readyForNewGame = [];
-        if (!room.readyForNewGame.includes(playerId)) room.readyForNewGame.push(playerId);
-        musBroadcast(room, { type: 'ready_count', count: room.readyForNewGame.length, total: room.players.length });
-        if (room.readyForNewGame.length >= room.players.length) musStartGame(room);
-        return;
-      }
-      if (msg.type === 'listo') {
-        musHandleListo(room, playerData, playerId);
-        return;
-      }
-      if (msg.type === 'mus') { musHandleMus(room, playerData); return; }
-      if (msg.type === 'noMus') { musHandleNoMus(room, playerData); return; }
-      if (msg.type === 'discard') { musHandleDiscard(room, playerData, msg.cards); return; }
-      if (msg.type === 'betAction') { musHandleBetAction(room, playerData, msg); return; }
-      if (msg.type === 'chat') {
-        musBroadcast(room, { type: 'chat', from: playerData.name, msg: msg.text });
-        return;
-      }
+    if (msg.type === 'ready') {
+      playerData.ready = true;
+      musBroadcast(room, { type: 'log', msg: `${playerData.name} está listo` });
+      musSendState(room);
+      return;
     }
+
+    if (msg.type === 'listoNuevaPartida') {
+      if (room.phase !== 'end') return;
+      if (!room.listoNuevaPartida) room.listoNuevaPartida = [];
+      if (!room.listoNuevaPartida.includes(playerId)) {
+        room.listoNuevaPartida.push(playerId);
+        musBroadcast(room, { type: 'log', msg: `✅ ${playerData.name} listo para nueva partida (${room.listoNuevaPartida.length}/${room.players.length})` });
+        musBroadcast(room, { type: 'nueva_partida_count', count: room.listoNuevaPartida.length, total: room.players.length });
+      }
+      if (room.listoNuevaPartida.length >= room.players.length) {
+        room.listoNuevaPartida = [];
+        room.matchHistory = [];
+        room.scores = [0, 0];
+        room.round = 0;
+        room.dealer = (room.dealer + 1) % room.players.length;
+        musBroadcast(room, { type: 'log', msg: '🔄 ¡Nueva partida!' });
+        musBroadcast(room, { type: 'new_game' });
+        musDealCards(room);
+      }
+      return;
+    }
+
+    if (msg.type === 'listo') {
+      if (room.phase !== 'show_hands') return;
+      if (!room.listoVotes) room.listoVotes = [];
+      if (!room.listoVotes.includes(playerId)) {
+        room.listoVotes.push(playerId);
+        musBroadcast(room, { type: 'log', msg: `✅ ${playerData.name} está listo para continuar (${room.listoVotes.length}/${room.players.length})` });
+        // Send updated listo count to all
+        musBroadcast(room, { type: 'listo_count', count: room.listoVotes.length, total: room.players.length });
+        musSendState(room);
+      }
+      if (room.listoVotes.length >= room.players.length) {
+        room.listoVotes = [];
+        room.dealer = (room.dealer + 1) % room.players.length;
+        room.round++;
+        musDealCards(room);
+      }
+      return;
+    }
+
+    if (msg.type === 'mus') {
+      if (room.phase !== 'mus') return;
+      // Sequential mus: only the current musVoteTurn player can vote
+      const pidxMus = room.players.indexOf(playerData);
+      if (room.musVoteTurn !== undefined && room.musVoteTurn >= 0 && pidxMus !== room.musVoteTurn) {
+        musSendTo(playerData, { type: 'error', msg: 'Espera tu turno para votar' });
+        return;
+      }
+      if (!room.musVotes.includes(playerId)) room.musVotes.push(playerId);
+      // Track mus requested
+      ensureStat(room, playerData);
+      room.playerStats[playerId].musRequested++;
+      musBroadcast(room, { type: 'log', msg: `${playerData.name} pide MUS` });
+      // Advance musVoteTurn to next player
+      room.musVoteTurn = (pidxMus + 1) % room.players.length;
+      if (room.musVotes.length === room.players.length) {
+        musBroadcast(room, { type: 'log', msg: '🔄 ¡MUS! Cambiando cartas en orden...' });
+        room.mus = true;
+        room.musVotes = [];
+        room.musCount++;
+        room.state = 'cambio';
+        room.phase = 'cambio';
+        room.players.forEach(p => { p.discardSelected = null; });
+        // Sequential discard: start with mano player
+        const manoIdxForDiscard = (room.dealer + 1) % room.players.length;
+        room.discardTurn = manoIdxForDiscard;
+        room.discardDone = [];
+        musBroadcast(room, { type: 'log', msg: `🃏 Le toca cambiar a ${room.players[room.discardTurn].name}` });
+        musSendState(room);
+      } else {
+        musSendState(room);
+      }
+      return;
+    }
+
+    if (msg.type === 'noMus') {
+      // Track noMus
+      ensureStat(room, playerData);
+      room.playerStats[playerId].noMus++;
+      if (room.phase !== 'mus') return;
+      // Check if it's this player's turn to vote
+      const pidxNoMus = room.players.indexOf(playerData);
+      if (room.musVoteTurn >= 0 && pidxNoMus !== room.musVoteTurn) {
+        musSendTo(playerData, { type: 'error', msg: 'Espera tu turno para votar' });
+        return;
+      }
+      musBroadcast(room, { type: 'log', msg: `${playerData.name} dice NO HAY MUS` });
+      room.musVoteTurn = -1;
+      room.state = 'grande';
+      room.phase = 'grande';
+      room.phaseIndex = 0;
+      room.activeBet = null;
+      room.paso = [];
+      room.currentTurn = (room.dealer + 1) % room.players.length;
+      musSendState(room);
+      return;
+    }
+
+    if (msg.type === 'discard') {
+      if (room.phase !== 'cambio') return;
+      // Sequential discard: only the current discardTurn player can act
+      const pidxDiscard = room.players.indexOf(playerData);
+      if (pidxDiscard !== room.discardTurn) {
+        musSendTo(playerData, { type: 'error', msg: 'Espera tu turno para cambiar cartas' });
+        return;
+      }
+      if (!msg.indices || msg.indices.length < 1) {
+        musSendTo(playerData, { type: 'error', msg: 'Debes descartar al menos 1 carta para pedir Mus' });
+        return;
+      }
+      // Apply this player's discard immediately
+      const indices = msg.indices || [];
+      indices.forEach(i => {
+        if (playerData.hand[i]) {
+          room.discards.push(playerData.hand[i]);
+          // Recycle deck if needed
+          if (room.deck.length === 0 && room.discards.length > 0) {
+            room.deck = musShuffle([...room.discards]);
+            room.discards = [];
+          }
+          playerData.hand[i] = room.deck.pop();
+        }
+      });
+      musBroadcast(room, { type: 'log', msg: `🃏 ${playerData.name} cambia ${indices.length} carta(s)` });
+      room.discardDone.push(pidxDiscard);
+
+      // Advance to next player in mano order
+      let nextDiscard = -1;
+      for (let t = 1; t <= room.players.length; t++) {
+        const candidate = (room.discardTurn + t) % room.players.length;
+        if (!room.discardDone.includes(candidate)) { nextDiscard = candidate; break; }
+      }
+
+      if (nextDiscard === -1) {
+        // All players have discarded
+        if (room.deck.length < room.players.length && room.discards.length > 0) {
+          room.deck = musShuffle([...room.deck, ...room.discards]);
+          room.discards = [];
+        }
+        musBroadcast(room, { type: 'log', msg: '✅ Cambio completado. ¿Más mus?' });
+        room.state = 'mus';
+        room.phase = 'mus';
+        room.musVotes = [];
+        room.discardTurn = -1;
+        room.discardDone = [];
+        room.musVoteTurn = (room.dealer + 1) % room.players.length; // start from mano
+        musSendState(room);
+      } else {
+        room.discardTurn = nextDiscard;
+        musBroadcast(room, { type: 'log', msg: `🃏 Le toca cambiar a ${room.players[room.discardTurn].name}` });
+        musSendState(room);
+      }
+      return;
+    }
+
+    if (msg.type === 'betAction') {
+      musHandleBetAction(room, playerId, msg.action, msg.amount);
+      return;
+    }
+
+    if (msg.type === 'chat') {
+      musBroadcast(room, { type: 'chat', from: playerData.name, msg: msg.text });
+      return;
+    } // end last mus handler
+    } // end playerGame===mus
 
     // ── CAÍDA MESSAGES ───────────────────────────────────────────────────────
     if (playerGame === 'caida') {
       const room = playerRoom;
-      const pidx = room.players.indexOf(playerData);
-
-      if (msg.type === 'puestoChoice') { caidaHandlePuestoChoice(room, playerData, msg.direction); return; }
-      if (msg.type === 'playCard') { caidaHandlePlayCard(room, playerData, msg.cardIndex); return; }
-      if (msg.type === 'nextRound') {
-        const id = playerData.id;
-        if (!room.readyForNext.includes(id)) {
-          room.readyForNext.push(id);
-          caidaBroadcast(room, { type: 'ready_count', count: room.readyForNext.length, total: room.players.length });
-        }
-        if (room.readyForNext.length >= room.players.length) caidaStartRound(room);
-        return;
+    if (msg.type === 'puestoChoice') {
+      if (playerRoom.state !== 'puesto_choosing') return;
+      if (playerRoom.players.indexOf(playerData) !== playerRoom.dealer) {
+        caidaSendTo(playerData, { type: 'error', msg: 'Solo el repartidor elige' }); return;
       }
-      if (msg.type === 'chat') {
-        caidaBroadcast(room, { type: 'chat', from: playerData.name, msg: msg.text });
-        return;
-      }
+      caidaStartPuesto(playerRoom, msg.direction === 'asc' ? 'asc' : 'desc');
+      return;
     }
+
+    if (msg.type === 'playCard') {
+      if (playerRoom.state !== 'playing') return;
+      const pidx = playerRoom.players.indexOf(playerData);
+      if (pidx !== playerRoom.currentTurn) { caidaSendTo(playerData, { type: 'error', msg: 'No es tu turno' }); return; }
+      if (msg.cardIndex < 0 || msg.cardIndex >= playerData.hand.length) return;
+      caidaPlayCard(playerRoom, pidx, msg.cardIndex);
+      return;
+    }
+
+    if (msg.type === 'nextRound') {
+      if (playerRoom.state !== 'round_end') return;
+      if (!playerRoom.readyForNext.includes(playerId)) {
+        playerRoom.readyForNext.push(playerId);
+        caidaBroadcast(playerRoom, { type: 'ready_count', count: playerRoom.readyForNext.length, total: playerRoom.players.length });
+        caidaAddLog(playerRoom, `✅ ${playerData.name} listo (${playerRoom.readyForNext.length}/${playerRoom.players.length})`);
+      }
+      // FIX: compare against current player count (handles disconnects during round_end)
+      if (playerRoom.readyForNext.length >= playerRoom.players.length) {
+        playerRoom.readyForNext = [];
+        caidaDealRound(playerRoom);
+      }
+      return;
+    }
+
+    if (msg.type === 'chat') {
+      caidaBroadcast(playerRoom, { type: 'chat', from: playerData.name, msg: msg.text });
+      return;
+    } // end last caida handler
+    } // end playerGame===caida
 
     // ── POKER MESSAGES ───────────────────────────────────────────────────────
     if (playerGame === 'poker') {
       const room = playerRoom;
-
-      if (msg.type === 'startGame') {
-        if (room.state !== 'waiting') return;
-        if (room.players.length < 2) { sendTo(playerData, { type: 'error', msg: 'Se necesitan al menos 2 jugadores' }); return; }
-        pokerStartGame(room); return;
-      }
-      if (msg.type === 'action') {
-        if (room.state !== 'playing') return;
-        const pidx = room.players.indexOf(playerData);
-        if (pidx !== room.currentTurn) { sendTo(playerData, { type: 'error', msg: 'No es tu turno' }); return; }
-        pokerHandleAction(room, pidx, msg.action, msg.amount); return;
-      }
-      if (msg.type === 'nextHand') {
-        if (room.state !== 'hand_end') return;
-        if (!room.readyForNext.includes(playerId)) {
-          room.readyForNext.push(playerId);
-          pokerBroadcast(room, { type: 'ready_count', count: room.readyForNext.length, total: room.players.filter(p => !p.eliminated).length });
-        }
-        if (room.readyForNext.length >= room.players.filter(p => !p.eliminated).length) pokerStartHand(room);
-        return;
-      }
-      if (msg.type === 'chat') {
-        pokerBroadcast(room, { type: 'chat', from: playerData.name, msg: msg.text });
-        return;
-      }
+    if (msg.type === 'startGame') {
+      if (!playerRoom || playerRoom.state !== 'waiting') return;
+      if (playerRoom.players.length < 2) { pokerSendTo(playerData, { type: 'error', msg: 'Se necesitan al menos 2 jugadores' }); return; }
+      pokerStartGame(playerRoom); return;
     }
-  });
+
+
+    if (msg.type === 'action') {
+      if (playerRoom.state !== 'playing') return;
+      const pidx = playerRoom.players.indexOf(playerData);
+      if (pidx !== playerRoom.currentTurn) { pokerSendTo(playerData, { type: 'error', msg: 'No es tu turno' }); return; }
+      pokerHandleAction(playerRoom, pidx, msg.action, msg.amount);
+      return;
+    }
+
+    if (msg.type === 'nextHand') {
+      if (playerRoom.state !== 'hand_end') return;
+      if (!playerRoom.readyForNext.includes(playerId)) {
+        playerRoom.readyForNext.push(playerId);
+        pokerBroadcast(playerRoom, { type: 'ready_count', count: playerRoom.readyForNext.length, total: playerRoom.players.filter(p => !p.eliminated).length });
+      }
+      if (playerRoom.readyForNext.length >= playerRoom.players.filter(p => !p.eliminated).length) {
+        pokerStartHand(playerRoom);
+      }
+      return;
+    }
+
+    if (msg.type === 'chat') {
+      pokerBroadcast(playerRoom, { type: 'chat', from: playerData.name, msg: msg.text });
+      return;
+    } // end last poker handler
+    } // end playerGame===poker
+  }); // end ws.on message
 
   ws.on('close', () => {
     if (!playerRoom || !playerData) return;
-
     if (playerGame === 'mus') {
       musBroadcast(playerRoom, { type: 'log', msg: `⚠️ ${playerData.name} se desconectó` });
       playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
       if (playerRoom.players.length === 0) { delete musRooms[playerRoom.code]; return; }
       musSendState(playerRoom);
-
     } else if (playerGame === 'caida') {
       caidaBroadcast(playerRoom, { type: 'log', msg: `⚠️ ${playerData.name} se desconectó` });
       playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
       if (playerRoom.players.length === 0) { delete caidaRooms[playerRoom.code]; return; }
       const n = playerRoom.players.length;
-      if (playerRoom.currentTurn >= n) playerRoom.currentTurn = playerRoom.currentTurn % n;
-      if (playerRoom.readyForNext.length >= n) caidaStartRound(playerRoom);
+      if (playerRoom.currentTurn !== undefined && playerRoom.currentTurn >= n)
+        playerRoom.currentTurn = playerRoom.currentTurn % n;
       caidaSendState(playerRoom);
-
     } else if (playerGame === 'poker') {
       pokerBroadcast(playerRoom, { type: 'log', msg: `⚠️ ${playerData.name} se fue` });
       playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
@@ -2275,13 +2452,13 @@ wss.on('connection', (ws) => {
       pokerSendState(playerRoom);
     }
   });
-});
+}); // end wss.on connection
 
 // ─── START ────────────────────────────────────────────────────────────────────
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🎮 Arcade Server — puerto ${PORT}`);
-  console.log('  /       → Lobby principal');
-  console.log('  /mus    → Juego de Mus');
+  console.log('  /       → Lobby');
+  console.log('  /mus    → Mus');
   console.log('  /caida  → Caída');
-  console.log('  /poker  → Texas Hold\'em\n');
+  console.log('  /poker  → Poker\n');
 });
