@@ -66,9 +66,17 @@ body { cursor: none; }
     radial-gradient(ellipse 55% 55% at 90% 40%,  rgba(15,45,100,0.18)  0%, transparent 55%),
     radial-gradient(ellipse 40% 40% at 50% 50%,  rgba(18,4,4,0.45)     0%, transparent 100%);
 }
+#bg-solitario {
+  opacity:0;
+  background:
+    radial-gradient(ellipse 85% 85% at 50% 20%,  rgba(109,40,217,0.88) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 60% at 10% 60%,  rgba(76,20,180,0.30)  0%, transparent 55%),
+    radial-gradient(ellipse 60% 60% at 90% 60%,  rgba(88,28,200,0.30)  0%, transparent 55%),
+    radial-gradient(ellipse 40% 40% at 50% 50%,  rgba(15,5,40,0.5)     0%, transparent 100%);
+}
 
 /* Ambient ghost layers — always slightly visible, slowly drifting */
-#bg-mus-ghost, #bg-caida-ghost, #bg-poker-ghost {
+#bg-mus-ghost, #bg-caida-ghost, #bg-poker-ghost, #bg-solitario-ghost {
   position:fixed; inset:0; pointer-events:none;
   opacity:0; transition:opacity 0.9s ease;
   animation: none;
@@ -84,6 +92,15 @@ body { cursor: none; }
 #bg-poker-ghost {
   background: radial-gradient(ellipse 65% 65% at 50% 95%, rgba(155,12,12,0.22) 0%, transparent 58%);
   animation: driftRed 20s ease-in-out infinite;
+}
+#bg-solitario-ghost {
+  background: radial-gradient(ellipse 65% 70% at 50% 15%, rgba(109,40,217,0.22) 0%, transparent 60%);
+  animation: driftPurple 24s ease-in-out infinite;
+}
+@keyframes driftPurple {
+  0%,100%{ transform:translate(0,0) scale(1); }
+  33%    { transform:translate(-5%, 7%) scale(1.07); }
+  66%    { transform:translate(7%, -5%) scale(0.94); }
 }
 
 @keyframes driftGreen {
@@ -106,19 +123,19 @@ body { cursor: none; }
 body.hover-mus   #bg-mus-ghost   { opacity:0 !important; }
 body.hover-caida #bg-caida-ghost { opacity:0 !important; }
 body.hover-poker #bg-poker-ghost { opacity:0 !important; }
+body.hover-solitario #bg-solitario-ghost { opacity:0 !important; }
 
-/* Default state: all 3 ghosts visible */
-body:not(.hover-mus):not(.hover-caida):not(.hover-poker) #bg-mus-ghost,
-body:not(.hover-mus):not(.hover-caida):not(.hover-poker) #bg-caida-ghost,
-body:not(.hover-mus):not(.hover-caida):not(.hover-poker) #bg-poker-ghost { opacity:0; }
+/* Default state: all ghosts hidden */
+body:not(.hover-mus):not(.hover-caida):not(.hover-poker):not(.hover-solitario) #bg-mus-ghost,
+body:not(.hover-mus):not(.hover-caida):not(.hover-poker):not(.hover-solitario) #bg-caida-ghost,
+body:not(.hover-mus):not(.hover-caida):not(.hover-poker):not(.hover-solitario) #bg-poker-ghost,
+body:not(.hover-mus):not(.hover-caida):not(.hover-poker):not(.hover-solitario) #bg-solitario-ghost { opacity:0; }
 
-/* During any hover: the 2 non-active ghosts show */
-body.hover-mus   #bg-caida-ghost,
-body.hover-mus   #bg-poker-ghost,
-body.hover-caida #bg-mus-ghost,
-body.hover-caida #bg-poker-ghost,
-body.hover-poker #bg-mus-ghost,
-body.hover-poker #bg-caida-ghost { opacity:1; }
+/* During hover: non-active ghosts show */
+body.hover-mus   #bg-caida-ghost, body.hover-mus   #bg-poker-ghost, body.hover-mus   #bg-solitario-ghost,
+body.hover-caida #bg-mus-ghost,   body.hover-caida #bg-poker-ghost, body.hover-caida #bg-solitario-ghost,
+body.hover-poker #bg-mus-ghost,   body.hover-poker #bg-caida-ghost, body.hover-poker #bg-solitario-ghost,
+body.hover-solitario #bg-mus-ghost, body.hover-solitario #bg-caida-ghost, body.hover-solitario #bg-poker-ghost { opacity:1; }
 
 /* ── VIGNETTE ──────────────────────────────────────────────────────────────── */
 body::after {
@@ -187,6 +204,12 @@ body.hover-poker .title { text-shadow:0 0 80px rgba(230,60,60,0.45),  0 0 20px r
 body.hover-mus   .title { color: #7bc47b; text-shadow: 0 0 60px rgba(39,200,80,0.7), 0 0 120px rgba(39,200,80,0.3), 0 2px 4px rgba(0,0,0,0.8); animation: titlePulseGreen 2.5s ease-in-out infinite; }
 body.hover-caida .title { color: #6ab0e8; text-shadow: 0 0 60px rgba(60,140,230,0.7), 0 0 120px rgba(60,140,230,0.3), 0 2px 4px rgba(0,0,0,0.8); animation: titlePulseBlue  2.5s ease-in-out infinite; }
 body.hover-poker .title { color: #e87a7a; text-shadow: 0 0 60px rgba(230,60,60,0.7),  0 0 120px rgba(230,60,60,0.3),  0 2px 4px rgba(0,0,0,0.8); animation: titlePulseRed   2.5s ease-in-out infinite; }
+body.hover-solitario .title { color: #c084fc; text-shadow: 0 0 60px rgba(168,85,247,0.7), 0 0 120px rgba(124,58,237,0.3), 0 2px 4px rgba(0,0,0,0.8); animation: titlePulsePurple 2.5s ease-in-out infinite; }
+
+@keyframes titlePulsePurple {
+  0%,100% { text-shadow: 0 0 40px rgba(168,85,247,0.4),  0 2px 4px rgba(0,0,0,0.8); }
+  50%     { text-shadow: 0 0 100px rgba(168,85,247,0.85), 0 0 30px rgba(124,58,237,0.4), 0 2px 4px rgba(0,0,0,0.8); }
+}
 
 @keyframes titlePulseGreen {
   0%,100% { text-shadow: 0 0 40px rgba(39,200,80,0.4),  0 2px 4px rgba(0,0,0,0.8); }
@@ -234,36 +257,42 @@ body.hover-mus .divider, body.hover-caida .divider, body.hover-poker .divider { 
   content:''; position:absolute; bottom:0; left:0; right:0;
   height:2px; opacity:0; transition:opacity 0.35s; border-radius:0 0 10px 10px;
 }
-.card-mus::after   { background:linear-gradient(90deg,transparent,rgba(39,200,80,0.8),transparent); }
-.card-caida::after { background:linear-gradient(90deg,transparent,rgba(60,140,230,0.8),transparent); }
-.card-poker::after { background:linear-gradient(90deg,transparent,rgba(230,60,60,0.8),transparent); }
+.card-mus::after      { background:linear-gradient(90deg,transparent,rgba(39,200,80,0.8),transparent); }
+.card-caida::after    { background:linear-gradient(90deg,transparent,rgba(60,140,230,0.8),transparent); }
+.card-poker::after    { background:linear-gradient(90deg,transparent,rgba(230,60,60,0.8),transparent); }
+.card-solitario::after{ background:linear-gradient(90deg,transparent,rgba(168,85,247,0.8),transparent); }
 .game-card:hover::after { opacity:1; }
 
 /* Dim non-hovered */
-body.hover-mus   .card-caida, body.hover-mus   .card-poker,
-body.hover-caida .card-mus,   body.hover-caida .card-poker,
-body.hover-poker .card-mus,   body.hover-poker .card-caida {
+body.hover-mus       .card-caida, body.hover-mus       .card-poker, body.hover-mus       .card-solitario,
+body.hover-caida     .card-mus,   body.hover-caida     .card-poker, body.hover-caida     .card-solitario,
+body.hover-poker     .card-mus,   body.hover-poker     .card-caida, body.hover-poker     .card-solitario,
+body.hover-solitario .card-mus,   body.hover-solitario .card-caida, body.hover-solitario .card-poker {
   opacity:0.38; filter:blur(0.5px); transform:scale(0.96);
 }
 /* Boost hovered */
-body.hover-mus   .card-mus,
-body.hover-caida .card-caida,
-body.hover-poker .card-poker { transform:translateY(-8px) scale(1.04); }
+body.hover-mus       .card-mus       { transform:translateY(-8px) scale(1.04); }
+body.hover-caida     .card-caida     { transform:translateY(-8px) scale(1.04); }
+body.hover-poker     .card-poker     { transform:translateY(-8px) scale(1.04); }
+body.hover-solitario .card-solitario { transform:translateY(-8px) scale(1.04); }
 
 .card-mus   { border-color:rgba(39,120,60,0.3); }
 .card-caida { border-color:rgba(30,80,160,0.3); }
 .card-poker { border-color:rgba(160,30,30,0.3); }
-.card-mus:hover   { border-color:rgba(39,200,80,0.7);  box-shadow:0 14px 55px rgba(18,110,42,0.45),  0 0 0 1px rgba(39,200,80,0.25); }
-.card-caida:hover { border-color:rgba(60,140,230,0.7); box-shadow:0 14px 55px rgba(15,55,160,0.45),  0 0 0 1px rgba(60,140,230,0.25); }
-.card-poker:hover { border-color:rgba(230,60,60,0.7);  box-shadow:0 14px 55px rgba(155,12,12,0.45),  0 0 0 1px rgba(230,60,60,0.25); }
+.card-solitario { border-color:rgba(109,40,217,0.3); animation: fadeSlideUp 0.65s ease both; animation-delay: 1.2s; }
+.card-mus:hover      { border-color:rgba(39,200,80,0.7);   box-shadow:0 14px 55px rgba(18,110,42,0.45),  0 0 0 1px rgba(39,200,80,0.25); }
+.card-caida:hover    { border-color:rgba(60,140,230,0.7);  box-shadow:0 14px 55px rgba(15,55,160,0.45),  0 0 0 1px rgba(60,140,230,0.25); }
+.card-poker:hover    { border-color:rgba(230,60,60,0.7);   box-shadow:0 14px 55px rgba(155,12,12,0.45),  0 0 0 1px rgba(230,60,60,0.25); }
+.card-solitario:hover{ border-color:rgba(168,85,247,0.7);  box-shadow:0 14px 55px rgba(109,40,217,0.5),  0 0 0 1px rgba(168,85,247,0.25); }
 
 .game-icon { font-size:2.8rem; line-height:1; filter:drop-shadow(0 2px 8px rgba(0,0,0,0.5)); transition:transform 0.3s; }
 .game-card:hover .game-icon { transform:scale(1.12); }
 
 .game-name { font-family:'Cinzel Decorative',cursive; font-size:0.9rem; font-weight:700; letter-spacing:0.1em; }
-.card-mus   .game-name { color:#7bc47b; }
-.card-caida .game-name { color:#6ab0e8; }
-.card-poker .game-name { color:#e87a7a; }
+.card-mus       .game-name { color:#7bc47b; }
+.card-caida     .game-name { color:#6ab0e8; }
+.card-poker     .game-name { color:#e87a7a; }
+.card-solitario .game-name { color:#c084fc; }
 
 .game-desc { font-size:0.6rem; color:var(--muted); text-align:center; line-height:1.5; letter-spacing:0.05em; }
 
@@ -273,9 +302,10 @@ body.hover-poker .card-poker { transform:translateY(-8px) scale(1.04); }
   padding:0.2rem 0.6rem; border-radius:20px;
   transition: opacity 0.3s;
 }
-.card-mus   .game-players { background:rgba(39,120,60,0.2);  color:#7bc47b; border:1px solid rgba(39,120,60,0.3); }
-.card-caida .game-players { background:rgba(30,80,160,0.2);  color:#6ab0e8; border:1px solid rgba(30,80,160,0.3); }
-.card-poker .game-players { background:rgba(160,30,30,0.2);  color:#e87a7a; border:1px solid rgba(160,30,30,0.3); }
+.card-mus       .game-players { background:rgba(39,120,60,0.2);   color:#7bc47b; border:1px solid rgba(39,120,60,0.3); }
+.card-caida     .game-players { background:rgba(30,80,160,0.2);   color:#6ab0e8; border:1px solid rgba(30,80,160,0.3); }
+.card-poker     .game-players { background:rgba(160,30,30,0.2);   color:#e87a7a; border:1px solid rgba(160,30,30,0.3); }
+.card-solitario .game-players { background:rgba(109,40,217,0.2);  color:#c084fc; border:1px solid rgba(109,40,217,0.3); }
 
 /* Online counter */
 .online-count {
@@ -288,9 +318,10 @@ body.hover-poker .card-poker { transform:translateY(-8px) scale(1.04); }
   width:5px; height:5px; border-radius:50%;
   animation:dotPulse 2s ease-in-out infinite;
 }
-.card-mus   .online-dot { background:#7bc47b; box-shadow:0 0 5px rgba(123,196,123,0.7); }
-.card-caida .online-dot { background:#6ab0e8; box-shadow:0 0 5px rgba(106,176,232,0.7); }
-.card-poker .online-dot { background:#e87a7a; box-shadow:0 0 5px rgba(232,122,122,0.7); }
+.card-mus       .online-dot { background:#7bc47b; box-shadow:0 0 5px rgba(123,196,123,0.7); }
+.card-caida     .online-dot { background:#6ab0e8; box-shadow:0 0 5px rgba(106,176,232,0.7); }
+.card-poker     .online-dot { background:#e87a7a; box-shadow:0 0 5px rgba(232,122,122,0.7); }
+.card-solitario .online-dot { background:#c084fc; box-shadow:0 0 5px rgba(192,132,252,0.7); }
 @keyframes dotPulse {
   0%,100% { opacity:1; transform:scale(1); }
   50%     { opacity:0.4; transform:scale(0.75); }
@@ -306,9 +337,10 @@ body.hover-poker .card-poker { transform:translateY(-8px) scale(1.04); }
   color:rgba(245,234,216,0.2); transition:color 0.6s, opacity 0.4s;
   min-height:1em;
 }
-body.hover-mus   .footer { color:rgba(123,196,123,0.4); }
-body.hover-caida .footer { color:rgba(106,176,232,0.4); }
-body.hover-poker .footer { color:rgba(232,122,122,0.4); }
+body.hover-mus       .footer { color:rgba(123,196,123,0.4); }
+body.hover-caida     .footer { color:rgba(106,176,232,0.4); }
+body.hover-poker     .footer { color:rgba(232,122,122,0.4); }
+body.hover-solitario .footer { color:rgba(192,132,252,0.4); }
 
 /* ── AMBIENT PARTICLES ─────────────────────────────────────────────────────── */
 .particles { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
@@ -341,13 +373,15 @@ body.hover-poker .footer { color:rgba(232,122,122,0.4); }
 <div id="cursor">♠</div>
 
 <!-- Background layers -->
-<div id="bg-default"     class="bg-layer"></div>
-<div id="bg-mus"        class="bg-layer"></div>
-<div id="bg-caida"      class="bg-layer"></div>
-<div id="bg-poker"      class="bg-layer"></div>
+<div id="bg-default"       class="bg-layer"></div>
+<div id="bg-mus"          class="bg-layer"></div>
+<div id="bg-caida"        class="bg-layer"></div>
+<div id="bg-poker"        class="bg-layer"></div>
+<div id="bg-solitario"    class="bg-layer"></div>
 <div id="bg-mus-ghost"></div>
 <div id="bg-caida-ghost"></div>
 <div id="bg-poker-ghost"></div>
+<div id="bg-solitario-ghost"></div>
 <div class="fall-layer" id="fall-layer"></div>
 
 <div class="page">
@@ -389,6 +423,16 @@ body.hover-poker .footer { color:rgba(232,122,122,0.4); }
       <div class="online-count"><span class="online-dot"></span><span id="online-poker">— online</span></div>
       <div class="arrow">JUGAR →</div>
     </a>
+
+    <a class="game-card card-solitario" href="/solitario"
+       onmouseenter="setHover('solitario')" onmouseleave="clearHover()">
+      <div class="game-icon">🕷️</div>
+      <div class="game-name">SOLITARIO</div>
+      <div class="game-desc">Klondike clásico.<br>1 jugador.</div>
+      <div class="game-players">1 jugador</div>
+      <div class="online-count"><span class="online-dot"></span><span id="online-solitario"></span></div>
+      <div class="arrow">JUGAR →</div>
+    </a>
   </div>
 
   <div class="footer" id="footer-text">SELECCIONA UN JUEGO PARA COMENZAR</div>
@@ -399,7 +443,7 @@ body.hover-poker .footer { color:rgba(232,122,122,0.4); }
 <script>
 // ── CUSTOM CURSOR ─────────────────────────────────────────────────────────────
 const cursor = document.getElementById('cursor');
-const cursorSymbols = { mus:'♣', caida:'🎴', poker:'♠', default:'♠' };
+const cursorSymbols = { mus:'♣', caida:'🎴', poker:'♠', solitario:'🕷️', default:'♠' };
 let cursorGame = 'default';
 
 document.addEventListener('mousemove', e => {
@@ -408,7 +452,7 @@ document.addEventListener('mousemove', e => {
 });
 
 // ── BACKGROUND HOVER + FOOTER + CURSOR (unified) ─────────────────────────────
-const layers = { mus:'bg-mus', caida:'bg-caida', poker:'bg-poker' };
+const layers = { mus:'bg-mus', caida:'bg-caida', poker:'bg-poker', solitario:'bg-solitario' };
 let current = null;
 
 const footerEl = document.getElementById('footer-text');
@@ -420,9 +464,10 @@ const phrases = [
   'FAROL, ESCALERA O FULL HOUSE',
 ];
 const hoverPhrases = {
-  mus:   ['EL CLÁSICO VASCO', 'GRANDE · CHICA · PARES · JUEGO', '¿TIENES MUS?'],
-  caida: ['RECOGE Y ESCALA', '¡CAÍDA!', 'CANTOS Y ESCALERAS'],
-  poker: ['ALL IN', "TEXAS HOLD'EM", '¿TIENES EL FAROL?'],
+  mus:       ['EL CLÁSICO VASCO', 'GRANDE · CHICA · PARES · JUEGO', '¿TIENES MUS?'],
+  caida:     ['RECOGE Y ESCALA', '¡CAÍDA!', 'CANTOS Y ESCALERAS'],
+  poker:     ['ALL IN', "TEXAS HOLD'EM", '¿TIENES EL FAROL?'],
+  solitario: ['UN JUGADOR', 'KLONDIKE CLÁSICO', '¿PUEDES GANAR?'],
 };
 let phraseIdx = 0;
 let isHoverPhrase = false;
@@ -439,7 +484,7 @@ setInterval(() => {
 }, 3200);
 
 const titleEl = document.querySelector('.title');
-const titleNames = { mus: 'MUS', caida: 'CAÍDA', poker: 'PÓKER' };
+const titleNames = { mus: 'MUS', caida: 'CAÍDA', poker: 'PÓKER', solitario: 'SOLITARIO' };
 
 function setTitle(text) {
   titleEl.style.opacity = '0';
@@ -525,9 +570,10 @@ const fallLayer = document.getElementById('fall-layer');
 let fallInterval = null;
 
 const fallConfig = {
-  mus:   { logo:'🃏', extras:['♣','♠','♥','♦','7','3','1'], opacity:0.24, glow:'rgba(39,180,80,0.5)' },
-  caida: { logo:'🎴', extras:['♣','♠','♥','♦','7','3','1'], opacity:0.24, glow:'rgba(60,140,230,0.5)' },
-  poker: { logo:'♠',  extras:['♥','♦','♣','A','K','Q','J'], opacity:0.28, glow:'rgba(230,60,60,0.5)' },
+  mus:       { logo:'🃏', extras:['♣','♠','♥','♦','7','3','1'], opacity:0.24, glow:'rgba(39,180,80,0.5)' },
+  caida:     { logo:'🎴', extras:['♣','♠','♥','♦','7','3','1'], opacity:0.24, glow:'rgba(60,140,230,0.5)' },
+  poker:     { logo:'♠',  extras:['♥','♦','♣','A','K','Q','J'], opacity:0.28, glow:'rgba(230,60,60,0.5)' },
+  solitario: { logo:'🕷️', extras:['♠','♥','♦','♣','A','K','Q'], opacity:0.26, glow:'rgba(168,85,247,0.5)' },
 };
 
 function pickSymbol(game) {

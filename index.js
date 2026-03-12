@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 
 // ─── HTTP ─────────────────────────────────────────────────────────────────────
 const httpServer = http.createServer((req, res) => {
-  const routes = { '/': 'arcade.html', '/mus': 'mus.html', '/caida': 'caida.html', '/poker': 'poker.html' };
+  const routes = { '/': 'arcade.html', '/mus': 'mus.html', '/caida': 'caida.html', '/poker': 'poker.html', '/solitario': 'solitario.html' };
   const file = routes[req.url] || null;
   if (!file) { res.writeHead(404); res.end('Not found'); return; }
   fs.readFile(path.join(__dirname, file), (err, data) => {

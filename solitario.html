@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solitario — Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #06050a;
+  --purple: #7c3aed;
+  --purple2: #a855f7;
+  --purple3: #c084fc;
+  --purple-dim: rgba(124,58,237,0.35);
+  --gold: #c9a84c;
+  --gold2: #e8c97a;
+  --text: #f5ead8;
+  --muted: rgba(245,234,216,0.45);
+  --border: rgba(124,58,237,0.25);
+  --card-w: 72px;
+  --card-h: 100px;
+  --card-radius: 7px;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html,body { height:100%; background:var(--bg); color:var(--text); font-family:'Cinzel',serif; overflow:hidden; user-select:none; }
+
+/* ── CURSOR ─────────────────────────────────────────────────────────────────── */
+body { cursor:none; }
+#cursor {
+  position:fixed; pointer-events:none; z-index:9999;
+  font-size:1.1rem; transform:translate(-50%,-50%);
+  filter:drop-shadow(0 0 6px rgba(168,85,247,0.8));
+  transition:transform 0.1s ease;
+}
+#cursor.dragging { transform:translate(-50%,-50%) scale(1.2) rotate(-8deg); }
+
+/* ── BACKGROUND ─────────────────────────────────────────────────────────────── */
+.bg-layer { position:fixed; inset:0; pointer-events:none; }
+#bg-main {
+  background:
+    radial-gradient(ellipse 70% 80% at 20% 30%,  rgba(88,28,220,0.55)  0%, transparent 60%),
+    radial-gradient(ellipse 60% 70% at 80% 20%,  rgba(124,58,237,0.40) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 50% 100%, rgba(60,10,100,0.65)  0%, transparent 55%),
+    radial-gradient(ellipse 50% 50% at 10% 80%,  rgba(40,5,80,0.5)     0%, transparent 50%);
+}
+#bg-drift1 {
+  background: radial-gradient(ellipse 55% 65% at 70% 60%, rgba(139,58,237,0.2) 0%, transparent 65%);
+  animation: bgDrift1 20s ease-in-out infinite;
+}
+#bg-drift2 {
+  background: radial-gradient(ellipse 45% 55% at 30% 70%, rgba(80,20,160,0.18) 0%, transparent 60%);
+  animation: bgDrift2 26s ease-in-out infinite;
+}
+@keyframes bgDrift1 {
+  0%,100%{ transform:translate(0,0) scale(1); }
+  50%    { transform:translate(-8%,6%) scale(1.1); }
+}
+@keyframes bgDrift2 {
+  0%,100%{ transform:translate(0,0) scale(1); }
+  50%    { transform:translate(6%,-8%) scale(0.92); }
+}
+body::after {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:radial-gradient(ellipse 88% 88% at 50% 50%, transparent 38%, rgba(0,0,0,0.6) 100%);
+}
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.035) 3px,rgba(0,0,0,0.035) 4px);
+}
+
+/* ── BACK BUTTON ────────────────────────────────────────────────────────────── */
+.arcade-back {
+  position:fixed; top:16px; left:18px; z-index:100;
+  font-size:0.58rem; letter-spacing:0.18em; color:var(--purple3);
+  text-decoration:none; padding:5px 10px;
+  border:1px solid rgba(168,85,247,0.3); border-radius:4px;
+  background:rgba(0,0,0,0.4);
+  transition:color 0.2s, border-color 0.2s, background 0.2s;
+  cursor:none;
+}
+.arcade-back:hover { color:#fff; border-color:rgba(168,85,247,0.7); background:rgba(124,58,237,0.2); }
+
+/* ── HEADER ─────────────────────────────────────────────────────────────────── */
+#header {
+  position:fixed; top:0; left:0; right:0; z-index:10;
+  display:flex; align-items:center; justify-content:center;
+  padding:12px 20px; gap:1.5rem;
+  pointer-events:none;
+}
+#title-area { text-align:center; }
+.game-title {
+  font-family:'Cinzel Decorative',cursive; font-size:1.5rem; font-weight:900;
+  color:var(--purple3); letter-spacing:0.12em;
+  text-shadow:0 0 40px rgba(168,85,247,0.6), 0 0 80px rgba(124,58,237,0.3);
+  animation:titleGlow 3s ease-in-out infinite;
+}
+@keyframes titleGlow {
+  0%,100%{ text-shadow:0 0 30px rgba(168,85,247,0.5), 0 2px 4px rgba(0,0,0,0.8); }
+  50%    { text-shadow:0 0 70px rgba(168,85,247,0.85), 0 0 120px rgba(124,58,237,0.4), 0 2px 4px rgba(0,0,0,0.8); }
+}
+
+/* ── SCORE / CONTROLS ────────────────────────────────────────────────────────── */
+#controls {
+  position:fixed; top:12px; right:16px; z-index:100;
+  display:flex; align-items:center; gap:10px; pointer-events:all;
+}
+.score-box {
+  font-size:0.55rem; letter-spacing:0.15em; padding:5px 12px;
+  background:rgba(0,0,0,0.45); border:1px solid var(--border);
+  border-radius:5px; color:var(--purple3); text-align:center; min-width:70px;
+}
+.score-val { font-size:0.95rem; font-weight:700; color:#fff; display:block; margin-top:1px; }
+.ctrl-btn {
+  font-family:'Cinzel',serif; font-size:0.52rem; letter-spacing:0.15em;
+  padding:5px 11px; border-radius:5px; cursor:none;
+  border:1px solid rgba(168,85,247,0.4); background:rgba(0,0,0,0.45);
+  color:var(--purple3); transition:all 0.2s;
+}
+.ctrl-btn:hover { border-color:rgba(168,85,247,0.8); background:rgba(124,58,237,0.25); color:#fff; }
+
+/* ── TABLE ───────────────────────────────────────────────────────────────────── */
+#table {
+  position:fixed; inset:0; z-index:1;
+  display:flex; flex-direction:column; align-items:center;
+  padding-top:60px; gap:14px;
+}
+
+/* ── TOP ROW (stock, waste, foundations) ─────────────────────────────────────── */
+#top-row {
+  display:flex; gap:12px; align-items:flex-start;
+}
+
+/* ── TABLEAU ─────────────────────────────────────────────────────────────────── */
+#tableau {
+  display:flex; gap:12px; align-items:flex-start;
+}
+
+/* ── CARD SLOT (empty placeholder) ──────────────────────────────────────────── */
+.slot {
+  width:var(--card-w); height:var(--card-h);
+  border:1.5px dashed rgba(168,85,247,0.3);
+  border-radius:var(--card-radius);
+  background:rgba(80,20,160,0.08);
+  position:relative; flex-shrink:0;
+}
+.slot.foundation { cursor:none; }
+.slot-label {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-size:1.4rem; opacity:0.25; pointer-events:none;
+}
+
+/* ── CARDS ───────────────────────────────────────────────────────────────────── */
+.card {
+  width:var(--card-w); height:var(--card-h);
+  border-radius:var(--card-radius);
+  position:absolute; cursor:none;
+  transition:box-shadow 0.15s, filter 0.15s;
+  transform-origin:top center;
+  will-change:transform;
+}
+.card.face-up {
+  background:#f8f2e8;
+  border:1px solid rgba(0,0,0,0.18);
+  box-shadow:0 2px 8px rgba(0,0,0,0.5);
+}
+.card.face-down {
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(88,28,180,0.9) 0px, rgba(88,28,180,0.9) 4px,
+    rgba(60,10,120,0.9) 4px, rgba(60,10,120,0.9) 8px
+  );
+  border:1.5px solid rgba(168,85,247,0.5);
+  box-shadow:0 2px 8px rgba(0,0,0,0.5);
+  cursor:default;
+}
+.card.face-down::after {
+  content:''; position:absolute; inset:4px;
+  border:1px solid rgba(168,85,247,0.3); border-radius:4px;
+}
+.card.face-up:hover { box-shadow:0 4px 18px rgba(168,85,247,0.5); filter:brightness(1.04); }
+.card.dragged {
+  z-index:5000 !important; pointer-events:none;
+  box-shadow:0 16px 40px rgba(124,58,237,0.7), 0 4px 12px rgba(0,0,0,0.6);
+  filter:brightness(1.06);
+}
+.card.win-anim {
+  animation:cardWin 0.5s ease both;
+}
+@keyframes cardWin {
+  0%  { transform:scale(1); }
+  50% { transform:scale(1.15) rotate(5deg); }
+  100%{ transform:scale(1); }
+}
+
+/* Card inner layout */
+.card-inner { width:100%; height:100%; position:relative; border-radius:var(--card-radius); overflow:hidden; }
+.card-tl, .card-br {
+  position:absolute; font-size:0.72rem; font-weight:700; line-height:1.1;
+  display:flex; flex-direction:column; align-items:center;
+}
+.card-tl { top:4px; left:5px; }
+.card-br { bottom:4px; right:5px; transform:rotate(180deg); }
+.card-center { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:1.6rem; }
+.red { color:#c0392b; }
+.black { color:#1a1a2e; }
+
+/* Stock pile */
+#stock {
+  width:var(--card-w); height:var(--card-h);
+  border-radius:var(--card-radius); cursor:none;
+  position:relative; flex-shrink:0;
+}
+#stock-top {
+  width:var(--card-w); height:var(--card-h);
+  border-radius:var(--card-radius);
+  position:absolute; top:0; left:0;
+}
+#stock-empty {
+  width:var(--card-w); height:var(--card-h);
+  border-radius:var(--card-radius);
+  border:1.5px dashed rgba(168,85,247,0.3);
+  background:rgba(80,20,160,0.08);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.6rem; opacity:0.4; cursor:none;
+}
+
+/* Waste pile */
+#waste {
+  width:var(--card-w); height:var(--card-h);
+  position:relative; flex-shrink:0;
+}
+
+/* Tableau columns */
+.tableau-col {
+  width:var(--card-w);
+  position:relative; flex-shrink:0;
+  min-height:var(--card-h);
+}
+
+/* ── PARTICLES ───────────────────────────────────────────────────────────────── */
+.particles { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+.particle  { position:absolute; opacity:0; animation:floatUp linear infinite; font-size:0.7rem; }
+@keyframes floatUp {
+  0%  { transform:translateY(0) rotate(0deg); opacity:0; }
+  8%  { opacity:0.07; }
+  92% { opacity:0.04; }
+  100%{ transform:translateY(-105vh) rotate(280deg); opacity:0; }
+}
+
+/* ── WIN SCREEN ──────────────────────────────────────────────────────────────── */
+#win-screen {
+  display:none; position:fixed; inset:0; z-index:8000;
+  background:rgba(6,5,10,0.88);
+  align-items:center; justify-content:center; flex-direction:column; gap:1.5rem;
+}
+#win-screen.show { display:flex; animation:fadeIn 0.6s ease; }
+@keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+.win-title {
+  font-family:'Cinzel Decorative',cursive; font-size:2.8rem; font-weight:900;
+  color:var(--purple3);
+  text-shadow:0 0 60px rgba(168,85,247,0.9), 0 0 120px rgba(124,58,237,0.5);
+  animation:titleGlow 2s ease-in-out infinite;
+}
+.win-score { font-size:1.1rem; color:var(--gold2); letter-spacing:0.2em; }
+.win-btn {
+  font-family:'Cinzel',serif; font-size:0.7rem; letter-spacing:0.2em;
+  padding:10px 28px; border-radius:6px; cursor:none;
+  border:1px solid rgba(168,85,247,0.6); background:rgba(124,58,237,0.3);
+  color:#fff; transition:all 0.2s; margin-top:0.5rem;
+}
+.win-btn:hover { background:rgba(124,58,237,0.6); border-color:var(--purple2); }
+
+/* ── CONFETTI ────────────────────────────────────────────────────────────────── */
+.confetti-piece {
+  position:fixed; width:8px; height:8px; border-radius:2px;
+  pointer-events:none; z-index:7999;
+  animation:confettiFall linear forwards;
+}
+@keyframes confettiFall {
+  0%  { transform:translateY(-20px) rotate(0deg); opacity:1; }
+  100%{ transform:translateY(110vh)  rotate(720deg); opacity:0; }
+}
+
+/* ── TOOLTIP / hint ──────────────────────────────────────────────────────────── */
+#hint-bar {
+  position:fixed; bottom:14px; left:50%; transform:translateX(-50%);
+  font-size:0.5rem; letter-spacing:0.15em; color:rgba(192,132,252,0.4);
+  pointer-events:none; z-index:100;
+}
+</style>
+</head>
+<body>
+
+<div id="cursor">🕷️</div>
+<a class="arcade-back" href="/">← ARCADE</a>
+
+<!-- Backgrounds -->
+<div class="bg-layer" id="bg-main"></div>
+<div class="bg-layer" id="bg-drift1"></div>
+<div class="bg-layer" id="bg-drift2"></div>
+
+<!-- Header -->
+<div id="header">
+  <div id="title-area">
+    <div class="game-title">🕷️ SOLITARIO</div>
+  </div>
+</div>
+
+<!-- Controls -->
+<div id="controls">
+  <div class="score-box">PUNTOS<span class="score-val" id="score-display">0</span></div>
+  <div class="score-box">MOVS<span class="score-val" id="moves-display">0</span></div>
+  <button class="ctrl-btn" id="btn-undo">↩ DESHACER</button>
+  <button class="ctrl-btn" id="btn-new">✦ NUEVA</button>
+</div>
+
+<!-- Game table -->
+<div id="table">
+  <div id="top-row">
+    <div id="stock"><div id="stock-empty">↺</div></div>
+    <div id="waste" class="slot"></div>
+    <div style="width:calc(var(--card-w)*1 + 12px)"></div>
+    <div id="f0" class="slot foundation"><div class="slot-label">♠</div></div>
+    <div id="f1" class="slot foundation"><div class="slot-label">♥</div></div>
+    <div id="f2" class="slot foundation"><div class="slot-label">♦</div></div>
+    <div id="f3" class="slot foundation"><div class="slot-label">♣</div></div>
+  </div>
+  <div id="tableau">
+    <div id="t0" class="tableau-col slot"></div>
+    <div id="t1" class="tableau-col slot"></div>
+    <div id="t2" class="tableau-col slot"></div>
+    <div id="t3" class="tableau-col slot"></div>
+    <div id="t4" class="tableau-col slot"></div>
+    <div id="t5" class="tableau-col slot"></div>
+    <div id="t6" class="tableau-col slot"></div>
+  </div>
+</div>
+
+<div class="particles" id="particles"></div>
+<div id="win-screen">
+  <div class="win-title">¡VICTORIA!</div>
+  <div class="win-score" id="win-score-text"></div>
+  <button class="win-btn" id="btn-win-new">✦ NUEVA PARTIDA</button>
+  <a class="win-btn" href="/" style="text-decoration:none;text-align:center">← ARCADE</a>
+</div>
+<div id="hint-bar">CLICK EN EL MAZO · ARRASTRA CARTAS · DOBLE CLICK PARA AUTO-MOVER</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// CURSOR
+// ══════════════════════════════════════════════════════════
+const cursor = document.getElementById('cursor');
+document.addEventListener('mousemove', e => {
+  cursor.style.left = e.clientX + 'px';
+  cursor.style.top  = e.clientY + 'px';
+});
+
+// ══════════════════════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════════════════════
+const SUITS  = ['♠','♥','♦','♣'];
+const RANKS  = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const RANK_V = { A:1,2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,J:11,Q:12,K:13 };
+const RED    = new Set(['♥','♦']);
+const VERT_FACE_UP   = 20;  // px between face-up cards in tableau
+const VERT_FACE_DOWN = 14;  // px between face-down cards
+
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let stock = [], waste = [];
+let foundations = [[],[],[],[]];   // indexed by suit index
+let tableau = [[],[],[],[],[],[],[]];
+let score = 0, moves = 0;
+let history = [];   // for undo
+let dragState = null;
+
+// ══════════════════════════════════════════════════════════
+// DECK
+// ══════════════════════════════════════════════════════════
+function makeDeck() {
+  const deck = [];
+  for (const suit of SUITS)
+    for (const rank of RANKS)
+      deck.push({ suit, rank, faceUp: false, id: suit+rank });
+  return deck;
+}
+function shuffle(arr) {
+  for (let i = arr.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+
+// ══════════════════════════════════════════════════════════
+// DEAL
+// ══════════════════════════════════════════════════════════
+function newGame() {
+  const deck = shuffle(makeDeck());
+  stock = []; waste = []; foundations = [[],[],[],[]];
+  tableau = [[],[],[],[],[],[],[]]; score = 0; moves = 0;
+  history = [];
+  let idx = 0;
+  for (let col = 0; col < 7; col++) {
+    for (let row = 0; row <= col; row++) {
+      const card = deck[idx++];
+      card.faceUp = (row === col);
+      tableau[col].push(card);
+    }
+  }
+  stock = deck.slice(idx).map(c => ({ ...c, faceUp:false }));
+  render();
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════════
+function render() {
+  document.getElementById('score-display').textContent = score;
+  document.getElementById('moves-display').textContent = moves;
+  renderStock();
+  renderWaste();
+  renderFoundations();
+  renderTableau();
+}
+
+function cardEl(card, extraClass='') {
+  const div = document.createElement('div');
+  div.className = 'card ' + (card.faceUp ? 'face-up' : 'face-down') + (extraClass ? ' '+extraClass : '');
+  div.dataset.id = card.id;
+  if (card.faceUp) {
+    const color = RED.has(card.suit) ? 'red' : 'black';
+    div.innerHTML = `<div class="card-inner">
+      <div class="card-tl ${color}"><span>${card.rank}</span><span>${card.suit}</span></div>
+      <div class="card-center ${color}">${card.suit}</div>
+      <div class="card-br ${color}"><span>${card.rank}</span><span>${card.suit}</span></div>
+    </div>`;
+  }
+  return div;
+}
+
+function renderStock() {
+  const el = document.getElementById('stock');
+  // Remove old card tops
+  el.querySelectorAll('.card').forEach(c=>c.remove());
+  if (stock.length > 0) {
+    const top = cardEl(stock[stock.length-1]);
+    top.id = 'stock-top';
+    top.style.position = 'absolute'; top.style.top = '0'; top.style.left = '0';
+    el.appendChild(top);
+    document.getElementById('stock-empty').style.display = 'none';
+  } else {
+    document.getElementById('stock-empty').style.display = 'flex';
+  }
+}
+
+function renderWaste() {
+  const el = document.getElementById('waste');
+  el.innerHTML = '';
+  // Show up to 3 fanned waste cards
+  const show = waste.slice(-3);
+  show.forEach((card, i) => {
+    const div = cardEl(card);
+    div.style.position = 'absolute';
+    div.style.top  = '0';
+    div.style.left = (i * 14) + 'px';
+    div.style.zIndex = i;
+    if (i === show.length - 1) {
+      div.style.zIndex = 10;
+      div.classList.add('waste-top');
+    }
+    el.appendChild(div);
+  });
+  // Widen waste slot to show fanned cards
+  el.style.width = waste.length > 1 ? 'calc(var(--card-w) + 28px)' : 'var(--card-w)';
+}
+
+function renderFoundations() {
+  for (let f = 0; f < 4; f++) {
+    const el = document.getElementById('f'+f);
+    el.querySelectorAll('.card').forEach(c=>c.remove());
+    const pile = foundations[f];
+    if (pile.length > 0) {
+      const div = cardEl(pile[pile.length-1]);
+      div.style.position = 'absolute'; div.style.top='0'; div.style.left='0';
+      el.appendChild(div);
+    }
+  }
+}
+
+function renderTableau() {
+  for (let col = 0; col < 7; col++) {
+    const el = document.getElementById('t'+col);
+    el.querySelectorAll('.card').forEach(c=>c.remove());
+    const pile = tableau[col];
+    let yOff = 0;
+    let colHeight = 0;
+    pile.forEach((card, i) => {
+      const div = cardEl(card);
+      div.style.position = 'absolute';
+      div.style.top = yOff + 'px';
+      div.style.left = '0';
+      div.style.zIndex = i;
+      el.appendChild(div);
+      const prev = pile[i-1];
+      const gap = card.faceUp ? VERT_FACE_UP : VERT_FACE_DOWN;
+      colHeight = yOff + parseInt(getComputedStyle(document.documentElement).getPropertyValue('--card-h'));
+      if (i < pile.length-1) yOff += gap;
+    });
+    // Resize column height
+    el.style.height = (pile.length === 0 ? 100 : colHeight) + 'px';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// INTERACTIONS
+// ══════════════════════════════════════════════════════════
+
+// ─── Stock click ───────────────────────────────────────────
+document.getElementById('stock').addEventListener('click', e => {
+  if (dragState) return;
+  saveHistory();
+  if (stock.length === 0) {
+    // Recycle waste
+    if (waste.length === 0) return;
+    stock = waste.reverse().map(c=>({...c,faceUp:false}));
+    waste = [];
+    score = Math.max(0, score - 100);
+  } else {
+    const card = stock.pop();
+    card.faceUp = true;
+    waste.push(card);
+    score += 5; moves++;
+  }
+  render();
+});
+
+// ─── Drag & Drop ───────────────────────────────────────────
+let dragEl = null, dragCards = [], dragOrigin = null;
+let dragOffX = 0, dragOffY = 0;
+
+document.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  const card = e.target.closest('.card');
+  if (!card) return;
+  const origin = getCardOrigin(card.dataset.id);
+  if (!origin) return;
+  if (!canPickup(origin)) return;
+
+  e.preventDefault();
+  const stack = getPickupStack(origin);
+  if (!stack || stack.length === 0) return;
+
+  saveHistory();
+  dragCards = stack;
+  dragOrigin = origin;
+
+  // Build drag ghost
+  dragEl = document.createElement('div');
+  dragEl.style.cssText = `position:fixed;z-index:5000;pointer-events:none;`;
+  stack.forEach((c, i) => {
+    const div = cardEl(c, 'dragged');
+    div.style.position = 'absolute';
+    div.style.top = (i * VERT_FACE_UP) + 'px';
+    div.style.left = '0';
+    dragEl.appendChild(div);
+  });
+  document.body.appendChild(dragEl);
+
+  const rect = card.getBoundingClientRect();
+  dragOffX = e.clientX - rect.left;
+  dragOffY = e.clientY - rect.top;
+  moveDrag(e.clientX, e.clientY);
+
+  // Remove from origin visually
+  removeFromOrigin(dragOrigin, dragCards.length);
+  render();
+  cursor.classList.add('dragging');
+});
+
+document.addEventListener('mousemove', e => {
+  if (!dragEl) return;
+  moveDrag(e.clientX, e.clientY);
+});
+
+document.addEventListener('mouseup', e => {
+  if (!dragEl) return;
+  cursor.classList.remove('dragging');
+
+  const target = findDropTarget(e.clientX, e.clientY);
+  if (target && canDrop(dragCards, target)) {
+    dropCards(dragCards, target);
+    moves++;
+    scoreMove(dragOrigin, target, dragCards.length);
+  } else {
+    // Return cards
+    restoreToOrigin(dragOrigin, dragCards);
+  }
+
+  dragEl.remove(); dragEl = null;
+  dragCards = []; dragOrigin = null;
+  render();
+  checkWin();
+});
+
+function moveDrag(x, y) {
+  dragEl.style.left = (x - dragOffX) + 'px';
+  dragEl.style.top  = (y - dragOffY) + 'px';
+}
+
+// ─── Double-click auto-move to foundation ──────────────────
+document.addEventListener('dblclick', e => {
+  const card = e.target.closest('.card');
+  if (!card) return;
+  const origin = getCardOrigin(card.dataset.id);
+  if (!origin) return;
+  // Only top card
+  if (!isTopCard(origin, card.dataset.id)) return;
+  const cardData = getCardData(card.dataset.id);
+  const fi = findFoundationFor(cardData);
+  if (fi === -1) return;
+  saveHistory();
+  removeFromOrigin(origin, 1);
+  foundations[fi].push(cardData);
+  score += 10; moves++;
+  render();
+  checkWin();
+});
+
+// ══════════════════════════════════════════════════════════
+// LOGIC HELPERS
+// ══════════════════════════════════════════════════════════
+
+function getCardData(id) {
+  for (const c of stock)       if (c.id===id) return c;
+  for (const c of waste)       if (c.id===id) return c;
+  for (const f of foundations) for (const c of f) if (c.id===id) return c;
+  for (const t of tableau)     for (const c of t) if (c.id===id) return c;
+  return null;
+}
+
+function getCardOrigin(id) {
+  // waste top?
+  if (waste.length && waste[waste.length-1].id===id) return {type:'waste'};
+  // foundation?
+  for (let f=0;f<4;f++) {
+    const pile=foundations[f];
+    if (pile.length && pile[pile.length-1].id===id) return {type:'foundation',f};
+  }
+  // tableau?
+  for (let t=0;t<7;t++) {
+    const pile=tableau[t];
+    for (let i=0;i<pile.length;i++) {
+      if (pile[i].id===id) return {type:'tableau',t,i};
+    }
+  }
+  return null;
+}
+
+function canPickup(origin) {
+  if (origin.type==='waste') return true;
+  if (origin.type==='foundation') return true;
+  if (origin.type==='tableau') return tableau[origin.t][origin.i]?.faceUp;
+  return false;
+}
+
+function getPickupStack(origin) {
+  if (origin.type==='waste')      return [waste[waste.length-1]];
+  if (origin.type==='foundation') return [foundations[origin.f][foundations[origin.f].length-1]];
+  if (origin.type==='tableau')    return tableau[origin.t].slice(origin.i);
+  return [];
+}
+
+function removeFromOrigin(origin, n) {
+  if (origin.type==='waste')      waste.splice(waste.length-n, n);
+  else if (origin.type==='foundation') foundations[origin.f].splice(-n, n);
+  else if (origin.type==='tableau') {
+    tableau[origin.t].splice(origin.i, n);
+    // Flip top card
+    const t = tableau[origin.t];
+    if (t.length && !t[t.length-1].faceUp) {
+      t[t.length-1].faceUp = true;
+      score += 5;
+    }
+  }
+}
+
+function restoreToOrigin(origin, cards) {
+  if (origin.type==='waste')      waste.push(...cards);
+  else if (origin.type==='foundation') foundations[origin.f].push(...cards);
+  else if (origin.type==='tableau') {
+    const t = tableau[origin.t];
+    // Unflip if we flipped during pickup
+    if (t.length && t[t.length-1].faceUp && origin.i <= t.length) {
+      // might have been flipped, check
+    }
+    tableau[origin.t].splice(origin.i, 0, ...cards);
+    // Re-hide any card that was face-down before
+    if (t.length > origin.i && origin.i > 0) {
+      const prev = t[origin.i - 1];
+      if (prev) prev.faceUp = (origin.i - 1 === t.length - 1);
+    }
+  }
+}
+
+function findDropTarget(x, y) {
+  // Check foundations
+  for (let f=0;f<4;f++) {
+    const el = document.getElementById('f'+f);
+    if (hitTest(el, x, y)) return {type:'foundation', f};
+  }
+  // Check tableau cols
+  for (let t=0;t<7;t++) {
+    const el = document.getElementById('t'+t);
+    if (hitTest(el, x, y)) return {type:'tableau', t};
+  }
+  return null;
+}
+
+function hitTest(el, x, y) {
+  const r = el.getBoundingClientRect();
+  return x>=r.left && x<=r.right && y>=r.top && y<=r.bottom;
+}
+
+function canDrop(cards, target) {
+  const card = cards[0];
+  if (target.type==='foundation') {
+    if (cards.length > 1) return false;
+    const fi = target.f;
+    const pile = foundations[fi];
+    if (pile.length===0) return card.rank==='A';
+    const top = pile[pile.length-1];
+    return top.suit===card.suit && RANK_V[top.rank]+1===RANK_V[card.rank];
+  }
+  if (target.type==='tableau') {
+    const pile = tableau[target.t];
+    if (pile.length===0) return card.rank==='K';
+    const top = pile[pile.length-1];
+    if (!top.faceUp) return false;
+    const diffColor = RED.has(top.suit) !== RED.has(card.suit);
+    return diffColor && RANK_V[top.rank]-1===RANK_V[card.rank];
+  }
+  return false;
+}
+
+function dropCards(cards, target) {
+  if (target.type==='foundation') foundations[target.f].push(...cards);
+  else if (target.type==='tableau') tableau[target.t].push(...cards);
+}
+
+function scoreMove(origin, target, n) {
+  if (target.type==='foundation') score += 10 * n;
+  else if (origin && origin.type==='foundation') score = Math.max(0, score - 15);
+  else if (target.type==='tableau' && origin && origin.type==='waste') score += 5;
+}
+
+function findFoundationFor(card) {
+  for (let f=0;f<4;f++) {
+    const pile=foundations[f];
+    if (pile.length===0 && card.rank==='A') return f;
+    if (pile.length>0) {
+      const top=pile[pile.length-1];
+      if (top.suit===card.suit && RANK_V[top.rank]+1===RANK_V[card.rank]) return f;
+    }
+  }
+  return -1;
+}
+
+function isTopCard(origin, id) {
+  if (origin.type==='waste') return waste[waste.length-1]?.id===id;
+  if (origin.type==='foundation') {
+    const pile=foundations[origin.f];
+    return pile[pile.length-1]?.id===id;
+  }
+  if (origin.type==='tableau') {
+    const pile=tableau[origin.t];
+    return pile[pile.length-1]?.id===id;
+  }
+  return false;
+}
+
+// ══════════════════════════════════════════════════════════
+// UNDO
+// ══════════════════════════════════════════════════════════
+function saveHistory() {
+  history.push({
+    stock: JSON.parse(JSON.stringify(stock)),
+    waste: JSON.parse(JSON.stringify(waste)),
+    foundations: JSON.parse(JSON.stringify(foundations)),
+    tableau: JSON.parse(JSON.stringify(tableau)),
+    score, moves
+  });
+  if (history.length > 50) history.shift();
+}
+
+function undo() {
+  if (history.length===0) return;
+  const prev = history.pop();
+  stock=prev.stock; waste=prev.waste;
+  foundations=prev.foundations; tableau=prev.tableau;
+  score=prev.score; moves=prev.moves;
+  render();
+}
+
+// ══════════════════════════════════════════════════════════
+// WIN
+// ══════════════════════════════════════════════════════════
+function checkWin() {
+  const won = foundations.every(f => f.length===13);
+  if (!won) return;
+  score += 500;
+  document.getElementById('win-score-text').textContent = `PUNTUACIÓN: ${score} · MOVIMIENTOS: ${moves}`;
+  document.getElementById('win-screen').classList.add('show');
+  spawnConfetti();
+}
+
+function spawnConfetti() {
+  const colors = ['#a855f7','#c084fc','#e8c97a','#7c3aed','#fff','#f0abfc'];
+  for (let i=0;i<80;i++) {
+    setTimeout(() => {
+      const el=document.createElement('div');
+      el.className='confetti-piece';
+      el.style.cssText=`
+        left:${Math.random()*100}vw;
+        top:-10px;
+        background:${colors[Math.floor(Math.random()*colors.length)]};
+        animation-duration:${2+Math.random()*3}s;
+        animation-delay:${Math.random()*0.5}s;
+        transform:rotate(${Math.random()*360}deg);
+        width:${6+Math.random()*6}px;
+        height:${6+Math.random()*6}px;
+      `;
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(), 4000);
+    }, i*30);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// BUTTON BINDINGS
+// ══════════════════════════════════════════════════════════
+document.getElementById('btn-undo').addEventListener('click', undo);
+document.getElementById('btn-new').addEventListener('click', () => {
+  document.getElementById('win-screen').classList.remove('show');
+  newGame();
+});
+document.getElementById('btn-win-new').addEventListener('click', () => {
+  document.getElementById('win-screen').classList.remove('show');
+  newGame();
+});
+
+// ══════════════════════════════════════════════════════════
+// PARTICLES
+// ══════════════════════════════════════════════════════════
+const pSymbols=['♠','♥','♦','♣','🕷️'];
+const pColors=['rgba(168,85,247,0.5)','rgba(124,58,237,0.4)','rgba(192,132,252,0.4)','rgba(201,168,76,0.4)'];
+const pContainer=document.getElementById('particles');
+for(let i=0;i<18;i++){
+  const el=document.createElement('div');
+  el.className='particle';
+  el.textContent=pSymbols[Math.floor(Math.random()*pSymbols.length)];
+  const sz=0.5+Math.random()*0.8, lf=Math.random()*100;
+  const dur=20+Math.random()*30, del=-(Math.random()*dur);
+  const col=pColors[Math.floor(Math.random()*pColors.length)];
+  el.style.cssText=`left:${lf}vw;font-size:${sz}rem;color:${col};animation-duration:${dur}s;animation-delay:${del}s;`;
+  pContainer.appendChild(el);
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+newGame();
+</script>
+</body>
+</html>
