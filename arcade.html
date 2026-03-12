@@ -31,7 +31,8 @@ body { cursor: none; }
 #cursor.on-card { transform: translate(-50%,-50%) scale(1.35); }
 
 /* ── BACKGROUND LAYERS ─────────────────────────────────────────────────────── */
-.bg-layer { position:fixed; inset:0; pointer-events:none; transition:opacity 0.7s ease; }
+.bg-layer { position:fixed; inset:0; pointer-events:none; transition:opacity 0.9s ease; }
+
 #bg-default {
   opacity:1;
   background:
@@ -39,30 +40,85 @@ body { cursor: none; }
     radial-gradient(ellipse 60% 70% at 90% 40%,  rgba(15,50,120,0.55) 0%, transparent 65%),
     radial-gradient(ellipse 70% 60% at 50% 100%, rgba(120,15,15,0.6)  0%, transparent 60%);
 }
+
+/* Each game layer: when active → opacity 1, when ambient → opacity 0.18 with drift */
 #bg-mus {
   opacity:0;
   background:
     radial-gradient(ellipse 90% 90% at 20% 45%,  rgba(18,110,42,0.82)  0%, transparent 60%),
-    radial-gradient(ellipse 55% 55% at 85% 35%,  rgba(15,45,100,0.25)  0%, transparent 55%),
-    radial-gradient(ellipse 60% 50% at 50% 105%, rgba(100,12,12,0.25)  0%, transparent 55%),
+    radial-gradient(ellipse 55% 55% at 85% 35%,  rgba(15,45,100,0.18)  0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 50% 105%, rgba(100,12,12,0.18)  0%, transparent 55%),
     radial-gradient(ellipse 40% 60% at 50% 50%,  rgba(6,20,10,0.45)    0%, transparent 100%);
 }
 #bg-caida {
   opacity:0;
   background:
     radial-gradient(ellipse 90% 90% at 80% 45%,  rgba(15,55,160,0.84)  0%, transparent 60%),
-    radial-gradient(ellipse 55% 55% at 15% 40%,  rgba(18,80,30,0.25)   0%, transparent 55%),
-    radial-gradient(ellipse 60% 50% at 50% 105%, rgba(100,12,12,0.25)  0%, transparent 55%),
+    radial-gradient(ellipse 55% 55% at 15% 40%,  rgba(18,80,30,0.18)   0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 50% 105%, rgba(100,12,12,0.18)  0%, transparent 55%),
     radial-gradient(ellipse 40% 60% at 50% 50%,  rgba(4,8,24,0.45)     0%, transparent 100%);
 }
 #bg-poker {
   opacity:0;
   background:
     radial-gradient(ellipse 85% 85% at 50% 92%,  rgba(155,12,12,0.88)  0%, transparent 58%),
-    radial-gradient(ellipse 55% 55% at 10% 40%,  rgba(18,75,28,0.25)   0%, transparent 55%),
-    radial-gradient(ellipse 55% 55% at 90% 40%,  rgba(15,45,100,0.25)  0%, transparent 55%),
+    radial-gradient(ellipse 55% 55% at 10% 40%,  rgba(18,75,28,0.18)   0%, transparent 55%),
+    radial-gradient(ellipse 55% 55% at 90% 40%,  rgba(15,45,100,0.18)  0%, transparent 55%),
     radial-gradient(ellipse 40% 40% at 50% 50%,  rgba(18,4,4,0.45)     0%, transparent 100%);
 }
+
+/* Ambient ghost layers — always slightly visible, slowly drifting */
+#bg-mus-ghost, #bg-caida-ghost, #bg-poker-ghost {
+  position:fixed; inset:0; pointer-events:none;
+  opacity:0; transition:opacity 0.9s ease;
+  animation: none;
+}
+#bg-mus-ghost {
+  background: radial-gradient(ellipse 70% 80% at 15% 50%, rgba(18,110,42,0.22) 0%, transparent 60%);
+  animation: driftGreen 18s ease-in-out infinite;
+}
+#bg-caida-ghost {
+  background: radial-gradient(ellipse 70% 80% at 85% 45%, rgba(15,55,160,0.22) 0%, transparent 60%);
+  animation: driftBlue 22s ease-in-out infinite;
+}
+#bg-poker-ghost {
+  background: radial-gradient(ellipse 65% 65% at 50% 95%, rgba(155,12,12,0.22) 0%, transparent 58%);
+  animation: driftRed 20s ease-in-out infinite;
+}
+
+@keyframes driftGreen {
+  0%,100% { transform: translate(0,    0)    scale(1);    }
+  33%     { transform: translate(6%,  -8%)   scale(1.08); }
+  66%     { transform: translate(-5%,  5%)   scale(0.94); }
+}
+@keyframes driftBlue {
+  0%,100% { transform: translate(0,    0)    scale(1);    }
+  33%     { transform: translate(-7%,  6%)   scale(1.06); }
+  66%     { transform: translate(5%,  -7%)   scale(0.96); }
+}
+@keyframes driftRed {
+  0%,100% { transform: translate(0,    0)    scale(1);    }
+  33%     { transform: translate(4%,   8%)   scale(0.93); }
+  66%     { transform: translate(-6%,  -4%)  scale(1.07); }
+}
+
+/* When a game is hovered → its ghost fades out, the other 2 stay visible */
+body.hover-mus   #bg-mus-ghost   { opacity:0 !important; }
+body.hover-caida #bg-caida-ghost { opacity:0 !important; }
+body.hover-poker #bg-poker-ghost { opacity:0 !important; }
+
+/* Default state: all 3 ghosts visible */
+body:not(.hover-mus):not(.hover-caida):not(.hover-poker) #bg-mus-ghost,
+body:not(.hover-mus):not(.hover-caida):not(.hover-poker) #bg-caida-ghost,
+body:not(.hover-mus):not(.hover-caida):not(.hover-poker) #bg-poker-ghost { opacity:0; }
+
+/* During any hover: the 2 non-active ghosts show */
+body.hover-mus   #bg-caida-ghost,
+body.hover-mus   #bg-poker-ghost,
+body.hover-caida #bg-mus-ghost,
+body.hover-caida #bg-poker-ghost,
+body.hover-poker #bg-mus-ghost,
+body.hover-poker #bg-caida-ghost { opacity:1; }
 
 /* ── VIGNETTE ──────────────────────────────────────────────────────────────── */
 body::after {
@@ -117,7 +173,7 @@ body.hover-mus .suits-row, body.hover-caida .suits-row, body.hover-poker .suits-
   font-size:clamp(2rem, 5vw, 3.8rem); font-weight:900;
   color:var(--gold2); letter-spacing:0.1em;
   animation: fadeSlideDown 0.7s ease both, titlePulse 4s ease-in-out 1.2s infinite;
-  transition: text-shadow 0.6s;
+  transition: color 0.25s ease, text-shadow 0.4s ease, opacity 0.2s ease, transform 0.2s ease;
 }
 @keyframes titlePulse {
   0%,100% { text-shadow:0 0 40px rgba(201,168,76,0.25), 0 2px 4px rgba(0,0,0,0.8); }
@@ -126,6 +182,24 @@ body.hover-mus .suits-row, body.hover-caida .suits-row, body.hover-poker .suits-
 body.hover-mus   .title { text-shadow:0 0 80px rgba(39,180,80,0.45),  0 0 20px rgba(201,168,76,0.3), 0 2px 4px rgba(0,0,0,0.8); }
 body.hover-caida .title { text-shadow:0 0 80px rgba(60,140,230,0.45), 0 0 20px rgba(201,168,76,0.3), 0 2px 4px rgba(0,0,0,0.8); }
 body.hover-poker .title { text-shadow:0 0 80px rgba(230,60,60,0.45),  0 0 20px rgba(201,168,76,0.3), 0 2px 4px rgba(0,0,0,0.8); }
+
+/* Title color transitions per game */
+body.hover-mus   .title { color: #7bc47b; text-shadow: 0 0 60px rgba(39,200,80,0.7), 0 0 120px rgba(39,200,80,0.3), 0 2px 4px rgba(0,0,0,0.8); animation: titlePulseGreen 2.5s ease-in-out infinite; }
+body.hover-caida .title { color: #6ab0e8; text-shadow: 0 0 60px rgba(60,140,230,0.7), 0 0 120px rgba(60,140,230,0.3), 0 2px 4px rgba(0,0,0,0.8); animation: titlePulseBlue  2.5s ease-in-out infinite; }
+body.hover-poker .title { color: #e87a7a; text-shadow: 0 0 60px rgba(230,60,60,0.7),  0 0 120px rgba(230,60,60,0.3),  0 2px 4px rgba(0,0,0,0.8); animation: titlePulseRed   2.5s ease-in-out infinite; }
+
+@keyframes titlePulseGreen {
+  0%,100% { text-shadow: 0 0 40px rgba(39,200,80,0.4),  0 2px 4px rgba(0,0,0,0.8); }
+  50%     { text-shadow: 0 0 100px rgba(39,200,80,0.85), 0 0 30px rgba(39,200,80,0.4), 0 2px 4px rgba(0,0,0,0.8); }
+}
+@keyframes titlePulseBlue {
+  0%,100% { text-shadow: 0 0 40px rgba(60,140,230,0.4),  0 2px 4px rgba(0,0,0,0.8); }
+  50%     { text-shadow: 0 0 100px rgba(60,140,230,0.85), 0 0 30px rgba(60,140,230,0.4), 0 2px 4px rgba(0,0,0,0.8); }
+}
+@keyframes titlePulseRed {
+  0%,100% { text-shadow: 0 0 40px rgba(230,60,60,0.4),  0 2px 4px rgba(0,0,0,0.8); }
+  50%     { text-shadow: 0 0 100px rgba(230,60,60,0.85), 0 0 30px rgba(230,60,60,0.4), 0 2px 4px rgba(0,0,0,0.8); }
+}
 
 .subtitle { font-size:0.72rem; color:var(--muted); letter-spacing:0.35em; margin-top:0.4rem; }
 
@@ -267,10 +341,13 @@ body.hover-poker .footer { color:rgba(232,122,122,0.4); }
 <div id="cursor">♠</div>
 
 <!-- Background layers -->
-<div id="bg-default" class="bg-layer"></div>
-<div id="bg-mus"     class="bg-layer"></div>
-<div id="bg-caida"   class="bg-layer"></div>
-<div id="bg-poker"   class="bg-layer"></div>
+<div id="bg-default"     class="bg-layer"></div>
+<div id="bg-mus"        class="bg-layer"></div>
+<div id="bg-caida"      class="bg-layer"></div>
+<div id="bg-poker"      class="bg-layer"></div>
+<div id="bg-mus-ghost"></div>
+<div id="bg-caida-ghost"></div>
+<div id="bg-poker-ghost"></div>
 <div class="fall-layer" id="fall-layer"></div>
 
 <div class="page">
@@ -330,35 +407,10 @@ document.addEventListener('mousemove', e => {
   cursor.style.top  = e.clientY + 'px';
 });
 
-// ── BACKGROUND HOVER ──────────────────────────────────────────────────────────
+// ── BACKGROUND HOVER + FOOTER + CURSOR (unified) ─────────────────────────────
 const layers = { mus:'bg-mus', caida:'bg-caida', poker:'bg-poker' };
 let current = null;
 
-function setHover(game) {
-  if (current === game) return;
-  if (current) { document.getElementById(layers[current]).style.opacity = '0'; stopFalling(); }
-  else document.getElementById('bg-default').style.opacity = '0';
-  current = game;
-  document.getElementById(layers[game]).style.opacity = '1';
-  document.body.className = 'hover-' + game;
-  startFalling(game);
-  // Update cursor
-  cursor.textContent = cursorSymbols[game];
-  cursor.classList.add('on-card');
-}
-
-function clearHover() {
-  if (!current) return;
-  document.getElementById(layers[current]).style.opacity = '0';
-  document.getElementById('bg-default').style.opacity = '1';
-  document.body.className = '';
-  stopFalling();
-  current = null;
-  cursor.textContent = cursorSymbols.default;
-  cursor.classList.remove('on-card');
-}
-
-// ── FOOTER ROTATING PHRASES ───────────────────────────────────────────────────
 const footerEl = document.getElementById('footer-text');
 const phrases = [
   'SELECCIONA UN JUEGO PARA COMENZAR',
@@ -370,39 +422,63 @@ const phrases = [
 const hoverPhrases = {
   mus:   ['EL CLÁSICO VASCO', 'GRANDE · CHICA · PARES · JUEGO', '¿TIENES MUS?'],
   caida: ['RECOGE Y ESCALA', '¡CAÍDA!', 'CANTOS Y ESCALERAS'],
-  poker: ['ALL IN', 'TEXAS HOLD\'EM', '¿TIENES EL FAROL?'],
+  poker: ['ALL IN', "TEXAS HOLD'EM", '¿TIENES EL FAROL?'],
 };
 let phraseIdx = 0;
-let phraseTimer = null;
 let isHoverPhrase = false;
 
-function rotatePhrases() {
+function setFooter(text) {
+  footerEl.style.opacity = '0';
+  setTimeout(() => { footerEl.textContent = text; footerEl.style.opacity = '1'; }, 250);
+}
+
+setInterval(() => {
   if (isHoverPhrase) return;
   phraseIdx = (phraseIdx + 1) % phrases.length;
-  footerEl.style.opacity = '0';
-  setTimeout(() => {
-    footerEl.textContent = phrases[phraseIdx];
-    footerEl.style.opacity = '1';
-  }, 300);
-}
-phraseTimer = setInterval(rotatePhrases, 3200);
+  setFooter(phrases[phraseIdx]);
+}, 3200);
 
-// Override footer on card hover
-const origSetHover = setHover;
-function setHover(game) {
-  origSetHover(game);
-  const pool = hoverPhrases[game];
-  const phrase = pool[Math.floor(Math.random() * pool.length)];
-  isHoverPhrase = true;
-  footerEl.style.opacity = '0';
-  setTimeout(() => { footerEl.textContent = phrase; footerEl.style.opacity = '1'; }, 200);
+const titleEl = document.querySelector('.title');
+const titleNames = { mus: 'MUS', caida: 'CAÍDA', poker: 'PÓKER' };
+
+function setTitle(text) {
+  titleEl.style.opacity = '0';
+  titleEl.style.transform = 'translateY(-8px) scale(0.95)';
+  setTimeout(() => {
+    titleEl.textContent = text;
+    titleEl.style.opacity = '1';
+    titleEl.style.transform = '';
+  }, 220);
 }
-const origClearHover = clearHover;
+
+function setHover(game) {
+  if (current === game) return;
+  if (current) { document.getElementById(layers[current]).style.opacity = '0'; stopFalling(); }
+  else document.getElementById('bg-default').style.opacity = '0';
+  current = game;
+  document.getElementById(layers[game]).style.opacity = '1';
+  document.body.className = 'hover-' + game;
+  startFalling(game);
+  cursor.textContent = cursorSymbols[game];
+  cursor.classList.add('on-card');
+  isHoverPhrase = true;
+  const pool = hoverPhrases[game];
+  setFooter(pool[Math.floor(Math.random() * pool.length)]);
+  setTitle(titleNames[game]);
+}
+
 function clearHover() {
-  origClearHover();
+  if (!current) return;
+  document.getElementById(layers[current]).style.opacity = '0';
+  document.getElementById('bg-default').style.opacity = '1';
+  document.body.className = '';
+  stopFalling();
+  current = null;
+  cursor.textContent = cursorSymbols.default;
+  cursor.classList.remove('on-card');
   isHoverPhrase = false;
-  footerEl.style.opacity = '0';
-  setTimeout(() => { footerEl.textContent = phrases[phraseIdx]; footerEl.style.opacity = '1'; }, 200);
+  setFooter(phrases[phraseIdx]);
+  setTitle('ARCADE');
 }
 
 // ── LIVE PLAYER COUNTER ───────────────────────────────────────────────────────
