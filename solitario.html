@@ -83,15 +83,15 @@ body::before {
 
 /* ── HEADER ─────────────────────────────────────────────────────────────────── */
 #header {
-  position:fixed; top:0; left:0; right:0; z-index:10;
+  position:fixed; bottom:32px; left:0; right:0; z-index:10;
   display:flex; align-items:center; justify-content:center;
-  padding:12px 20px; gap:1.5rem;
+  padding:8px 20px;
   pointer-events:none;
 }
 #title-area { text-align:center; }
 .game-title {
-  font-family:'Cinzel Decorative',cursive; font-size:1.5rem; font-weight:900;
-  color:var(--purple3); letter-spacing:0.12em;
+  font-family:'Cinzel Decorative',cursive; font-size:1.1rem; font-weight:900;
+  color:var(--purple3); letter-spacing:0.12em; opacity:0.6;
   text-shadow:0 0 40px rgba(168,85,247,0.6), 0 0 80px rgba(124,58,237,0.3);
   animation:titleGlow 3s ease-in-out infinite;
 }
@@ -163,6 +163,11 @@ body::before {
   background:#f8f2e8;
   border:1px solid rgba(0,0,0,0.18);
   box-shadow:0 2px 8px rgba(0,0,0,0.5);
+}
+.card.face-up.selected {
+  box-shadow:0 0 0 2.5px #c084fc, 0 0 18px rgba(168,85,247,0.7), 0 2px 8px rgba(0,0,0,0.5);
+  transform:translateY(-6px) scale(1.04);
+  z-index:200 !important;
 }
 .card.face-down {
   background: repeating-linear-gradient(
@@ -412,7 +417,7 @@ body::before {
   <button class="win-btn" id="btn-win-new">✦ NUEVA PARTIDA</button>
   <a class="win-btn" href="/" style="text-decoration:none;text-align:center">← ARCADE</a>
 </div>
-<div id="hint-bar">CLICK EN EL MAZO · ARRASTRA CARTAS · DOBLE CLICK PARA AUTO-MOVER</div>
+<div id="hint-bar">CLICK PARA SELECCIONAR · CLICK DESTINO PARA MOVER · DOBLE CLICK AUTO-MOVER</div>
 
 <script>
 // ══════════════════════════════════════════════════════════
@@ -605,185 +610,153 @@ document.getElementById('stock').addEventListener('click', e => {
   render();
 });
 
-// ─── Drag & Drop ───────────────────────────────────────────
-let dragEl = null, dragCards = [], dragOrigin = null;
-let dragOffX = 0, dragOffY = 0;
+// ─── Click-to-Select / Click-to-Place ──────────────────────
+let selectedCards = null;   // { cards, origin } or null
+let dragState = null;       // kept for compatibility (unused)
 
-document.addEventListener('mousedown', e => {
-  if (e.button !== 0) return;
-  const card = e.target.closest('.card');
-  if (!card) return;
-  const origin = getCardOrigin(card.dataset.id);
+// Error message display
+function showMoveError(msg) {
+  const bar = document.getElementById('hint-bar');
+  bar.textContent = msg;
+  bar.style.color = 'rgba(248,113,113,0.85)';
+  bar.style.opacity = '1';
+  clearTimeout(bar._t);
+  bar._t = setTimeout(() => {
+    bar.style.opacity = '0';
+    setTimeout(() => {
+      bar.textContent = 'CLICK PARA SELECCIONAR · CLICK DESTINO PARA MOVER · DOBLE CLICK AUTO-MOVER';
+      bar.style.color  = 'rgba(192,132,252,0.4)';
+      bar.style.opacity = '1';
+    }, 300);
+  }, 2200);
+}
+
+function canDropReason(cards, target) {
+  const card = cards[0];
+  if (target.type === 'foundation') {
+    if (cards.length > 1) return 'Solo puedes mover una carta a la fundación';
+    const fi = target.f;
+    const pile = foundations[fi];
+    if (pile.length === 0) {
+      if (card.rank !== 'A') return 'La fundación empieza con un As';
+      return null;
+    }
+    const top = pile[pile.length - 1];
+    if (top.suit !== card.suit) return `La fundación ${top.suit} es del mismo palo`;
+    if (RANK_V[top.rank] + 1 !== RANK_V[card.rank]) return `Necesitas un ${Object.keys(RANK_V).find(k=>RANK_V[k]===RANK_V[top.rank]+1) || '?'} aquí`;
+    return null;
+  }
+  if (target.type === 'tableau') {
+    const pile = tableau[target.t];
+    if (pile.length === 0) {
+      if (card.rank !== 'K') return 'Solo el Rey puede ir en columna vacía';
+      return null;
+    }
+    const top = pile[pile.length - 1];
+    if (!top.faceUp) return 'Esa carta está boca abajo';
+    const diffColor = RED.has(top.suit) !== RED.has(card.suit);
+    if (!diffColor) return 'Colores alternos: rojo sobre negro o negro sobre rojo';
+    if (RANK_V[top.rank] - 1 !== RANK_V[card.rank]) return `Necesitas un ${Object.keys(RANK_V).find(k=>RANK_V[k]===RANK_V[top.rank]-1) || '?'} aquí`;
+    return null;
+  }
+  return 'Destino inválido';
+}
+
+function selectCard(cardEl) {
+  // Deselect if clicking same card
+  if (selectedCards && selectedCards.cards[0].id === cardEl.dataset.id) {
+    clearSelection(); return;
+  }
+  const origin = getCardOrigin(cardEl.dataset.id);
   if (!origin) return;
-  if (!canPickup(origin)) return;
-
-  e.preventDefault();
+  if (!canPickup(origin)) { showMoveError('Esa carta está boca abajo'); return; }
   const stack = getPickupStack(origin);
   if (!stack || stack.length === 0) return;
-
-  saveHistory();
-  dragCards = stack;
-  dragOrigin = origin;
-
-  // Build drag ghost
-  dragEl = document.createElement('div');
-  dragEl.style.cssText = `position:fixed;z-index:5000;pointer-events:none;`;
-  stack.forEach((c, i) => {
-    const div = cardEl(c, 'dragged');
-    div.style.position = 'absolute';
-    div.style.top = (i * VERT_FACE_UP) + 'px';
-    div.style.left = '0';
-    dragEl.appendChild(div);
-  });
-  document.body.appendChild(dragEl);
-
-  const rect = card.getBoundingClientRect();
-  dragOffX = e.clientX - rect.left;
-  dragOffY = e.clientY - rect.top;
-  moveDrag(e.clientX, e.clientY);
-
-  // Remove from origin visually
-  removeFromOrigin(dragOrigin, dragCards.length);
+  selectedCards = { cards: stack, origin };
+  // Highlight selected cards
   render();
-  cursor.classList.add('dragging');
-});
+  markSelected(stack);
+}
 
-document.addEventListener('mousemove', e => {
-  if (!dragEl) return;
-  moveDrag(e.clientX, e.clientY);
-});
+function markSelected(stack) {
+  stack.forEach(c => {
+    const el = document.querySelector(`[data-id="${c.id}"]`);
+    if (el) el.classList.add('selected');
+  });
+}
 
-document.addEventListener('mouseup', e => {
-  if (!dragEl) return;
-  cursor.classList.remove('dragging');
+function clearSelection() {
+  selectedCards = null;
+  document.querySelectorAll('.card.selected').forEach(el => el.classList.remove('selected'));
+}
 
-  const target = findDropTarget(e.clientX, e.clientY);
-  if (target && canDrop(dragCards, target)) {
-    dropCards(dragCards, target);
-    moves++;
-    scoreMove(dragOrigin, target, dragCards.length);
-  } else {
-    restoreToOrigin(dragOrigin, dragCards);
+function tryDropOn(target) {
+  if (!selectedCards) return;
+  const reason = canDropReason(selectedCards.cards, target);
+  if (reason) {
+    showMoveError(reason);
+    clearSelection();
+    return;
   }
-
-  dragEl.remove(); dragEl = null;
-  dragCards = []; dragOrigin = null;
+  saveHistory();
+  removeFromOrigin(selectedCards.origin, selectedCards.cards.length);
+  scoreMove(selectedCards.origin, target, selectedCards.cards.length);
+  dropCards(selectedCards.cards, target);
+  moves++;
+  clearSelection();
   render();
   checkWin();
-});
-
-// ─── Touch support ─────────────────────────────────────────
-function startDragFromEvent(clientX, clientY, target) {
-  const card = target.closest('.card');
-  if (!card) return false;
-  const origin = getCardOrigin(card.dataset.id);
-  if (!origin) return false;
-  if (!canPickup(origin)) return false;
-  const stack = getPickupStack(origin);
-  if (!stack || stack.length === 0) return false;
-
-  saveHistory();
-  dragCards = stack;
-  dragOrigin = origin;
-
-  dragEl = document.createElement('div');
-  dragEl.style.cssText = `position:fixed;z-index:5000;pointer-events:none;`;
-  stack.forEach((c, i) => {
-    const div = cardEl(c, 'dragged');
-    div.style.position = 'absolute';
-    div.style.top = (i * VERT_FACE_UP) + 'px';
-    div.style.left = '0';
-    dragEl.appendChild(div);
-  });
-  document.body.appendChild(dragEl);
-
-  const rect = card.getBoundingClientRect();
-  dragOffX = clientX - rect.left;
-  dragOffY = clientY - rect.top;
-  moveDrag(clientX, clientY);
-  removeFromOrigin(dragOrigin, dragCards.length);
-  render();
-  return true;
 }
 
-let touchStartX = 0, touchStartY = 0, touchMoved = false;
+// Main click handler
+document.addEventListener('click', e => {
+  const card = e.target.closest('.card');
+  const slot = e.target.closest('.slot');
+  const colEl = e.target.closest('.tableau-col');
+  const wasteEl = e.target.closest('#waste');
+  const stockEl = e.target.closest('#stock');
 
-document.addEventListener('touchstart', e => {
-  const t = e.touches[0];
-  touchStartX = t.clientX; touchStartY = t.clientY;
-  touchMoved = false;
-}, { passive: true });
+  // Stock handled separately
+  if (stockEl) return;
 
-document.addEventListener('touchmove', e => {
-  const t = e.touches[0];
-  const dx = t.clientX - touchStartX, dy = t.clientY - touchStartY;
-  if (!touchMoved && Math.sqrt(dx*dx+dy*dy) > 6) {
-    touchMoved = true;
-    if (!dragEl) startDragFromEvent(touchStartX, touchStartY, e.target);
-  }
-  if (dragEl) {
-    e.preventDefault();
-    moveDrag(t.clientX, t.clientY);
-  }
-}, { passive: false });
-
-document.addEventListener('touchend', e => {
-  if (dragEl) {
-    const t = e.changedTouches[0];
-    const target = findDropTarget(t.clientX, t.clientY);
-    if (target && canDrop(dragCards, target)) {
-      dropCards(dragCards, target);
-      moves++;
-      scoreMove(dragOrigin, target, dragCards.length);
-    } else {
-      restoreToOrigin(dragOrigin, dragCards);
-    }
-    dragEl.remove(); dragEl = null;
-    dragCards = []; dragOrigin = null;
-    render();
-    checkWin();
-  } else if (!touchMoved) {
-    // Tap — handle stock click or double-tap auto-move
-    const el = document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-    if (el && el.closest('#stock')) {
-      document.getElementById('stock').click();
-    } else {
-      // Single tap on face-up card = try auto-move to foundation
-      const card = el && el.closest('.card');
-      if (card) {
-        const origin = getCardOrigin(card.dataset.id);
-        if (origin && isTopCard(origin, card.dataset.id)) {
-          const cardData = getCardData(card.dataset.id);
-          const fi = findFoundationFor(cardData);
-          if (fi !== -1) {
-            saveHistory();
-            removeFromOrigin(origin, 1);
-            foundations[fi].push(cardData);
-            score += 10; moves++;
-            render(); checkWin();
-          }
-        }
+  // If something is selected, try to place it
+  if (selectedCards) {
+    // Clicked foundation slot or foundation top card
+    for (let f = 0; f < 4; f++) {
+      const fEl = document.getElementById('f' + f);
+      if (fEl && (fEl === e.target || fEl.contains(e.target))) {
+        tryDropOn({ type: 'foundation', f }); return;
       }
     }
+    // Clicked tableau column
+    for (let t = 0; t < 7; t++) {
+      const tEl = document.getElementById('t' + t);
+      if (tEl && (tEl === e.target || tEl.contains(e.target))) {
+        tryDropOn({ type: 'tableau', t }); return;
+      }
+    }
+    // Clicked elsewhere — deselect
+    clearSelection(); return;
+  }
+
+  // Nothing selected — select a card
+  if (card) {
+    // Try auto-move to foundation on double-click handled separately
+    selectCard(card);
   }
 });
 
-function moveDrag(x, y) {
-  dragEl.style.left = (x - dragOffX) + 'px';
-  dragEl.style.top  = (y - dragOffY) + 'px';
-}
-
-// ─── Double-click auto-move to foundation ──────────────────
+// Double-click: auto-move top card to foundation
 document.addEventListener('dblclick', e => {
   const card = e.target.closest('.card');
   if (!card) return;
+  clearSelection();
   const origin = getCardOrigin(card.dataset.id);
   if (!origin) return;
-  // Only top card
   if (!isTopCard(origin, card.dataset.id)) return;
   const cardData = getCardData(card.dataset.id);
   const fi = findFoundationFor(cardData);
-  if (fi === -1) return;
+  if (fi === -1) { showMoveError('No hay fundación disponible para esta carta'); return; }
   saveHistory();
   removeFromOrigin(origin, 1);
   foundations[fi].push(cardData);
@@ -791,6 +764,43 @@ document.addEventListener('dblclick', e => {
   render();
   checkWin();
 });
+
+// Touch: single tap = select/place; no drag
+document.addEventListener('touchend', e => {
+  const touch = e.changedTouches[0];
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (!el) return;
+  if (el.closest('#stock')) {
+    document.getElementById('stock').click();
+    return;
+  }
+  const card = el.closest('.card');
+  if (card) {
+    if (selectedCards) {
+      // Find where the card belongs and try to place there
+      const origin = getCardOrigin(card.dataset.id);
+      if (origin) {
+        let placed = false;
+        if (origin.type === 'foundation') { tryDropOn({ type: 'foundation', f: origin.f }); placed = true; }
+        else if (origin.type === 'tableau') { tryDropOn({ type: 'tableau', t: origin.t }); placed = true; }
+        if (!placed) clearSelection();
+      }
+    } else {
+      card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    }
+    return;
+  }
+  // Tapped empty slot/column
+  for (let f = 0; f < 4; f++) {
+    const fEl = document.getElementById('f' + f);
+    if (fEl && fEl.contains(el)) { tryDropOn({ type: 'foundation', f }); return; }
+  }
+  for (let t = 0; t < 7; t++) {
+    const tEl = document.getElementById('t' + t);
+    if (tEl && tEl.contains(el)) { tryDropOn({ type: 'tableau', t }); return; }
+  }
+  clearSelection();
+}, { passive: true });
 
 // ══════════════════════════════════════════════════════════
 // LOGIC HELPERS

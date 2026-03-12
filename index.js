@@ -1277,7 +1277,8 @@ function caidaRevealNextPuestoCard(room) {
   caidaSendState(room);
 
   if (card.val === target) {
-    const pts = target;
+    // Score = sum of ALL values in puestoTargets up to and including current position
+    const pts = room.puestoTargets.slice(0, room.puestoTargetIdx + 1).reduce((s, v) => s + v, 0);
     room.scores[room.dealer] += pts;
     caidaAddRoundLog(room, { event: 'Puesto', player: room.players[room.dealer].name, pts, detail: `${card.display} = ${target}` });
     caidaAddLog(room, `✅ ¡PUESTO! La ${ordinal} carta es ${target} — +${pts} pts para ${room.players[room.dealer].name}`);
@@ -1732,6 +1733,7 @@ function pokerBuildStateFor(room, player) {
       eliminated: p.eliminated || false,
       isDealer: i === room.dealer,
       isYou: p.id === player.id,
+      isHost: i === 0,
       hand: p.id === player.id ? p.hand : (room.state === 'showdown' && !p.folded ? p.hand : null),
       handName: room.state === 'showdown' && !p.folded ? p.handName : null,
       cardCount: p.hand ? p.hand.length : 0,
@@ -2401,37 +2403,36 @@ wss.on('connection', (ws) => {
     // ── POKER MESSAGES ───────────────────────────────────────────────────────
     if (playerGame === 'poker') {
       const room = playerRoom;
-    if (msg.type === 'startGame') {
-      if (!playerRoom || playerRoom.state !== 'waiting') return;
-      if (playerRoom.players.length < 2) { pokerSendTo(playerData, { type: 'error', msg: 'Se necesitan al menos 2 jugadores' }); return; }
-      pokerStartGame(playerRoom); return;
-    }
-
-
-    if (msg.type === 'action') {
-      if (playerRoom.state !== 'playing') return;
-      const pidx = playerRoom.players.indexOf(playerData);
-      if (pidx !== playerRoom.currentTurn) { pokerSendTo(playerData, { type: 'error', msg: 'No es tu turno' }); return; }
-      pokerHandleAction(playerRoom, pidx, msg.action, msg.amount);
-      return;
-    }
-
-    if (msg.type === 'nextHand') {
-      if (playerRoom.state !== 'hand_end') return;
-      if (!playerRoom.readyForNext.includes(playerId)) {
-        playerRoom.readyForNext.push(playerId);
-        pokerBroadcast(playerRoom, { type: 'ready_count', count: playerRoom.readyForNext.length, total: playerRoom.players.filter(p => !p.eliminated).length });
+      if (msg.type === 'startGame') {
+        if (!room || room.state !== 'waiting') return;
+        if (room.players.length < 2) { pokerSendTo(playerData, { type: 'error', msg: 'Se necesitan al menos 2 jugadores' }); return; }
+        pokerStartGame(room); return;
       }
-      if (playerRoom.readyForNext.length >= playerRoom.players.filter(p => !p.eliminated).length) {
-        pokerStartHand(playerRoom);
-      }
-      return;
-    }
 
-    if (msg.type === 'chat') {
-      pokerBroadcast(playerRoom, { type: 'chat', from: playerData.name, msg: msg.text });
-      return;
-    } // end last poker handler
+      if (msg.type === 'action') {
+        if (!room || room.state !== 'playing') return;
+        const pidx = room.players.indexOf(playerData);
+        if (pidx !== room.currentTurn) { pokerSendTo(playerData, { type: 'error', msg: 'No es tu turno' }); return; }
+        pokerHandleAction(room, pidx, msg.action, msg.amount);
+        return;
+      }
+
+      if (msg.type === 'nextHand') {
+        if (!room || room.state !== 'hand_end') return;
+        if (!room.readyForNext.includes(playerId)) {
+          room.readyForNext.push(playerId);
+          pokerBroadcast(room, { type: 'ready_count', count: room.readyForNext.length, total: room.players.filter(p => !p.eliminated).length });
+        }
+        if (room.readyForNext.length >= room.players.filter(p => !p.eliminated).length) {
+          pokerStartHand(room);
+        }
+        return;
+      }
+
+      if (msg.type === 'chat') {
+        pokerBroadcast(room, { type: 'chat', from: playerData.name, msg: msg.text });
+        return;
+      }
     } // end playerGame===poker
   }); // end ws.on message
 

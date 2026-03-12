@@ -463,16 +463,19 @@ function doRaise(){const a=parseInt(document.getElementById('ramt')?.value||0);s
 
 function renderWaiting(state){
   document.getElementById('wlist').innerHTML=state.players.map(p=>`
-    <div class="w-player"><span>${esc(p.name)}</span><span style="color:var(--muted);font-size:0.7rem">${p.isYou?'(Tú)':'💰 1,000'}</span></div>
+    <div class="w-player"><span>${esc(p.name)}</span><span style="color:var(--muted);font-size:0.7rem">${p.isYou?'(Tú)':p.isHost?'👑 Anfitrión':'💰 1,000'}</span></div>
   `).join('');
   const me=state.players.find(p=>p.isYou);
-  const isHost=me&&state.players.indexOf(me)===0;
+  const isHost=me&&me.isHost;
   const sa=document.getElementById('start-area');
-  if(isHost&&state.players.length>=2) sa.innerHTML=`<button class="btn btn-gold" style="margin-top:0.5rem" id="start-btn">▶ Iniciar (${state.players.length} jugadores)</button>`;
-  else if(isHost) sa.innerHTML=`<div style="font-size:0.65rem;color:var(--muted);margin-top:0.5rem">Necesitas al menos 2 jugadores</div>`;
-  else sa.innerHTML=`<div style="font-size:0.65rem;color:var(--muted);margin-top:0.5rem">El anfitrión iniciará la partida</div>`;
-  const sb = document.getElementById('start-btn');
-  if(sb) sb.addEventListener('click', () => send({type:'startGame'}));
+  if(isHost&&state.players.length>=2){
+    sa.innerHTML=`<button class="btn btn-gold" style="margin-top:0.5rem;cursor:pointer" id="start-btn">▶ Iniciar (${state.players.length} jugadores)</button>`;
+    document.getElementById('start-btn').addEventListener('click',()=>send({type:'startGame'}));
+  } else if(isHost){
+    sa.innerHTML=`<div style="font-size:0.65rem;color:var(--muted);margin-top:0.5rem">Necesitas al menos 2 jugadores</div>`;
+  } else {
+    sa.innerHTML=`<div style="font-size:0.65rem;color:var(--muted);margin-top:0.5rem">El anfitrión iniciará la partida</div>`;
+  }
 }
 
 function renderHandEnd(data){
