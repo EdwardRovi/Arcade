@@ -26,6 +26,11 @@ function shuffle(arr) {
   return arr;
 }
 
+
+function sendTo(player, msg) {
+  if (player.ws && player.ws.readyState === 1) player.ws.send(JSON.stringify(msg));
+}
+
 function genCode(prefix, store) {
   let code;
   do { code = prefix + Math.random().toString(36).substring(2, 5).toUpperCase(); }
@@ -2232,7 +2237,7 @@ wss.on('connection', (ws) => {
         if (room.state !== 'hand_end') return;
         if (!room.readyForNext.includes(playerId)) {
           room.readyForNext.push(playerId);
-          musBroadcast(room, { type: 'ready_count', count: room.readyForNext.length, total: room.players.filter(p => !p.eliminated).length });
+          pokerBroadcast(room, { type: 'ready_count', count: room.readyForNext.length, total: room.players.filter(p => !p.eliminated).length });
         }
         if (room.readyForNext.length >= room.players.filter(p => !p.eliminated).length) pokerStartHand(room);
         return;
