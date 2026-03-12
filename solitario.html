@@ -286,7 +286,75 @@ body::before {
 #hint-bar {
   position:fixed; bottom:14px; left:50%; transform:translateX(-50%);
   font-size:0.5rem; letter-spacing:0.15em; color:rgba(192,132,252,0.4);
-  pointer-events:none; z-index:100;
+  pointer-events:none; z-index:100; white-space:nowrap;
+}
+
+/* ── MOBILE ──────────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  :root {
+    --card-w: 42px;
+    --card-h: 60px;
+    --card-radius: 4px;
+  }
+
+  /* Hide desktop cursor */
+  #cursor { display: none; }
+  body { cursor: auto; overflow-y: auto; overflow-x: hidden; }
+  .ctrl-btn, .arcade-back { cursor: pointer; }
+
+  /* Header: compact single row */
+  #header {
+    padding: 6px 10px;
+    justify-content: center;
+  }
+  .game-title { font-size: 1rem; letter-spacing: 0.08em; }
+
+  /* Back button smaller */
+  .arcade-back {
+    top: 8px; left: 8px;
+    font-size: 0.48rem; padding: 4px 7px;
+  }
+
+  /* Controls: compact row at top right */
+  #controls {
+    top: 6px; right: 6px; gap: 5px;
+  }
+  .score-box {
+    font-size: 0.42rem; padding: 3px 7px; min-width: 48px;
+  }
+  .score-val { font-size: 0.75rem; }
+  .ctrl-btn { font-size: 0.42rem; padding: 4px 7px; letter-spacing: 0.1em; }
+
+  /* Table: starts below the compact header+controls */
+  #table { padding-top: 52px; gap: 8px; }
+
+  /* Top row: tighter gaps */
+  #top-row { gap: 5px; }
+
+  /* Waste: only show 1 card fanned (less overlap) */
+  #waste { width: var(--card-w) !important; }
+
+  /* Spacer between waste and foundations: smaller */
+  #top-row > div[style*="width:calc"] {
+    width: 10px !important;
+  }
+
+  /* Card labels smaller */
+  .card-tl, .card-br { font-size: 0.52rem; }
+  .card-tl { top: 2px; left: 3px; }
+  .card-br { bottom: 2px; right: 3px; }
+  .card-center { font-size: 1rem; }
+
+  /* Tableau gaps tighter */
+  #tableau { gap: 5px; }
+
+  /* Hint bar */
+  #hint-bar { font-size: 0.42rem; letter-spacing: 0.08em; bottom: 8px; }
+
+  /* Win screen */
+  .win-title { font-size: 1.8rem; }
+  .win-score { font-size: 0.7rem; }
+  .win-btn { font-size: 0.55rem; padding: 8px 20px; }
 }
 </style>
 </head>
@@ -595,7 +663,6 @@ document.addEventListener('mouseup', e => {
     moves++;
     scoreMove(dragOrigin, target, dragCards.length);
   } else {
-    // Return cards
     restoreToOrigin(dragOrigin, dragCards);
   }
 
@@ -603,6 +670,102 @@ document.addEventListener('mouseup', e => {
   dragCards = []; dragOrigin = null;
   render();
   checkWin();
+});
+
+// ─── Touch support ─────────────────────────────────────────
+function startDragFromEvent(clientX, clientY, target) {
+  const card = target.closest('.card');
+  if (!card) return false;
+  const origin = getCardOrigin(card.dataset.id);
+  if (!origin) return false;
+  if (!canPickup(origin)) return false;
+  const stack = getPickupStack(origin);
+  if (!stack || stack.length === 0) return false;
+
+  saveHistory();
+  dragCards = stack;
+  dragOrigin = origin;
+
+  dragEl = document.createElement('div');
+  dragEl.style.cssText = `position:fixed;z-index:5000;pointer-events:none;`;
+  stack.forEach((c, i) => {
+    const div = cardEl(c, 'dragged');
+    div.style.position = 'absolute';
+    div.style.top = (i * VERT_FACE_UP) + 'px';
+    div.style.left = '0';
+    dragEl.appendChild(div);
+  });
+  document.body.appendChild(dragEl);
+
+  const rect = card.getBoundingClientRect();
+  dragOffX = clientX - rect.left;
+  dragOffY = clientY - rect.top;
+  moveDrag(clientX, clientY);
+  removeFromOrigin(dragOrigin, dragCards.length);
+  render();
+  return true;
+}
+
+let touchStartX = 0, touchStartY = 0, touchMoved = false;
+
+document.addEventListener('touchstart', e => {
+  const t = e.touches[0];
+  touchStartX = t.clientX; touchStartY = t.clientY;
+  touchMoved = false;
+}, { passive: true });
+
+document.addEventListener('touchmove', e => {
+  const t = e.touches[0];
+  const dx = t.clientX - touchStartX, dy = t.clientY - touchStartY;
+  if (!touchMoved && Math.sqrt(dx*dx+dy*dy) > 6) {
+    touchMoved = true;
+    if (!dragEl) startDragFromEvent(touchStartX, touchStartY, e.target);
+  }
+  if (dragEl) {
+    e.preventDefault();
+    moveDrag(t.clientX, t.clientY);
+  }
+}, { passive: false });
+
+document.addEventListener('touchend', e => {
+  if (dragEl) {
+    const t = e.changedTouches[0];
+    const target = findDropTarget(t.clientX, t.clientY);
+    if (target && canDrop(dragCards, target)) {
+      dropCards(dragCards, target);
+      moves++;
+      scoreMove(dragOrigin, target, dragCards.length);
+    } else {
+      restoreToOrigin(dragOrigin, dragCards);
+    }
+    dragEl.remove(); dragEl = null;
+    dragCards = []; dragOrigin = null;
+    render();
+    checkWin();
+  } else if (!touchMoved) {
+    // Tap — handle stock click or double-tap auto-move
+    const el = document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    if (el && el.closest('#stock')) {
+      document.getElementById('stock').click();
+    } else {
+      // Single tap on face-up card = try auto-move to foundation
+      const card = el && el.closest('.card');
+      if (card) {
+        const origin = getCardOrigin(card.dataset.id);
+        if (origin && isTopCard(origin, card.dataset.id)) {
+          const cardData = getCardData(card.dataset.id);
+          const fi = findFoundationFor(cardData);
+          if (fi !== -1) {
+            saveHistory();
+            removeFromOrigin(origin, 1);
+            foundations[fi].push(cardData);
+            score += 10; moves++;
+            render(); checkWin();
+          }
+        }
+      }
+    }
+  }
 });
 
 function moveDrag(x, y) {

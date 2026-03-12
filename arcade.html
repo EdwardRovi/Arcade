@@ -365,6 +365,59 @@ body.hover-solitario .footer { color:rgba(192,132,252,0.4); }
   85%  { opacity:var(--peak-opacity); }
   100% { transform:translateY(110vh) rotate(var(--r1)) scale(1);   opacity:0; }
 }
+/* ── MOBILE ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  /* Hide cursor on touch */
+  #cursor { display: none; }
+  body { cursor: auto; }
+  .arcade-back, .game-card, .ctrl-btn { cursor: pointer; }
+
+  .page { gap: 1.4rem; padding: 0 12px; justify-content: center; }
+
+  .suits-row { font-size: 1rem; letter-spacing: 0.4rem; }
+  .title { font-size: clamp(1.6rem, 9vw, 2.8rem); }
+  .subtitle { font-size: 0.6rem; letter-spacing: 0.2em; }
+
+  .divider { width: 200px; }
+  body.hover-mus .divider, body.hover-caida .divider,
+  body.hover-poker .divider, body.hover-solitario .divider { width: 240px; }
+
+  /* 2x2 grid on mobile */
+  .games {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+    max-width: 360px;
+  }
+
+  .game-card {
+    width: 100%;
+    padding: 1.1rem 0.8rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .game-icon { font-size: 2rem; }
+  .game-name { font-size: 0.75rem; }
+  .game-desc { font-size: 0.52rem; }
+  .game-players { font-size: 0.48rem; padding: 0.15rem 0.5rem; }
+  .arrow { font-size: 0.5rem; }
+  .online-count { font-size: 0.44rem; }
+
+  /* Disable hover effects on touch — use tap instead */
+  body.hover-mus   .card-caida, body.hover-mus   .card-poker, body.hover-mus   .card-solitario,
+  body.hover-caida .card-mus,   body.hover-caida .card-poker, body.hover-caida .card-solitario,
+  body.hover-poker .card-mus,   body.hover-poker .card-caida, body.hover-poker .card-solitario,
+  body.hover-solitario .card-mus, body.hover-solitario .card-caida, body.hover-solitario .card-poker {
+    opacity: 1; filter: none; transform: none;
+  }
+  body.hover-mus   .card-mus,
+  body.hover-caida .card-caida,
+  body.hover-poker .card-poker,
+  body.hover-solitario .card-solitario { transform: none; }
+
+  .footer { font-size: 0.46rem; letter-spacing: 0.12em; text-align: center; }
+}
 </style>
 </head>
 <body>

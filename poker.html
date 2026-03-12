@@ -149,6 +149,64 @@ body::before { content:''; position:fixed; inset:0; pointer-events:none; backgro
 #notice { position:fixed; top:1rem; left:50%; transform:translateX(-50%); z-index:100; pointer-events:none; }
 .n-box { background:rgba(0,0,0,0.88); border:1px solid var(--border); border-radius:4px; padding:0.45rem 1.1rem; font-size:0.75rem; color:var(--gold2); white-space:nowrap; opacity:0; transition:opacity 0.3s; font-family:'Cinzel Decorative',cursive; }
 .n-box.show { opacity:1; }
+
+/* ── MOBILE ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  /* Lobby */
+  #lobby { padding: 1rem 0.8rem; justify-content: flex-start; padding-top: 3.5rem; overflow-y: auto; }
+  .title-suits { font-size: 1rem; letter-spacing: 0.3rem; }
+  .title-main  { font-size: 1.8rem; }
+  .title-sub   { font-size: 0.55rem; }
+  .panel { width: 100%; max-width: 340px; padding: 1rem 1rem; }
+  .btn  { font-size: 0.62rem; padding: 0.5rem 1rem; cursor: pointer; }
+
+  /* Game: stack vertically — no sidebar */
+  #game { flex-direction: column; }
+  .main-area { flex-direction: column; overflow: visible; }
+  .sidebar { display: none; }          /* hide log/chat in-game on mobile */
+  .table-wrap { min-height: 260px; flex-shrink: 0; }
+
+  /* Smaller oval table */
+  .table-oval { width: 90% !important; height: 55% !important; }
+
+  /* Seat positions — scale down */
+  .seat { transform: scale(0.82); transform-origin: center; }
+
+  /* Community cards smaller */
+  .comm-cards { gap: 0.2rem; }
+  .card { width: 36px !important; height: 52px !important; padding: 2px !important; }
+  .card .cv { font-size: 0.55rem !important; }
+  .card .cs { font-size: 0.55rem !important; }
+  .card .cc { font-size: 0.8rem !important; }
+  .card.back::after { font-size: 1rem !important; }
+
+  /* Pot / street info */
+  .pot-info { font-size: 0.6rem !important; }
+  .street-label { font-size: 0.55rem !important; }
+
+  /* My area — compact */
+  .my-area { padding: 0.5rem 0.6rem; gap: 0.5rem; min-height: 80px; flex-wrap: wrap; }
+  .my-hand { gap: 0.25rem; }
+  .my-meta { font-size: 0.6rem; min-width: 70px; }
+  .act-area { gap: 0.3rem; justify-content: center; width: 100%; }
+  .ab { font-size: 0.52rem !important; padding: 0.3rem 0.5rem !important; cursor: pointer; }
+  #ramt { width: 55px !important; font-size: 0.52rem !important; }
+
+  /* Topbar */
+  .topbar { padding: 0.25rem 0.5rem; }
+  .topbar-title { font-size: 0.55rem; }
+  .topbar-info  { font-size: 0.52rem; }
+  .exit-btn { font-size: 0.5rem; padding: 0.2rem 0.5rem; cursor: pointer; }
+
+  /* Overlays */
+  .hand-box { width: 90vw; padding: 1.2rem; }
+  .hand-box h2 { font-size: 0.8rem; }
+  .w-name { font-size: 0.7rem; }
+  .w-hand { font-size: 0.6rem; }
+  .w-chips { font-size: 0.68rem; }
+  #next-btn { font-size: 0.6rem; cursor: pointer; }
+  .go-box h1 { font-size: 1.5rem; }
+}
 </style>
 </head>
 <body>
@@ -410,9 +468,11 @@ function renderWaiting(state){
   const me=state.players.find(p=>p.isYou);
   const isHost=me&&state.players.indexOf(me)===0;
   const sa=document.getElementById('start-area');
-  if(isHost&&state.players.length>=2) sa.innerHTML=`<button class="btn btn-gold" style="margin-top:0.5rem" onclick="send({type:'startGame'})">▶ Iniciar (${state.players.length} jugadores)</button>`;
+  if(isHost&&state.players.length>=2) sa.innerHTML=`<button class="btn btn-gold" style="margin-top:0.5rem" id="start-btn">▶ Iniciar (${state.players.length} jugadores)</button>`;
   else if(isHost) sa.innerHTML=`<div style="font-size:0.65rem;color:var(--muted);margin-top:0.5rem">Necesitas al menos 2 jugadores</div>`;
   else sa.innerHTML=`<div style="font-size:0.65rem;color:var(--muted);margin-top:0.5rem">El anfitrión iniciará la partida</div>`;
+  const sb = document.getElementById('start-btn');
+  if(sb) sb.addEventListener('click', () => send({type:'startGame'}));
 }
 
 function renderHandEnd(data){

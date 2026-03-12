@@ -348,16 +348,31 @@ input[type="text"]:focus { border-color: var(--gold); background: rgba(255,255,2
 
 /* Mobile */
 @media (max-width:600px) {
-  .game-wrapper { grid-template-columns:1fr; }
-  .sidebar-layout { display:none; }
-  #game { height:auto; min-height:100vh; overflow:auto; padding:0.3rem; }
-  .table-layout { grid-template-columns:80px 1fr 80px; gap:0.25rem; height:auto; }
-  .card { width:52px; height:76px; }
-  .card-face.mesa-card { width:44px; height:64px; }
-  .card-suit-icon { font-size:1.3rem; }
-  .card-face.mesa-card .card-suit-icon { font-size:1.1rem; }
-  .card-val-corner { font-size:0.65rem; }
+  /* Stack game + sidebar vertically */
+  .game-wrapper { grid-template-columns:1fr; grid-template-rows:auto auto; }
+
+  /* Sidebar becomes a bottom panel instead of disappearing */
+  .sidebar-layout {
+    display:flex; flex-direction:row; gap:0.5rem;
+    max-height:180px; overflow:hidden;
+    border-top:1px solid rgba(201,168,76,0.15);
+    padding-top:0.4rem;
+  }
+  .sidebar-layout > * { flex:1; min-width:0; }
+
+  #game { height:auto; min-height:unset; overflow:visible; padding:0.3rem; }
+
+  .table-layout { grid-template-columns:70px 1fr 70px; gap:0.2rem; height:auto; }
+  .card { width:48px; height:70px; }
+  .card-face.mesa-card { width:40px; height:58px; }
+  .card-suit-icon { font-size:1.2rem; }
+  .card-face.mesa-card .card-suit-icon { font-size:1rem; }
+  .card-val-corner { font-size:0.6rem; }
   #exit-btn { display:none; }
+
+  /* Log/chat panels compact */
+  .log-panel, .chat-panel { font-size:0.6rem; }
+  #round-log, #chat-log { max-height:80px; }
 }
 </style>
 </head>
