@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arcade — Juegos de Cartas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080a0f;
+  --gold: #c9a84c;
+  --gold2: #e8c97a;
+  --text: #f5ead8;
+  --muted: rgba(245,234,216,0.45);
+  --border: rgba(201,168,76,0.2);
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html,body { height:100%; background:var(--bg); color:var(--text); font-family:'Cinzel',serif; overflow:hidden; }
+
+/* Stars background */
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none;
+  background:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 40% 70%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 50%, rgba(255,255,255,0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.25) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 80%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 20%, rgba(255,255,255,0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 90%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(600px 400px at 50% 50%, rgba(15,20,30,0.8) 0%, transparent 100%);
+}
+
+.page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* Header */
+.header { text-align: center; }
+.suits-row { font-size: 1.4rem; letter-spacing: 0.6rem; margin-bottom: 0.6rem; opacity: 0.7; }
+.suits-row span:nth-child(2), .suits-row span:nth-child(3) { color: #c0392b; }
+.title { font-family:'Cinzel Decorative',cursive; font-size: clamp(2rem, 5vw, 3.8rem); font-weight: 900; color: var(--gold2); letter-spacing: 0.1em; text-shadow: 0 0 60px rgba(201,168,76,0.35), 0 2px 4px rgba(0,0,0,0.8); }
+.subtitle { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.35em; margin-top: 0.4rem; }
+
+/* Divider */
+.divider { width: 280px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0.4; }
+
+/* Game cards */
+.games { display: flex; gap: 1.5rem; align-items: stretch; }
+
+.game-card {
+  width: 200px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.6rem 1.2rem 1.4rem;
+  display: flex; flex-direction: column; align-items: center; gap: 0.8rem;
+  cursor: pointer;
+  text-decoration: none; color: inherit;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  position: relative; overflow: hidden;
+}
+.game-card::before {
+  content:''; position:absolute; inset:0; opacity:0;
+  transition: opacity 0.3s;
+  border-radius: 10px;
+}
+.game-card:hover { transform: translateY(-6px); }
+.game-card:hover::before { opacity: 1; }
+
+/* Mus — green */
+.card-mus { border-color: rgba(39,120,60,0.3); }
+.card-mus::before { background: radial-gradient(ellipse at 50% 0%, rgba(39,120,60,0.15) 0%, transparent 70%); }
+.card-mus:hover { border-color: rgba(39,180,80,0.6); box-shadow: 0 8px 40px rgba(39,120,60,0.25), 0 0 0 1px rgba(39,180,80,0.2); }
+
+/* Caída — blue */
+.card-caida { border-color: rgba(30,80,160,0.3); }
+.card-caida::before { background: radial-gradient(ellipse at 50% 0%, rgba(30,80,160,0.15) 0%, transparent 70%); }
+.card-caida:hover { border-color: rgba(60,130,220,0.6); box-shadow: 0 8px 40px rgba(30,80,160,0.25), 0 0 0 1px rgba(60,130,220,0.2); }
+
+/* Poker — red */
+.card-poker { border-color: rgba(160,30,30,0.3); }
+.card-poker::before { background: radial-gradient(ellipse at 50% 0%, rgba(160,30,30,0.15) 0%, transparent 70%); }
+.card-poker:hover { border-color: rgba(220,60,60,0.6); box-shadow: 0 8px 40px rgba(160,30,30,0.25), 0 0 0 1px rgba(220,60,60,0.2); }
+
+.game-icon { font-size: 2.8rem; line-height: 1; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5)); }
+.game-name { font-family:'Cinzel Decorative',cursive; font-size: 0.9rem; font-weight: 700; letter-spacing: 0.1em; }
+.card-mus .game-name { color: #7bc47b; }
+.card-caida .game-name { color: #6ab0e8; }
+.card-poker .game-name { color: #e87a7a; }
+.game-desc { font-size: 0.6rem; color: var(--muted); text-align: center; line-height: 1.5; letter-spacing: 0.05em; }
+.game-players { font-size: 0.55rem; letter-spacing: 0.12em; margin-top: auto; padding: 0.2rem 0.6rem; border-radius: 20px; }
+.card-mus .game-players { background: rgba(39,120,60,0.2); color: #7bc47b; border: 1px solid rgba(39,120,60,0.3); }
+.card-caida .game-players { background: rgba(30,80,160,0.2); color: #6ab0e8; border: 1px solid rgba(30,80,160,0.3); }
+.card-poker .game-players { background: rgba(160,30,30,0.2); color: #e87a7a; border: 1px solid rgba(160,30,30,0.3); }
+
+.arrow { font-size: 0.6rem; color: var(--muted); letter-spacing: 0.2em; opacity: 0; transition: opacity 0.2s; margin-top: 0.2rem; }
+.game-card:hover .arrow { opacity: 1; }
+
+/* Footer */
+.footer { font-size: 0.55rem; color: rgba(245,234,216,0.2); letter-spacing: 0.2em; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="suits-row"><span>♠</span><span>♥</span><span>♦</span><span>♣</span></div>
+    <div class="title">ARCADE</div>
+    <div class="subtitle">Juegos de cartas · Multijugador</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="games">
+    <a class="game-card card-mus" href="/mus">
+      <div class="game-icon">🃏</div>
+      <div class="game-name">MUS</div>
+      <div class="game-desc">El clásico juego vasco.<br>Apuestas, farol y estrategia.</div>
+      <div class="game-players">2 ó 4 jugadores</div>
+      <div class="arrow">JUGAR →</div>
+    </a>
+
+    <a class="game-card card-caida" href="/caida">
+      <div class="game-icon">🎴</div>
+      <div class="game-name">CAÍDA</div>
+      <div class="game-desc">El juego venezolano<br>de recoger y escalar.</div>
+      <div class="game-players">2 – 4 jugadores</div>
+      <div class="arrow">JUGAR →</div>
+    </a>
+
+    <a class="game-card card-poker" href="/poker">
+      <div class="game-icon">♠️</div>
+      <div class="game-name">PÓKER</div>
+      <div class="game-desc">Texas Hold'em.<br>Fichas virtuales.</div>
+      <div class="game-players">2 – 9 jugadores</div>
+      <div class="arrow">JUGAR →</div>
+    </a>
+  </div>
+
+  <div class="footer">SELECCIONA UN JUEGO PARA COMENZAR</div>
+</div>
+</body>
+</html>
