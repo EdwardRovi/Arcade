@@ -18,19 +18,29 @@
 * { box-sizing:border-box; margin:0; padding:0; }
 html,body { height:100%; background:var(--bg); color:var(--text); font-family:'Cinzel',serif; overflow:hidden; }
 
-.bg-layer {
-  position: fixed; inset: 0; pointer-events: none;
-  transition: opacity 0.7s ease;
+/* ── CUSTOM CURSOR ─────────────────────────────────────────────────────────── */
+body { cursor: none; }
+#cursor {
+  position: fixed; pointer-events: none; z-index: 9999;
+  font-size: 1.1rem; line-height: 1;
+  transform: translate(-50%, -50%);
+  transition: transform 0.12s ease, opacity 0.2s;
+  filter: drop-shadow(0 0 6px rgba(201,168,76,0.7));
+  user-select: none;
 }
+#cursor.on-card { transform: translate(-50%,-50%) scale(1.35); }
+
+/* ── BACKGROUND LAYERS ─────────────────────────────────────────────────────── */
+.bg-layer { position:fixed; inset:0; pointer-events:none; transition:opacity 0.7s ease; }
 #bg-default {
-  opacity: 1;
+  opacity:1;
   background:
     radial-gradient(ellipse 60% 70% at 10% 40%,  rgba(20,80,35,0.55)  0%, transparent 65%),
     radial-gradient(ellipse 60% 70% at 90% 40%,  rgba(15,50,120,0.55) 0%, transparent 65%),
     radial-gradient(ellipse 70% 60% at 50% 100%, rgba(120,15,15,0.6)  0%, transparent 60%);
 }
 #bg-mus {
-  opacity: 0;
+  opacity:0;
   background:
     radial-gradient(ellipse 90% 90% at 20% 45%,  rgba(18,110,42,0.82)  0%, transparent 60%),
     radial-gradient(ellipse 55% 55% at 85% 35%,  rgba(15,45,100,0.25)  0%, transparent 55%),
@@ -38,7 +48,7 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:'C
     radial-gradient(ellipse 40% 60% at 50% 50%,  rgba(6,20,10,0.45)    0%, transparent 100%);
 }
 #bg-caida {
-  opacity: 0;
+  opacity:0;
   background:
     radial-gradient(ellipse 90% 90% at 80% 45%,  rgba(15,55,160,0.84)  0%, transparent 60%),
     radial-gradient(ellipse 55% 55% at 15% 40%,  rgba(18,80,30,0.25)   0%, transparent 55%),
@@ -46,7 +56,7 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:'C
     radial-gradient(ellipse 40% 60% at 50% 50%,  rgba(4,8,24,0.45)     0%, transparent 100%);
 }
 #bg-poker {
-  opacity: 0;
+  opacity:0;
   background:
     radial-gradient(ellipse 85% 85% at 50% 92%,  rgba(155,12,12,0.88)  0%, transparent 58%),
     radial-gradient(ellipse 55% 55% at 10% 40%,  rgba(18,75,28,0.25)   0%, transparent 55%),
@@ -54,114 +64,214 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:'C
     radial-gradient(ellipse 40% 40% at 50% 50%,  rgba(18,4,4,0.45)     0%, transparent 100%);
 }
 
-.page {
-  height: 100vh;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 2.5rem;
-  position: relative; z-index: 1;
+/* ── VIGNETTE ──────────────────────────────────────────────────────────────── */
+body::after {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background: radial-gradient(ellipse 85% 85% at 50% 50%, transparent 40%, rgba(0,0,0,0.55) 100%);
+}
+/* ── SCANLINES ─────────────────────────────────────────────────────────────── */
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px);
 }
 
-.header { text-align: center; }
-.suits-row { font-size: 1.4rem; letter-spacing: 0.6rem; margin-bottom: 0.6rem; opacity: 0.7; }
-.suits-row span:nth-child(2), .suits-row span:nth-child(3) { color: #c0392b; }
-.title { font-family:'Cinzel Decorative',cursive; font-size: clamp(2rem, 5vw, 3.8rem); font-weight: 900; color: var(--gold2); letter-spacing: 0.1em; text-shadow: 0 0 60px rgba(201,168,76,0.35), 0 2px 4px rgba(0,0,0,0.8); }
-.subtitle { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.35em; margin-top: 0.4rem; }
+/* ── PAGE ──────────────────────────────────────────────────────────────────── */
+.page {
+  height:100vh; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:2.5rem;
+  position:relative; z-index:1;
+}
+
+/* ── HEADER ────────────────────────────────────────────────────────────────── */
+.header { text-align:center; }
+
+/* Entrance animations */
+.suits-row   { animation: fadeSlideDown 0.7s ease both; animation-delay: 0.1s; }
+.title       { animation: fadeSlideDown 0.7s ease both; animation-delay: 0.3s; }
+.subtitle    { animation: fadeSlideDown 0.6s ease both; animation-delay: 0.5s; }
+.divider     { animation: fadeIn 0.8s ease both;        animation-delay: 0.7s; }
+.card-mus    { animation: fadeSlideUp 0.65s ease both;  animation-delay: 0.75s; }
+.card-caida  { animation: fadeSlideUp 0.65s ease both;  animation-delay: 0.9s;  }
+.card-poker  { animation: fadeSlideUp 0.65s ease both;  animation-delay: 1.05s; }
+.footer      { animation: fadeIn 0.8s ease both;        animation-delay: 1.2s;  }
+
+@keyframes fadeSlideDown {
+  from { opacity:0; transform:translateY(-22px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes fadeSlideUp {
+  from { opacity:0; transform:translateY(28px) scale(0.96); }
+  to   { opacity:1; transform:translateY(0)   scale(1); }
+}
+@keyframes fadeIn {
+  from { opacity:0; }
+  to   { opacity:1; }
+}
+
+.suits-row { font-size:1.4rem; letter-spacing:0.6rem; margin-bottom:0.6rem; opacity:0.7; transition:letter-spacing 0.5s, opacity 0.5s; }
+.suits-row span:nth-child(2), .suits-row span:nth-child(3) { color:#c0392b; }
+body.hover-mus .suits-row, body.hover-caida .suits-row, body.hover-poker .suits-row { letter-spacing:0.9rem; opacity:0.9; }
+
+.title {
+  font-family:'Cinzel Decorative',cursive;
+  font-size:clamp(2rem, 5vw, 3.8rem); font-weight:900;
+  color:var(--gold2); letter-spacing:0.1em;
+  animation: fadeSlideDown 0.7s ease both, titlePulse 4s ease-in-out 1.2s infinite;
+  transition: text-shadow 0.6s;
+}
+@keyframes titlePulse {
+  0%,100% { text-shadow:0 0 40px rgba(201,168,76,0.25), 0 2px 4px rgba(0,0,0,0.8); }
+  50%     { text-shadow:0 0 90px rgba(201,168,76,0.55), 0 0 20px rgba(201,168,76,0.2), 0 2px 4px rgba(0,0,0,0.8); }
+}
+body.hover-mus   .title { text-shadow:0 0 80px rgba(39,180,80,0.45),  0 0 20px rgba(201,168,76,0.3), 0 2px 4px rgba(0,0,0,0.8); }
+body.hover-caida .title { text-shadow:0 0 80px rgba(60,140,230,0.45), 0 0 20px rgba(201,168,76,0.3), 0 2px 4px rgba(0,0,0,0.8); }
+body.hover-poker .title { text-shadow:0 0 80px rgba(230,60,60,0.45),  0 0 20px rgba(201,168,76,0.3), 0 2px 4px rgba(0,0,0,0.8); }
+
+.subtitle { font-size:0.72rem; color:var(--muted); letter-spacing:0.35em; margin-top:0.4rem; }
 
 .divider {
-  width: 280px; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  opacity: 0.4; transition: opacity 0.6s, width 0.6s;
+  width:280px; height:1px;
+  background:linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity:0.4; transition:opacity 0.6s, width 0.6s;
 }
-body.hover-mus .divider, body.hover-caida .divider, body.hover-poker .divider {
-  opacity: 0.65; width: 340px;
-}
+body.hover-mus .divider, body.hover-caida .divider, body.hover-poker .divider { opacity:0.7; width:360px; }
 
-.games { display: flex; gap: 1.5rem; align-items: stretch; }
+/* ── GAME CARDS ────────────────────────────────────────────────────────────── */
+.games { display:flex; gap:1.5rem; align-items:stretch; }
 
 .game-card {
-  width: 200px;
-  background: rgba(0,0,0,0.5);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1.6rem 1.2rem 1.4rem;
-  display: flex; flex-direction: column; align-items: center; gap: 0.8rem;
-  cursor: pointer; text-decoration: none; color: inherit;
-  transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s, opacity 0.45s, filter 0.45s;
-  position: relative; overflow: hidden;
+  width:200px; background:rgba(0,0,0,0.5); border:1px solid var(--border);
+  border-radius:10px; padding:1.6rem 1.2rem 1.4rem;
+  display:flex; flex-direction:column; align-items:center; gap:0.8rem;
+  cursor:none; text-decoration:none; color:inherit;
+  transition:transform 0.3s, border-color 0.3s, box-shadow 0.3s, opacity 0.45s, filter 0.45s, background 0.3s;
+  position:relative; overflow:hidden;
 }
+/* Shine sweep */
 .game-card::before {
-  content:''; position:absolute; inset:0; opacity:0;
-  transition: opacity 0.3s; border-radius: 10px;
+  content:''; position:absolute;
+  top:-60%; left:-75%; width:50%; height:220%;
+  background:linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.06) 50%, transparent 60%);
+  transform:skewX(-15deg); transition:left 0.55s ease;
 }
-.game-card:hover::before { opacity: 1; }
+.game-card:hover::before { left:130%; }
+/* Bottom accent line */
+.game-card::after {
+  content:''; position:absolute; bottom:0; left:0; right:0;
+  height:2px; opacity:0; transition:opacity 0.35s; border-radius:0 0 10px 10px;
+}
+.card-mus::after   { background:linear-gradient(90deg,transparent,rgba(39,200,80,0.8),transparent); }
+.card-caida::after { background:linear-gradient(90deg,transparent,rgba(60,140,230,0.8),transparent); }
+.card-poker::after { background:linear-gradient(90deg,transparent,rgba(230,60,60,0.8),transparent); }
+.game-card:hover::after { opacity:1; }
 
-/* Dim + blur non-hovered cards */
-body.hover-mus   .card-caida,
-body.hover-mus   .card-poker,
-body.hover-caida .card-mus,
-body.hover-caida .card-poker,
-body.hover-poker .card-mus,
-body.hover-poker .card-caida {
-  opacity: 0.38;
-  filter: blur(0.5px);
-  transform: scale(0.96);
+/* Dim non-hovered */
+body.hover-mus   .card-caida, body.hover-mus   .card-poker,
+body.hover-caida .card-mus,   body.hover-caida .card-poker,
+body.hover-poker .card-mus,   body.hover-poker .card-caida {
+  opacity:0.38; filter:blur(0.5px); transform:scale(0.96);
 }
-/* Boost hovered card */
+/* Boost hovered */
 body.hover-mus   .card-mus,
 body.hover-caida .card-caida,
-body.hover-poker .card-poker {
-  transform: translateY(-8px) scale(1.04);
+body.hover-poker .card-poker { transform:translateY(-8px) scale(1.04); }
+
+.card-mus   { border-color:rgba(39,120,60,0.3); }
+.card-caida { border-color:rgba(30,80,160,0.3); }
+.card-poker { border-color:rgba(160,30,30,0.3); }
+.card-mus:hover   { border-color:rgba(39,200,80,0.7);  box-shadow:0 14px 55px rgba(18,110,42,0.45),  0 0 0 1px rgba(39,200,80,0.25); }
+.card-caida:hover { border-color:rgba(60,140,230,0.7); box-shadow:0 14px 55px rgba(15,55,160,0.45),  0 0 0 1px rgba(60,140,230,0.25); }
+.card-poker:hover { border-color:rgba(230,60,60,0.7);  box-shadow:0 14px 55px rgba(155,12,12,0.45),  0 0 0 1px rgba(230,60,60,0.25); }
+
+.game-icon { font-size:2.8rem; line-height:1; filter:drop-shadow(0 2px 8px rgba(0,0,0,0.5)); transition:transform 0.3s; }
+.game-card:hover .game-icon { transform:scale(1.12); }
+
+.game-name { font-family:'Cinzel Decorative',cursive; font-size:0.9rem; font-weight:700; letter-spacing:0.1em; }
+.card-mus   .game-name { color:#7bc47b; }
+.card-caida .game-name { color:#6ab0e8; }
+.card-poker .game-name { color:#e87a7a; }
+
+.game-desc { font-size:0.6rem; color:var(--muted); text-align:center; line-height:1.5; letter-spacing:0.05em; }
+
+/* Player count badge */
+.game-players {
+  font-size:0.55rem; letter-spacing:0.12em; margin-top:auto;
+  padding:0.2rem 0.6rem; border-radius:20px;
+  transition: opacity 0.3s;
 }
+.card-mus   .game-players { background:rgba(39,120,60,0.2);  color:#7bc47b; border:1px solid rgba(39,120,60,0.3); }
+.card-caida .game-players { background:rgba(30,80,160,0.2);  color:#6ab0e8; border:1px solid rgba(30,80,160,0.3); }
+.card-poker .game-players { background:rgba(160,30,30,0.2);  color:#e87a7a; border:1px solid rgba(160,30,30,0.3); }
 
-/* Mus */
-.card-mus { border-color: rgba(39,120,60,0.3); }
-.card-mus::before { background: radial-gradient(ellipse at 50% 0%, rgba(39,120,60,0.18) 0%, transparent 70%); }
-.card-mus:hover { border-color: rgba(39,200,80,0.7); box-shadow: 0 14px 55px rgba(18,110,42,0.45), 0 0 0 1px rgba(39,200,80,0.25); }
+/* Online counter */
+.online-count {
+  font-size:0.5rem; letter-spacing:0.1em; color:var(--muted);
+  display:flex; align-items:center; gap:0.3rem;
+  opacity:0; transform:translateY(4px);
+  transition:opacity 0.4s, transform 0.4s;
+}
+.online-dot {
+  width:5px; height:5px; border-radius:50%;
+  animation:dotPulse 2s ease-in-out infinite;
+}
+.card-mus   .online-dot { background:#7bc47b; box-shadow:0 0 5px rgba(123,196,123,0.7); }
+.card-caida .online-dot { background:#6ab0e8; box-shadow:0 0 5px rgba(106,176,232,0.7); }
+.card-poker .online-dot { background:#e87a7a; box-shadow:0 0 5px rgba(232,122,122,0.7); }
+@keyframes dotPulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%     { opacity:0.4; transform:scale(0.75); }
+}
+.game-card:hover .online-count { opacity:1; transform:translateY(0); }
 
-/* Caída */
-.card-caida { border-color: rgba(30,80,160,0.3); }
-.card-caida::before { background: radial-gradient(ellipse at 50% 0%, rgba(30,80,160,0.18) 0%, transparent 70%); }
-.card-caida:hover { border-color: rgba(60,140,230,0.7); box-shadow: 0 14px 55px rgba(15,55,160,0.45), 0 0 0 1px rgba(60,140,230,0.25); }
+.arrow { font-size:0.6rem; color:var(--muted); letter-spacing:0.2em; opacity:0; transition:opacity 0.2s; margin-top:0.2rem; }
+.game-card:hover .arrow { opacity:1; }
 
-/* Poker */
-.card-poker { border-color: rgba(160,30,30,0.3); }
-.card-poker::before { background: radial-gradient(ellipse at 50% 0%, rgba(160,30,30,0.18) 0%, transparent 70%); }
-.card-poker:hover { border-color: rgba(230,60,60,0.7); box-shadow: 0 14px 55px rgba(155,12,12,0.45), 0 0 0 1px rgba(230,60,60,0.25); }
-
-.game-icon { font-size: 2.8rem; line-height: 1; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5)); transition: transform 0.3s; }
-.game-card:hover .game-icon { transform: scale(1.12); }
-
-.game-name { font-family:'Cinzel Decorative',cursive; font-size: 0.9rem; font-weight: 700; letter-spacing: 0.1em; }
-.card-mus   .game-name { color: #7bc47b; }
-.card-caida .game-name { color: #6ab0e8; }
-.card-poker .game-name { color: #e87a7a; }
-
-.game-desc { font-size: 0.6rem; color: var(--muted); text-align: center; line-height: 1.5; letter-spacing: 0.05em; }
-
-.game-players { font-size: 0.55rem; letter-spacing: 0.12em; margin-top: auto; padding: 0.2rem 0.6rem; border-radius: 20px; }
-.card-mus   .game-players { background: rgba(39,120,60,0.2);  color: #7bc47b; border: 1px solid rgba(39,120,60,0.3); }
-.card-caida .game-players { background: rgba(30,80,160,0.2);  color: #6ab0e8; border: 1px solid rgba(30,80,160,0.3); }
-.card-poker .game-players { background: rgba(160,30,30,0.2);  color: #e87a7a; border: 1px solid rgba(160,30,30,0.3); }
-
-.arrow { font-size: 0.6rem; color: var(--muted); letter-spacing: 0.2em; opacity: 0; transition: opacity 0.2s; margin-top: 0.2rem; }
-.game-card:hover .arrow { opacity: 1; }
-
+/* ── FOOTER ────────────────────────────────────────────────────────────────── */
 .footer {
-  font-size: 0.55rem; letter-spacing: 0.2em;
-  color: rgba(245,234,216,0.2); transition: color 0.6s;
+  font-size:0.55rem; letter-spacing:0.2em;
+  color:rgba(245,234,216,0.2); transition:color 0.6s, opacity 0.4s;
+  min-height:1em;
 }
-body.hover-mus   .footer { color: rgba(123,196,123,0.4); }
-body.hover-caida .footer { color: rgba(106,176,232,0.4); }
-body.hover-poker .footer { color: rgba(232,122,122,0.4); }
+body.hover-mus   .footer { color:rgba(123,196,123,0.4); }
+body.hover-caida .footer { color:rgba(106,176,232,0.4); }
+body.hover-poker .footer { color:rgba(232,122,122,0.4); }
+
+/* ── AMBIENT PARTICLES ─────────────────────────────────────────────────────── */
+.particles { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+.particle  { position:absolute; font-size:0.85rem; opacity:0; animation:floatUp linear infinite; user-select:none; }
+@keyframes floatUp {
+  0%   { transform:translateY(0) rotate(0deg);   opacity:0; }
+  8%   { opacity:0.09; }
+  92%  { opacity:0.05; }
+  100% { transform:translateY(-105vh) rotate(300deg); opacity:0; }
+}
+
+/* ── FALLING CARDS ─────────────────────────────────────────────────────────── */
+.fall-layer { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+.fall-card {
+  position:absolute; top:-120px; font-size:2.8rem; opacity:0;
+  animation:fallDown ease-in forwards; user-select:none;
+  filter:drop-shadow(0 4px 16px var(--fall-glow, rgba(0,0,0,0.6)));
+}
+@keyframes fallDown {
+  0%   { transform:translateY(0)     rotate(var(--r0)) scale(0.7); opacity:0; }
+  6%   { opacity:var(--peak-opacity); }
+  85%  { opacity:var(--peak-opacity); }
+  100% { transform:translateY(110vh) rotate(var(--r1)) scale(1);   opacity:0; }
+}
 </style>
 </head>
 <body>
 
+<!-- Custom cursor -->
+<div id="cursor">♠</div>
+
+<!-- Background layers -->
 <div id="bg-default" class="bg-layer"></div>
 <div id="bg-mus"     class="bg-layer"></div>
 <div id="bg-caida"   class="bg-layer"></div>
 <div id="bg-poker"   class="bg-layer"></div>
+<div class="fall-layer" id="fall-layer"></div>
 
 <div class="page">
   <div class="header">
@@ -178,7 +288,8 @@ body.hover-poker .footer { color: rgba(232,122,122,0.4); }
       <div class="game-icon">🃏</div>
       <div class="game-name">MUS</div>
       <div class="game-desc">El clásico juego vasco.<br>Apuestas, farol y estrategia.</div>
-      <div class="game-players">2 ó 4 jugadores</div>
+      <div class="game-players">4 jugadores</div>
+      <div class="online-count"><span class="online-dot"></span><span id="online-mus">— online</span></div>
       <div class="arrow">JUGAR →</div>
     </a>
 
@@ -188,6 +299,7 @@ body.hover-poker .footer { color: rgba(232,122,122,0.4); }
       <div class="game-name">CAÍDA</div>
       <div class="game-desc">El juego venezolano<br>de recoger y escalar.</div>
       <div class="game-players">2 – 4 jugadores</div>
+      <div class="online-count"><span class="online-dot"></span><span id="online-caida">— online</span></div>
       <div class="arrow">JUGAR →</div>
     </a>
 
@@ -197,35 +309,206 @@ body.hover-poker .footer { color: rgba(232,122,122,0.4); }
       <div class="game-name">PÓKER</div>
       <div class="game-desc">Texas Hold'em.<br>Fichas virtuales.</div>
       <div class="game-players">2 – 9 jugadores</div>
+      <div class="online-count"><span class="online-dot"></span><span id="online-poker">— online</span></div>
       <div class="arrow">JUGAR →</div>
     </a>
   </div>
 
-  <div class="footer">SELECCIONA UN JUEGO PARA COMENZAR</div>
+  <div class="footer" id="footer-text">SELECCIONA UN JUEGO PARA COMENZAR</div>
 </div>
 
+<div class="particles" id="particles"></div>
+
 <script>
-  const layers = { mus: 'bg-mus', caida: 'bg-caida', poker: 'bg-poker' };
-  let current = null;
+// ── CUSTOM CURSOR ─────────────────────────────────────────────────────────────
+const cursor = document.getElementById('cursor');
+const cursorSymbols = { mus:'♣', caida:'🎴', poker:'♠', default:'♠' };
+let cursorGame = 'default';
 
-  function setHover(game) {
-    if (current === game) return;
-    // Fade out whatever is showing
-    if (current) document.getElementById(layers[current]).style.opacity = '0';
-    else document.getElementById('bg-default').style.opacity = '0';
+document.addEventListener('mousemove', e => {
+  cursor.style.left = e.clientX + 'px';
+  cursor.style.top  = e.clientY + 'px';
+});
 
-    current = game;
-    document.getElementById(layers[game]).style.opacity = '1';
-    document.body.className = 'hover-' + game;
+// ── BACKGROUND HOVER ──────────────────────────────────────────────────────────
+const layers = { mus:'bg-mus', caida:'bg-caida', poker:'bg-poker' };
+let current = null;
+
+function setHover(game) {
+  if (current === game) return;
+  if (current) { document.getElementById(layers[current]).style.opacity = '0'; stopFalling(); }
+  else document.getElementById('bg-default').style.opacity = '0';
+  current = game;
+  document.getElementById(layers[game]).style.opacity = '1';
+  document.body.className = 'hover-' + game;
+  startFalling(game);
+  // Update cursor
+  cursor.textContent = cursorSymbols[game];
+  cursor.classList.add('on-card');
+}
+
+function clearHover() {
+  if (!current) return;
+  document.getElementById(layers[current]).style.opacity = '0';
+  document.getElementById('bg-default').style.opacity = '1';
+  document.body.className = '';
+  stopFalling();
+  current = null;
+  cursor.textContent = cursorSymbols.default;
+  cursor.classList.remove('on-card');
+}
+
+// ── FOOTER ROTATING PHRASES ───────────────────────────────────────────────────
+const footerEl = document.getElementById('footer-text');
+const phrases = [
+  'SELECCIONA UN JUEGO PARA COMENZAR',
+  '¿A QUÉ JUEGAS HOY?',
+  'QUE GANE EL MEJOR',
+  'JUEGOS DE CARTAS · MULTIJUGADOR',
+  'FAROL, ESCALERA O FULL HOUSE',
+];
+const hoverPhrases = {
+  mus:   ['EL CLÁSICO VASCO', 'GRANDE · CHICA · PARES · JUEGO', '¿TIENES MUS?'],
+  caida: ['RECOGE Y ESCALA', '¡CAÍDA!', 'CANTOS Y ESCALERAS'],
+  poker: ['ALL IN', 'TEXAS HOLD\'EM', '¿TIENES EL FAROL?'],
+};
+let phraseIdx = 0;
+let phraseTimer = null;
+let isHoverPhrase = false;
+
+function rotatePhrases() {
+  if (isHoverPhrase) return;
+  phraseIdx = (phraseIdx + 1) % phrases.length;
+  footerEl.style.opacity = '0';
+  setTimeout(() => {
+    footerEl.textContent = phrases[phraseIdx];
+    footerEl.style.opacity = '1';
+  }, 300);
+}
+phraseTimer = setInterval(rotatePhrases, 3200);
+
+// Override footer on card hover
+const origSetHover = setHover;
+function setHover(game) {
+  origSetHover(game);
+  const pool = hoverPhrases[game];
+  const phrase = pool[Math.floor(Math.random() * pool.length)];
+  isHoverPhrase = true;
+  footerEl.style.opacity = '0';
+  setTimeout(() => { footerEl.textContent = phrase; footerEl.style.opacity = '1'; }, 200);
+}
+const origClearHover = clearHover;
+function clearHover() {
+  origClearHover();
+  isHoverPhrase = false;
+  footerEl.style.opacity = '0';
+  setTimeout(() => { footerEl.textContent = phrases[phraseIdx]; footerEl.style.opacity = '1'; }, 200);
+}
+
+// ── LIVE PLAYER COUNTER ───────────────────────────────────────────────────────
+const SERVER_URL = `wss://${location.host}`;
+let countWs = null;
+
+function connectCounter() {
+  try {
+    countWs = new WebSocket(SERVER_URL);
+    countWs.onmessage = e => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'online_counts') {
+          updateCount('mus',   msg.mus   || 0);
+          updateCount('caida', msg.caida || 0);
+          updateCount('poker', msg.poker || 0);
+        }
+      } catch {}
+    };
+    countWs.onopen = () => {
+      countWs.send(JSON.stringify({ type: 'getOnlineCounts' }));
+    };
+    countWs.onclose = () => setTimeout(connectCounter, 8000);
+    countWs.onerror = () => {};
+  } catch {}
+}
+
+function updateCount(game, n) {
+  const el = document.getElementById(`online-${game}`);
+  if (!el) return;
+  el.textContent = n === 0 ? 'nadie online' : n === 1 ? '1 jugador online' : `${n} jugadores online`;
+}
+
+// Request counts every 15s
+connectCounter();
+setInterval(() => {
+  if (countWs && countWs.readyState === 1) {
+    countWs.send(JSON.stringify({ type: 'getOnlineCounts' }));
   }
+}, 15000);
 
-  function clearHover() {
-    if (!current) return;
-    document.getElementById(layers[current]).style.opacity = '0';
-    document.getElementById('bg-default').style.opacity = '1';
-    document.body.className = '';
-    current = null;
-  }
+// ── FALLING CARDS ─────────────────────────────────────────────────────────────
+const fallLayer = document.getElementById('fall-layer');
+let fallInterval = null;
+
+const fallConfig = {
+  mus:   { logo:'🃏', extras:['♣','♠','♥','♦','7','3','1'], opacity:0.24, glow:'rgba(39,180,80,0.5)' },
+  caida: { logo:'🎴', extras:['♣','♠','♥','♦','7','3','1'], opacity:0.24, glow:'rgba(60,140,230,0.5)' },
+  poker: { logo:'♠',  extras:['♥','♦','♣','A','K','Q','J'], opacity:0.28, glow:'rgba(230,60,60,0.5)' },
+};
+
+function pickSymbol(game) {
+  const cfg = fallConfig[game];
+  return Math.random() < 0.1
+    ? cfg.extras[Math.floor(Math.random() * cfg.extras.length)]
+    : cfg.logo;
+}
+
+function spawnCard(game) {
+  const cfg = fallConfig[game];
+  const el  = document.createElement('div');
+  el.className = 'fall-card';
+  const sym    = pickSymbol(game);
+  const isLogo = sym === cfg.logo;
+  el.textContent = sym;
+  const left = 5  + Math.random() * 90;
+  const size = isLogo ? (2.0 + Math.random() * 2.6) : (1.1 + Math.random() * 1.5);
+  const dur  = 4.0 + Math.random() * 5.0;
+  const r0   = -30 + Math.random() * 60;
+  const r1   = r0  + (-90 + Math.random() * 180);
+  const tints = { mus:'#7bc47b', caida:'#6ab0e8', poker:'#e87a7a' };
+  const tint  = isLogo ? '' : `color:${tints[game]};`;
+  el.style.cssText = `left:${left}vw;font-size:${size}rem;animation-duration:${dur}s;--r0:${r0}deg;--r1:${r1}deg;--peak-opacity:${cfg.opacity};--fall-glow:${cfg.glow};${tint}`;
+  fallLayer.appendChild(el);
+  setTimeout(() => el.remove(), (dur + 0.3) * 1000);
+}
+
+function startFalling(game) {
+  stopFalling();
+  spawnCard(game);
+  setTimeout(() => { if (current === game) spawnCard(game); }, 220);
+  setTimeout(() => { if (current === game) spawnCard(game); }, 500);
+  fallInterval = setInterval(() => { if (current === game) spawnCard(game); }, 480);
+}
+function stopFalling() {
+  clearInterval(fallInterval);
+  fallInterval = null;
+}
+
+// ── AMBIENT PARTICLES ─────────────────────────────────────────────────────────
+const suits  = ['♠','♥','♦','♣'];
+const colors = ['rgba(201,168,76,0.5)','rgba(180,40,40,0.5)','rgba(220,220,220,0.32)'];
+const container = document.getElementById('particles');
+
+for (let i = 0; i < 22; i++) {
+  const el    = document.createElement('div');
+  el.className = 'particle';
+  el.textContent = suits[Math.floor(Math.random() * suits.length)];
+  const size  = 0.6 + Math.random() * 0.9;
+  const left  = Math.random() * 100;
+  const dur   = 18 + Math.random() * 28;
+  const delay = -(Math.random() * dur);
+  const color = colors[Math.floor(Math.random() * colors.length)];
+  el.style.cssText = `left:${left}vw;font-size:${size}rem;color:${color};animation-duration:${dur}s;animation-delay:${delay}s;`;
+  container.appendChild(el);
+}
 </script>
 </body>
 </html>

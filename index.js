@@ -2082,6 +2082,12 @@ wss.on('connection', (ws) => {
     const game = msg.game;
 
     // ── CREATE ROOM ──────────────────────────────────────────────────────────
+    if (msg.type === 'getOnlineCounts') {
+      const countPlayers = (store) => Object.values(store).reduce((s, r) => s + r.players.length, 0);
+      sendTo({ ws }, { type: 'online_counts', mus: countPlayers(musRooms), caida: countPlayers(caidaRooms), poker: countPlayers(pokerRooms) });
+      return;
+    }
+
     if (msg.type === 'createRoom') {
       if (!game) return;
       playerGame = game;
