@@ -1610,7 +1610,7 @@ const POKER_RANK_VAL = {'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,
 
 function pokerMakeDeck() {
   const d = [];
-  for (const s of POKER_SUITS) for (const r of POKER_RANKS) d.push({ suit: s, rank: r, val: POKER_POKER_RANK_VAL[r] });
+  for (const s of POKER_SUITS) for (const r of POKER_RANKS) d.push({ suit: s, rank: r, val: POKER_RANK_VAL[r] });
   return d;
 }
 function pokerShuffle(arr) {

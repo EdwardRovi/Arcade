@@ -595,7 +595,6 @@ function renderTableau() {
 
 // ─── Stock click ───────────────────────────────────────────
 document.getElementById('stock').addEventListener('click', e => {
-  if (dragState) return;
   saveHistory();
   if (stock.length === 0) {
     // Recycle waste
@@ -614,7 +613,6 @@ document.getElementById('stock').addEventListener('click', e => {
 
 // ─── Click-to-Select / Click-to-Place ──────────────────────
 let selectedCards = null;   // { cards, origin } or null
-let dragState = null;       // kept for compatibility (unused)
 
 // Error message display
 function showMoveError(msg) {
