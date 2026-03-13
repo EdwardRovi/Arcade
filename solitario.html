@@ -18,11 +18,11 @@ body{cursor:none;}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 30%,rgba(124,58,237,0.18) 0%,transparent 70%);pointer-events:none;z-index:0;}
 
 /* ── CUSTOM CURSOR ── */
-#cursor{position:fixed;width:20px;height:20px;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);font-size:18px;transition:transform 0.08s;will-change:left,top;}
+#cursor{position:fixed;width:24px;height:24px;pointer-events:none;z-index:2147483647;transform:translate(-50%,-50%);font-size:18px;transition:transform 0.08s;isolation:isolate;}
 #cursor.selecting{transform:translate(-50%,-50%) scale(1.3);}
 
 /* ── BACK BUTTON ── */
-.back-btn{position:fixed;top:12px;left:14px;z-index:200;font-family:'Cinzel',serif;font-size:0.56rem;letter-spacing:0.12em;color:rgba(192,132,252,0.6);text-decoration:none;padding:5px 9px;border:1px solid rgba(192,132,252,0.22);border-radius:4px;background:rgba(13,7,24,0.6);}
+.back-btn{position:fixed;top:12px;left:14px;z-index:2147483646;font-family:'Cinzel',serif;font-size:0.56rem;letter-spacing:0.12em;color:rgba(192,132,252,0.6);text-decoration:none;padding:5px 9px;border:1px solid rgba(192,132,252,0.22);border-radius:4px;background:rgba(13,7,24,0.6);}
 .back-btn:hover{color:var(--purple3);border-color:rgba(192,132,252,0.5);}
 
 /* ── CONTROLS (top right) ── */
@@ -231,8 +231,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 </style>
 </head>
 <body>
-<div id="cursor">🕷️</div>
-<a class="back-btn" href="/">← ARCADE</a>
 <div id="ingame-name"></div>
 
 <!-- ── MENU OVERLAY ── -->
@@ -970,5 +968,9 @@ document.getElementById('win-overlay').querySelector('button').insertAdjacentHTM
 // ── Boot ──
 showMenu();
 </script>
+
+<!-- Cursor and back button rendered LAST so they're on top of everything -->
+<a class="back-btn" href="/">← ARCADE</a>
+<div id="cursor">🕷️</div>
 </body>
 </html>

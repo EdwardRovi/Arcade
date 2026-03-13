@@ -33,6 +33,9 @@ body { cursor: none; }
 /* ── BACKGROUND LAYERS ─────────────────────────────────────────────────────── */
 .bg-layer { position:fixed; inset:0; pointer-events:none; transition:opacity 0.9s ease; }
 
+/* The 4-color animated canvas sits behind everything */
+#bg-canvas { position:fixed; inset:0; pointer-events:none; z-index:0; }
+
 #bg-default {
   opacity:1;
   background:
@@ -425,6 +428,9 @@ body.hover-solitario .footer { color:rgba(192,132,252,0.4); }
 <!-- Custom cursor -->
 <div id="cursor">♠</div>
 
+<!-- Animated 4-color wave background -->
+<canvas id="bg-canvas"></canvas>
+
 <!-- Background layers -->
 <div id="bg-default"       class="bg-layer"></div>
 <div id="bg-mus"          class="bg-layer"></div>
@@ -684,6 +690,78 @@ for (let i = 0; i < 22; i++) {
   el.style.cssText = `left:${left}vw;font-size:${size}rem;color:${color};animation-duration:${dur}s;animation-delay:${delay}s;`;
   container.appendChild(el);
 }
+
+// ── 4-COLOR ANIMATED WAVE BACKGROUND ─────────────────────────────────────────
+(function(){
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+
+  // The 4 game colors: green(Mus), blue(Caída), red(Poker), purple(Solitario)
+  const blobs = [
+    { x:0.12, y:0.45, r:0.52, color:[18,110,42],   vx:0.00018, vy:0.00012, phase:0      },
+    { x:0.88, y:0.42, r:0.50, color:[15,55,160],    vx:-0.00015,vy:0.00016, phase:1.8    },
+    { x:0.50, y:0.95, r:0.55, color:[155,12,12],    vx:0.00010, vy:-0.00014,phase:3.4    },
+    { x:0.50, y:0.10, r:0.48, color:[109,40,217],   vx:-0.00012,vy:0.00018, phase:5.1    },
+  ];
+
+  // Secondary smaller blobs for more interesting movement
+  const blobs2 = [
+    { x:0.30, y:0.70, r:0.30, color:[18,110,42],   vx:-0.00022,vy:0.00008, phase:2.2    },
+    { x:0.70, y:0.30, r:0.28, color:[15,55,160],    vx:0.00019, vy:-0.00020,phase:4.0    },
+    { x:0.20, y:0.20, r:0.28, color:[155,12,12],    vx:0.00014, vy:0.00022,  phase:0.8   },
+    { x:0.80, y:0.80, r:0.32, color:[109,40,217],   vx:-0.00016,vy:-0.00010, phase:3.0   },
+  ];
+
+  let W, H;
+  function resize(){
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  let t = 0;
+  function draw(){
+    t += 16;
+    ctx.clearRect(0,0,W,H);
+
+    // Dark base
+    ctx.fillStyle = '#060809';
+    ctx.fillRect(0,0,W,H);
+
+    // Draw each blob with radial gradient
+    function drawBlob(blob, alpha){
+      const ox = Math.sin(t * blob.vx * 1000 + blob.phase) * 0.18;
+      const oy = Math.cos(t * blob.vy * 1000 + blob.phase + 1) * 0.14;
+      const bx = (blob.x + ox) * W;
+      const by = (blob.y + oy) * H;
+      const br = blob.r * Math.min(W, H);
+      const grad = ctx.createRadialGradient(bx, by, 0, bx, by, br);
+      const [r,g,b] = blob.color;
+      grad.addColorStop(0,   `rgba(${r},${g},${b},${alpha})`);
+      grad.addColorStop(0.45,`rgba(${r},${g},${b},${alpha*0.55})`);
+      grad.addColorStop(1,   `rgba(${r},${g},${b},0)`);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.ellipse(bx, by, br * 1.2, br * 0.85, t * 0.00003, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Draw primary blobs
+    [...blobs, ...blobs2].forEach(b => drawBlob(b, 0.38));
+
+    // Subtle dark center vignette
+    const vig = ctx.createRadialGradient(W/2,H/2,0, W/2,H/2,Math.max(W,H)*0.7);
+    vig.addColorStop(0,   'rgba(0,0,0,0)');
+    vig.addColorStop(0.6, 'rgba(0,0,0,0.1)');
+    vig.addColorStop(1,   'rgba(0,0,0,0.55)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0,0,W,H);
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
 </script>
 </body>
 </html>
