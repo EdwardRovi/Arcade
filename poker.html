@@ -656,7 +656,7 @@ function _buildHandEnd(data){
       </div>`;
     });
 
-    // Folded players — hidden by default, reveal button
+    // Folded players — only the player themselves can reveal their own hand
     if(folded.length > 0){
       html += `<div style="margin-top:0.5rem;border-top:1px solid rgba(255,255,255,0.07);padding-top:0.45rem">
         <div style="font-size:0.52rem;color:var(--muted);letter-spacing:0.12em;margin-bottom:0.38rem;text-align:center">SE RETIRARON</div>`;
@@ -664,24 +664,33 @@ function _buildHandEnd(data){
         const isRevealed = revealedFolded.has(p.name);
         const comm = gs ? gs.community||[] : [];
         const hn = p.hand&&p.hand.length ? bestHandName(p.hand, comm) : null;
-        if(isRevealed && p.hand && p.hand.length){
-          // Show cards + hide button
-          html += `<div class="showdown-player folded-player">
-            <div class="showdown-name" style="opacity:0.55">${esc(p.name)}</div>
-            <div class="showdown-cards">${p.hand.map(c=>mkCard(c,'sz-summary')).join('')}</div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin-left:auto">
-              ${hn?`<div class="showdown-handname" style="opacity:0.7">${esc(hn)}</div>`:''}
-              <button class="reveal-btn hide-btn" onclick="toggleReveal('${esc(p.name)}')">Ocultar</button>
-            </div>
-          </div>`;
+
+        if(p.isYou){
+          // My own folded hand — I can choose to reveal it
+          if(isRevealed && p.hand && p.hand.length){
+            html += `<div class="showdown-player folded-player">
+              <div class="showdown-name" style="opacity:0.65">${esc(p.name)} <span style="font-size:0.42rem;color:var(--muted)">(tú)</span></div>
+              <div class="showdown-cards">${p.hand.map(c=>mkCard(c,'sz-summary')).join('')}</div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin-left:auto">
+                ${hn?`<div class="showdown-handname" style="opacity:0.7">${esc(hn)}</div>`:''}
+                <button class="reveal-btn hide-btn" onclick="toggleReveal('${esc(p.name)}')">Ocultar</button>
+              </div>
+            </div>`;
+          } else {
+            html += `<div class="showdown-player folded-player">
+              <div class="showdown-name" style="opacity:0.65">${esc(p.name)} <span style="font-size:0.42rem;color:var(--muted)">(tú)</span></div>
+              <div style="display:flex;gap:3px;">${Array(p.hand&&p.hand.length||2).fill('<div class="card back sz-summary"></div>').join('')}</div>
+              ${p.hand&&p.hand.length
+                ? `<button class="reveal-btn" onclick="toggleReveal('${esc(p.name)}')">Mostrar mi mano</button>`
+                : `<span style="font-size:0.48rem;color:var(--muted);margin-left:auto">—</span>`}
+            </div>`;
+          }
         } else {
-          // Show reveal button
+          // Other folded players — always hidden, no button for others
           html += `<div class="showdown-player folded-player">
-            <div class="showdown-name" style="opacity:0.5">${esc(p.name)}</div>
+            <div class="showdown-name" style="opacity:0.45">${esc(p.name)}</div>
             <div style="display:flex;gap:3px;">${Array(p.hand&&p.hand.length||2).fill('<div class="card back sz-summary"></div>').join('')}</div>
-            ${p.hand&&p.hand.length
-              ? `<button class="reveal-btn" onclick="toggleReveal('${esc(p.name)}')">Mostrar mano</button>`
-              : `<span style="font-size:0.48rem;color:var(--muted);margin-left:auto">Sin cartas</span>`}
+            <span style="font-size:0.46rem;color:var(--muted);margin-left:auto;font-style:italic">Retirado</span>
           </div>`;
         }
       });

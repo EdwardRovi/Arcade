@@ -18,7 +18,7 @@ body{cursor:none;}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 30%,rgba(124,58,237,0.18) 0%,transparent 70%);pointer-events:none;z-index:0;}
 
 /* ── CUSTOM CURSOR ── */
-#cursor{position:fixed;width:20px;height:20px;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);font-size:18px;transition:transform 0.08s;}
+#cursor{position:fixed;width:20px;height:20px;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);font-size:18px;transition:transform 0.08s;will-change:left,top;}
 #cursor.selecting{transform:translate(-50%,-50%) scale(1.3);}
 
 /* ── BACK BUTTON ── */
@@ -37,11 +37,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 #table{position:fixed;inset:0;padding:52px 12px 12px;display:flex;flex-direction:column;gap:10px;z-index:1;}
 
 /* Top row: stock, waste, spacer, 4 foundations */
-#top-row{display:flex;align-items:flex-start;gap:8px;flex-shrink:0;}
+#top-row{display:flex;align-items:flex-start;gap:8px;flex-shrink:0;justify-content:center;max-width:calc(var(--card-w)*9 + 8px*8);margin:0 auto;width:100%;}
 #top-row .spacer{flex:1;}
 
-/* Tableau row */
-#tableau{display:flex;gap:8px;flex:1;align-items:flex-start;}
+/* Tableau row — centered, fixed width matching 7 columns */
+#tableau{display:flex;gap:8px;flex:1;align-items:flex-start;justify-content:center;max-width:calc(var(--card-w)*9 + 8px*8);margin:0 auto;width:100%;}
 
 /* ── SLOTS ── */
 .slot{
@@ -75,11 +75,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 }
 .card.face-up.red{color:#c0392b;}
 .card.face-up.black{color:#1a1a2e;}
-/* Selection glow */
+/* Selection glow — no transform to avoid creating stacking context above cursor */
 .card.selected{
-  box-shadow:0 0 0 2.5px #a855f7,0 0 20px rgba(168,85,247,0.65),0 2px 8px rgba(0,0,0,0.5);
-  transform:translateY(-5px) scale(1.03);
+  outline:2.5px solid #a855f7;
+  box-shadow:0 0 0 2.5px #a855f7,0 0 22px rgba(168,85,247,0.7),0 4px 12px rgba(0,0,0,0.5);
   z-index:500!important;
+  margin-top:-4px;
 }
 /* Card inner layout */
 .c-tl{position:absolute;top:4px;left:5px;line-height:1.1;}
