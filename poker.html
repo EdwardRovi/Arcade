@@ -511,6 +511,7 @@ function addChat(from,msg){
 function sendChat(){const i=document.getElementById('chatinp');const t=i.value.trim();if(!t)return;send({type:'chat',text:t});i.value='';}
 
 function handleMsg(msg){
+  console.log('[poker] msg:', msg.type, msg.state?.gameState || '');
   if(msg.type==='joined'){
     myId=msg.playerId; myRoom=msg.roomCode;
     document.getElementById('lform').style.display='none';
@@ -519,12 +520,14 @@ function handleMsg(msg){
   }
   if(msg.type==='state'){
     gs=msg.state;
+    console.log('[poker] gameState=', msg.state.gameState, 'players=', msg.state.players?.length);
     if(msg.state.gameState==='waiting'){
       renderWaiting(msg.state);
     } else {
+      console.log('[poker] switching to game screen');
       document.getElementById('lobby').style.display='none';
       document.getElementById('game').classList.add('active');
-      renderGame(msg.state);
+      try { renderGame(msg.state); } catch(e) { console.error('[poker] renderGame error:', e); }
       if(msg.state.gameState!=='hand_end') document.getElementById('hand-overlay').classList.remove('vis');
     }
   }

@@ -438,6 +438,8 @@ const RANK_V = { A:1,2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,J:11,Q:12,K:13 };
 const RED    = new Set(['♥','♦']);
 const VERT_FACE_UP   = 20;  // px between face-up cards in tableau
 const VERT_FACE_DOWN = 14;  // px between face-down cards
+const CARD_H = 100;
+const CARD_W = 72;
 
 // ══════════════════════════════════════════════════════════
 // STATE
@@ -579,7 +581,7 @@ function renderTableau() {
       el.appendChild(div);
       const prev = pile[i-1];
       const gap = card.faceUp ? VERT_FACE_UP : VERT_FACE_DOWN;
-      colHeight = yOff + parseInt(getComputedStyle(document.documentElement).getPropertyValue('--card-h'));
+      colHeight = yOff + CARD_H;
       if (i < pile.length-1) yOff += gap;
     });
     // Resize column height

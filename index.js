@@ -2404,7 +2404,8 @@ wss.on('connection', (ws) => {
     if (playerGame === 'poker') {
       const room = playerRoom;
       if (msg.type === 'startGame') {
-        if (!room || room.state !== 'waiting') return;
+        console.log(`[poker] startGame from ${playerData.name}, room=${room?.code}, state=${room?.state}, players=${room?.players?.length}`);
+        if (!room || room.state !== 'waiting') { console.log('[poker] startGame rejected: state=', room?.state); return; }
         if (room.players.length < 2) { pokerSendTo(playerData, { type: 'error', msg: 'Se necesitan al menos 2 jugadores' }); return; }
         pokerStartGame(room); return;
       }
