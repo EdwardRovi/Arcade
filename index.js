@@ -1734,8 +1734,10 @@ function pokerBuildStateFor(room, player) {
       isDealer: i === room.dealer,
       isYou: p.id === player.id,
       isHost: i === 0,
-      hand: p.id === player.id ? p.hand : (room.state === 'showdown' && !p.folded ? p.hand : null),
-      handName: room.state === 'showdown' && !p.folded ? p.handName : null,
+      hand: p.id === player.id ? p.hand : (
+        (room.state === 'showdown' || (room.currentTurn === -1 && p.allIn && !p.folded)) && !p.folded ? p.hand : null
+      ),
+      handName: (room.state === 'showdown' || room.currentTurn === -1) && !p.folded ? p.handName : null,
       cardCount: p.hand ? p.hand.length : 0,
     })),
     community: room.community,
@@ -1932,9 +1934,11 @@ function pokerAdvanceStreet(room) {
     idx = (idx + 1) % n;
     checked++;
   }
-  // All remaining players are all-in — run out the board
+  // All-in runout: reveal all hands, send state, then pause before next street
   room.currentTurn = -1;
-  pokerAdvanceStreet(room);
+  pokerBroadcast(room, { type: 'allin_runout', players: active.map(p => ({ name: p.name, hand: p.hand })) });
+  pokerSendState(room);
+  setTimeout(() => pokerAdvanceStreet(room), 2200);
 }
 
 function cardStr(c) { return `${c.rank}${c.suit}`; }
@@ -1997,7 +2001,23 @@ function pokerEndHand(room) {
   room.state = 'hand_end';
   room.currentTurn = -1;
   pokerSendState(room);
-  pokerBroadcast(room, { type: 'hand_end', winners: room.winners, pot: room.pot });
+  // Send each player their own hand_end with full player hands included
+  room.players.forEach(recipient => {
+    pokerSendTo(recipient, {
+      type: 'hand_end',
+      winners: room.winners,
+      pot: room.pot,
+      // Include all non-eliminated player hands (folded ones hidden by default, revealed on request)
+      playerHands: room.players.filter(p => !p.eliminated).map(p => ({
+        id: p.id,
+        name: p.name,
+        hand: p.hand || [],
+        folded: p.folded || false,
+        handName: p.handName || null,
+        isYou: p.id === recipient.id,
+      }))
+    });
+  });
 }
 
 function pokerHandleAction(room, playerIdx, action, amount) {
