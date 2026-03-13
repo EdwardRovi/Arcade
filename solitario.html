@@ -110,8 +110,110 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .confetti{position:fixed;width:8px;height:8px;border-radius:2px;pointer-events:none;z-index:999;animation:fall linear forwards;}
 @keyframes fall{0%{opacity:1;transform:translateY(-20px) rotate(0deg);}100%{opacity:0;transform:translateY(100vh) rotate(720deg);}}
 
-/* ── MOBILE ── */
+/* ── MENU OVERLAY ── */
+#menu-overlay{
+  position:fixed;inset:0;z-index:1000;
+  background:radial-gradient(ellipse 100% 100% at 50% 40%,rgba(88,28,180,0.25) 0%,var(--bg) 70%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:1.5rem;gap:1.2rem;
+}
+#menu-overlay.hidden{display:none;}
+
+.menu-title{
+  font-family:'Cinzel Decorative',cursive;
+  font-size:clamp(1.8rem,6vw,3rem);
+  color:var(--purple3);
+  letter-spacing:0.2em;
+  text-shadow:0 0 40px rgba(168,85,247,0.5),0 0 80px rgba(124,58,237,0.3);
+  text-align:center;
+}
+.menu-spider{font-size:clamp(2rem,6vw,3.2rem);display:block;margin-bottom:0.2rem;}
+.menu-sub{font-size:0.62rem;color:var(--muted);letter-spacing:0.35em;margin-top:-0.5rem;}
+
+.menu-panel{
+  background:rgba(124,58,237,0.08);
+  border:1px solid rgba(192,132,252,0.2);
+  border-radius:10px;
+  padding:1.4rem 1.8rem;
+  width:100%;max-width:360px;
+  display:flex;flex-direction:column;gap:0.75rem;
+}
+
+.menu-label{font-size:0.56rem;color:var(--muted);letter-spacing:0.14em;margin-bottom:0.2rem;display:block;}
+.menu-input{
+  width:100%;
+  background:rgba(124,58,237,0.1);
+  border:1px solid rgba(192,132,252,0.25);
+  color:var(--text);
+  font-family:'Cinzel',serif;
+  font-size:0.95rem;
+  padding:0.5rem 0.8rem;
+  border-radius:5px;
+  outline:none;
+  letter-spacing:0.08em;
+  text-align:center;
+}
+.menu-input:focus{border-color:var(--purple2);}
+
+.menu-play-btn{
+  background:linear-gradient(135deg,rgba(124,58,237,0.6),rgba(168,85,247,0.5));
+  border:1px solid rgba(192,132,252,0.45);
+  color:var(--text);
+  font-family:'Cinzel Decorative',cursive;
+  font-size:0.72rem;
+  letter-spacing:0.18em;
+  padding:0.65rem 1.2rem;
+  border-radius:6px;
+  cursor:none;
+  transition:all 0.2s;
+  width:100%;
+  text-shadow:0 0 12px rgba(192,132,252,0.5);
+}
+.menu-play-btn:hover{
+  background:linear-gradient(135deg,rgba(124,58,237,0.85),rgba(168,85,247,0.75));
+  box-shadow:0 0 20px rgba(168,85,247,0.35);
+}
+
+/* Stats grid */
+.stats-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;
+  width:100%;max-width:360px;
+}
+.stat-card{
+  background:rgba(124,58,237,0.08);
+  border:1px solid rgba(192,132,252,0.15);
+  border-radius:7px;padding:0.6rem 0.5rem;
+  text-align:center;
+}
+.stat-card-val{
+  font-family:'Cinzel Decorative',cursive;
+  font-size:1.3rem;color:var(--purple3);
+  display:block;line-height:1;
+}
+.stat-card-lbl{font-size:0.48rem;color:var(--muted);letter-spacing:0.12em;margin-top:0.25rem;display:block;}
+.stat-card.wide{grid-column:span 2;}
+
+/* Welcome back banner */
+.welcome-back{
+  font-size:0.62rem;color:var(--purple3);
+  letter-spacing:0.1em;text-align:center;
+  opacity:0.85;
+}
+
+/* In-game player name display */
+#ingame-name{
+  position:fixed;top:10px;left:50%;transform:translateX(-50%);
+  z-index:200;font-size:0.52rem;color:rgba(192,132,252,0.5);
+  letter-spacing:0.14em;pointer-events:none;white-space:nowrap;
+}
+
 @media(max-width:540px){
+  .menu-title{letter-spacing:0.1em;}
+  .menu-panel{padding:1rem 1.1rem;}
+  .menu-play-btn{font-size:0.62rem;cursor:auto;}
+  .menu-input{font-size:0.82rem;}
+  .stat-card-val{font-size:1.1rem;}
+}
   :root{--card-w:44px;--card-h:62px;--radius:5px;}
   body{cursor:auto;}
   #cursor{display:none;}
@@ -130,6 +232,49 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <body>
 <div id="cursor">🕷️</div>
 <a class="back-btn" href="/">← ARCADE</a>
+<div id="ingame-name"></div>
+
+<!-- ── MENU OVERLAY ── -->
+<div id="menu-overlay">
+  <span class="menu-spider">🕷️</span>
+  <div class="menu-title">SOLITARIO</div>
+  <div class="menu-sub">KLONDIKE</div>
+
+  <div class="menu-panel">
+    <div id="welcome-msg" class="welcome-back" style="display:none"></div>
+    <div>
+      <span class="menu-label">TU NOMBRE</span>
+      <input class="menu-input" id="menu-name" type="text" placeholder="Jugador..." maxlength="18" autocomplete="off" spellcheck="false">
+    </div>
+    <button class="menu-play-btn" onclick="startFromMenu()">✦ JUGAR</button>
+  </div>
+
+  <!-- Stats (only shown if there are games played) -->
+  <div id="stats-section" style="display:none;width:100%;max-width:360px;">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-card-val" id="st-played">0</span>
+        <span class="stat-card-lbl">PARTIDAS</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card-val" id="st-won">0</span>
+        <span class="stat-card-lbl">VICTORIAS</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card-val" id="st-winpct">0%</span>
+        <span class="stat-card-lbl">% VICTORIA</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card-val" id="st-bestscore">—</span>
+        <span class="stat-card-lbl">MEJOR PUNTUACIÓN</span>
+      </div>
+      <div class="stat-card wide">
+        <span class="stat-card-val" id="st-bestmoves">—</span>
+        <span class="stat-card-lbl">MEJOR EN MOVIMIENTOS</span>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="controls">
   <div class="stat-box"><span class="stat-lbl">PUNTOS</span><span class="stat-val" id="score-display">0</span></div>
@@ -209,38 +354,12 @@ function shuffle(arr){
 }
 
 // ══════════════════════════════════════════════════════════
-// NEW GAME
+// NEW GAME / HISTORY / WIN CHECK
+// (final implementations at end of script — these stubs are overridden)
 // ══════════════════════════════════════════════════════════
-function newGame(){
-  const deck=shuffle(makeDeck());
-  stock=[];waste=[];foundations=[[],[],[],[]];
-  tableau=[[],[],[],[],[],[],[]];
-  score=0;moves=0;history=[];selection=null;
-  let idx=0;
-  for(let col=0;col<7;col++){
-    for(let row=0;row<=col;row++){
-      const c=deck[idx++];
-      c.faceUp=(row===col);
-      tableau[col].push(c);
-    }
-  }
-  stock=deck.slice(idx).map(c=>({...c,faceUp:false}));
-  document.getElementById('win-overlay').classList.remove('vis');
-  render();
-  setHint('CLICK EN CARTA PARA SELECCIONAR · DOBLE CLICK AUTO-MOVER A FUNDACIÓN');
-}
-
-// ══════════════════════════════════════════════════════════
-// HISTORY / UNDO
-// ══════════════════════════════════════════════════════════
-function saveHistory(){
-  if(history.length>60)history.shift();
-  history.push({
-    stock:deepCopy(stock),waste:deepCopy(waste),
-    foundations:deepCopy(foundations),tableau:deepCopy(tableau),
-    score,moves
-  });
-}
+function newGame(){ }
+function saveHistory(){ }
+function checkWin(){ }
 function deepCopy(x){return JSON.parse(JSON.stringify(x));}
 function undoMove(){
   if(!history.length){setHint('Sin movimientos para deshacer',true);return;}
@@ -595,17 +714,7 @@ function drawStock(){
   render();
 }
 
-// ══════════════════════════════════════════════════════════
-// WIN CHECK
-// ══════════════════════════════════════════════════════════
-function checkWin(){
-  if(foundations.every(p=>p.length===13)){
-    addScore(500);
-    document.getElementById('win-msg').textContent=`¡${score} puntos en ${moves} movimientos!`;
-    document.getElementById('win-overlay').classList.add('vis');
-    spawnConfetti();
-  }
-}
+
 
 function spawnConfetti(){
   const colors=['#a855f7','#7c3aed','#c084fc','#f0e8ff','#60a5fa','#f472b6'];
@@ -709,9 +818,156 @@ document.addEventListener('touchend',e=>{
 },{passive:false});
 
 // ══════════════════════════════════════════════════════════
-// START
+// MENU & STATS (localStorage)
 // ══════════════════════════════════════════════════════════
-newGame();
+const STORE_KEY = 'sol_stats_v1';
+let playerName = 'Jugador';
+let gameStarted = false;   // true once a game is actively in progress
+
+function loadStats() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+  catch { return {}; }
+}
+function saveStats(s) {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(s)); } catch {}
+}
+function defaultStats() {
+  return { name:'', played:0, won:0, bestScore:0, bestMoves:null };
+}
+function getStats() {
+  const s = loadStats();
+  return Object.assign(defaultStats(), s);
+}
+
+function updateStatsDisplay() {
+  const s = getStats();
+  const section = document.getElementById('stats-section');
+  if (s.played === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  document.getElementById('st-played').textContent   = s.played;
+  document.getElementById('st-won').textContent      = s.won;
+  const pct = s.played > 0 ? Math.round((s.won / s.played) * 100) : 0;
+  document.getElementById('st-winpct').textContent   = pct + '%';
+  document.getElementById('st-bestscore').textContent = s.bestScore > 0 ? s.bestScore : '—';
+  document.getElementById('st-bestmoves').textContent = s.bestMoves !== null ? s.bestMoves + ' movs' : '—';
+}
+
+function showMenu() {
+  const s = getStats();
+  const inp = document.getElementById('menu-name');
+  // Pre-fill name if known
+  if (s.name) {
+    inp.value = s.name;
+    const wm = document.getElementById('welcome-msg');
+    wm.style.display = 'block';
+    wm.textContent   = `✦ Bienvenido de vuelta, ${s.name}`;
+  }
+  updateStatsDisplay();
+  document.getElementById('menu-overlay').classList.remove('hidden');
+
+  // Enter key starts game
+  inp.onkeydown = e => { if (e.key === 'Enter') startFromMenu(); };
+  // Focus the input after a tick
+  setTimeout(() => inp.focus(), 80);
+}
+
+function startFromMenu() {
+  const inp   = document.getElementById('menu-name');
+  const name  = inp.value.trim() || 'Jugador';
+  playerName  = name;
+
+  // Save name
+  const s = getStats();
+  s.name  = name;
+  saveStats(s);
+
+  // Update in-game name label
+  document.getElementById('ingame-name').textContent = name.toUpperCase();
+
+  // Hide menu
+  document.getElementById('menu-overlay').classList.add('hidden');
+  gameStarted = false;   // will be set true on first move
+  newGame();
+}
+
+function recordGamePlayed() {
+  // Called once per game when the first move is made
+  if (gameStarted) return;
+  gameStarted = true;
+  const s = getStats();
+  s.played = (s.played || 0) + 1;
+  saveStats(s);
+}
+
+function recordWin(finalScore, finalMoves) {
+  const s = getStats();
+  s.won = (s.won || 0) + 1;
+  if (finalScore > (s.bestScore || 0))   s.bestScore  = finalScore;
+  if (s.bestMoves === null || finalMoves < s.bestMoves) s.bestMoves = finalMoves;
+  saveStats(s);
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT — hide game until menu exits
+// ══════════════════════════════════════════════════════════
+document.getElementById('controls').style.visibility = 'hidden';
+document.getElementById('table').style.visibility    = 'hidden';
+document.getElementById('hint').style.visibility     = 'hidden';
+document.getElementById('title').style.visibility    = 'hidden';
+
+function newGame() {
+  const deck = shuffle(makeDeck());
+  stock=[]; waste=[]; foundations=[[],[],[],[]];
+  tableau=[[],[],[],[],[],[],[]];
+  score=0; moves=0; history=[]; selection=null;
+  gameStarted = false;
+  let idx=0;
+  for(let col=0;col<7;col++){
+    for(let row=0;row<=col;row++){
+      const c=deck[idx++];
+      c.faceUp=(row===col);
+      tableau[col].push(c);
+    }
+  }
+  stock=deck.slice(idx).map(c=>({...c,faceUp:false}));
+  // Reveal game UI
+  document.getElementById('controls').style.visibility = '';
+  document.getElementById('table').style.visibility    = '';
+  document.getElementById('hint').style.visibility     = '';
+  document.getElementById('title').style.visibility    = '';
+  document.getElementById('win-overlay').classList.remove('vis');
+  document.getElementById('menu-overlay').classList.add('hidden');
+  render();
+  setHint('CLICK EN CARTA PARA SELECCIONAR · DOBLE CLICK AUTO-MOVER A FUNDACIÓN');
+}
+
+function saveHistory() {
+  recordGamePlayed();
+  if(history.length>60)history.shift();
+  history.push({
+    stock:deepCopy(stock),waste:deepCopy(waste),
+    foundations:deepCopy(foundations),tableau:deepCopy(tableau),
+    score,moves
+  });
+}
+
+function checkWin(){
+  if(foundations.every(p=>p.length===13)){
+    addScore(500);
+    recordWin(score, moves);
+    document.getElementById('win-msg').textContent=`¡${score} puntos en ${moves} movimientos!`;
+    document.getElementById('win-overlay').classList.add('vis');
+    spawnConfetti();
+  }
+}
+
+// Win overlay: also allow going back to menu
+document.getElementById('win-overlay').querySelector('button').insertAdjacentHTML('afterend',
+  '<button onclick="showMenu()" style="margin-top:0.4rem;background:transparent;border:1px solid rgba(192,132,252,0.3);color:rgba(192,132,252,0.7);font-family:\'Cinzel\',serif;font-size:0.52rem;letter-spacing:0.1em;padding:0.35rem 0.9rem;border-radius:4px;cursor:none;">← Menú principal</button>'
+);
+
+// ── Boot ──
+showMenu();
 </script>
 </body>
 </html>
