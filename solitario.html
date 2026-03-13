@@ -13,6 +13,8 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Cinzel',serif;overflow:hidden;user-select:none;touch-action:manipulation;}
 body{cursor:none;}
+/* Force cursor:none on ALL elements so browser never reverts to system cursor */
+*{cursor:none!important;}
 
 /* ── BG ── */
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 30%,rgba(124,58,237,0.18) 0%,transparent 70%);pointer-events:none;z-index:0;}
@@ -84,10 +86,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 }
 /* Card inner layout */
 .c-tl{position:absolute;top:4px;left:5px;line-height:1.1;}
-.c-br{position:absolute;bottom:4px;right:5px;line-height:1.1;transform:rotate(180deg);}
+.c-br{position:absolute;bottom:4px;right:5px;line-height:1.1;rotate:180deg;}
 .c-rank{font-size:0.82rem;font-weight:700;display:block;}
 .c-suit{font-size:0.62rem;display:block;}
-.c-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.4rem;}
+.c-center{position:absolute;top:50%;left:50%;translate:-50% -50%;font-size:1.4rem;}
 
 /* ── WASTE ── */
 #waste{width:var(--card-w);height:var(--card-h);position:relative;flex-shrink:0;}
@@ -175,24 +177,40 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   box-shadow:0 0 20px rgba(168,85,247,0.35);
 }
 
-/* Stats grid */
-.stats-grid{
-  display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;
-  width:100%;max-width:360px;
+/* Leaderboard */
+.lb-wrap{width:100%;max-width:420px;display:flex;flex-direction:column;gap:0.5rem;}
+.lb-tabs{display:flex;gap:0.4rem;justify-content:center;}
+.lb-tab{
+  background:rgba(124,58,237,0.1);border:1px solid rgba(192,132,252,0.2);
+  color:var(--muted);font-family:'Cinzel',serif;font-size:0.52rem;
+  letter-spacing:0.12em;padding:0.3rem 0.9rem;border-radius:4px;cursor:none;
+  transition:all 0.18s;
 }
-.stat-card{
-  background:rgba(124,58,237,0.08);
-  border:1px solid rgba(192,132,252,0.15);
-  border-radius:7px;padding:0.6rem 0.5rem;
-  text-align:center;
+.lb-tab.active{background:rgba(124,58,237,0.35);border-color:rgba(192,132,252,0.55);color:var(--purple3);}
+.lb-table{
+  background:rgba(124,58,237,0.06);border:1px solid rgba(192,132,252,0.14);
+  border-radius:8px;overflow:hidden;
 }
-.stat-card-val{
-  font-family:'Cinzel Decorative',cursive;
-  font-size:1.3rem;color:var(--purple3);
-  display:block;line-height:1;
+.lb-head{
+  display:grid;grid-template-columns:28px 1fr 72px 72px;
+  padding:0.32rem 0.65rem;border-bottom:1px solid rgba(192,132,252,0.12);
 }
-.stat-card-lbl{font-size:0.48rem;color:var(--muted);letter-spacing:0.12em;margin-top:0.25rem;display:block;}
-.stat-card.wide{grid-column:span 2;}
+.lb-head span{font-size:0.42rem;color:var(--muted);letter-spacing:0.14em;}
+.lb-row{
+  display:grid;grid-template-columns:28px 1fr 72px 72px;
+  padding:0.38rem 0.65rem;border-bottom:1px solid rgba(192,132,252,0.06);
+  align-items:center;transition:background 0.15s;
+}
+.lb-row:last-child{border-bottom:none;}
+.lb-row.me{background:rgba(168,85,247,0.12);}
+.lb-rank{font-family:'Cinzel Decorative',cursive;font-size:0.65rem;color:var(--muted);}
+.lb-rank.gold{color:#f1c40f;} .lb-rank.silver{color:#bdc3c7;} .lb-rank.bronze{color:#cd7f32;}
+.lb-name{font-size:0.62rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lb-name.me{color:var(--purple3);}
+.lb-val{font-family:'Cinzel Decorative',cursive;font-size:0.62rem;color:var(--purple3);text-align:right;}
+.lb-sub{font-size:0.46rem;color:var(--muted);text-align:right;}
+.lb-empty{padding:1.2rem;text-align:center;font-size:0.58rem;color:var(--muted);font-style:italic;}
+.lb-loading{padding:1rem;text-align:center;font-size:0.55rem;color:var(--muted);}
 
 /* Welcome back banner */
 .welcome-back{
@@ -248,29 +266,14 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <button class="menu-play-btn" onclick="startFromMenu()">✦ JUGAR</button>
   </div>
 
-  <!-- Stats (only shown if there are games played) -->
-  <div id="stats-section" style="display:none;width:100%;max-width:360px;">
-    <div class="stats-grid">
-      <div class="stat-card">
-        <span class="stat-card-val" id="st-played">0</span>
-        <span class="stat-card-lbl">PARTIDAS</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-card-val" id="st-won">0</span>
-        <span class="stat-card-lbl">VICTORIAS</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-card-val" id="st-winpct">0%</span>
-        <span class="stat-card-lbl">% VICTORIA</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-card-val" id="st-bestscore">—</span>
-        <span class="stat-card-lbl">MEJOR PUNTUACIÓN</span>
-      </div>
-      <div class="stat-card wide">
-        <span class="stat-card-val" id="st-bestmoves">—</span>
-        <span class="stat-card-lbl">MEJOR EN MOVIMIENTOS</span>
-      </div>
+  <!-- Leaderboard -->
+  <div class="lb-wrap" id="lb-wrap">
+    <div class="lb-tabs">
+      <button class="lb-tab active" id="lb-tab-score" onclick="switchTab('score')">🏆 MAYOR PUNTUACIÓN</button>
+      <button class="lb-tab" id="lb-tab-moves" onclick="switchTab('moves')">⚡ MENOS MOVIMIENTOS</button>
+    </div>
+    <div class="lb-table" id="lb-table">
+      <div class="lb-loading">Conectando…</div>
     </div>
   </div>
 </div>
@@ -731,10 +734,13 @@ function spawnConfetti(){
 // ══════════════════════════════════════════════════════════
 // CURSOR
 // ══════════════════════════════════════════════════════════
+const _cur = document.getElementById('cursor');
 document.addEventListener('mousemove',e=>{
-  const cur=document.getElementById('cursor');
-  cur.style.left=e.clientX+'px';cur.style.top=e.clientY+'px';
-  cur.classList.toggle('selecting',!!selection);
+  _cur.style.left=e.clientX+'px';
+  _cur.style.top=e.clientY+'px';
+  _cur.classList.toggle('selecting',!!selection);
+  // Always keep cursor as last child of body = painted last = always on top
+  if(document.body.lastElementChild !== _cur) document.body.appendChild(_cur);
 });
 
 // ══════════════════════════════════════════════════════════
@@ -817,93 +823,126 @@ document.addEventListener('touchend',e=>{
 },{passive:false});
 
 // ══════════════════════════════════════════════════════════
-// MENU & STATS (localStorage)
+// MENU & LEADERBOARD (WebSocket global)
 // ══════════════════════════════════════════════════════════
-const STORE_KEY = 'sol_stats_v1';
-let playerName = 'Jugador';
-let gameStarted = false;   // true once a game is actively in progress
+const NAME_KEY = 'sol_name_v1';
+let playerName  = 'Jugador';
+let gameStarted = false;
+let lbWs        = null;
+let lbTab       = 'score';   // 'score' | 'moves'
+let lbData      = { topScore: [], topMoves: [] };
 
-function loadStats() {
-  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
-  catch { return {}; }
-}
-function saveStats(s) {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(s)); } catch {}
-}
-function defaultStats() {
-  return { name:'', played:0, won:0, bestScore:0, bestMoves:null };
-}
-function getStats() {
-  const s = loadStats();
-  return Object.assign(defaultStats(), s);
-}
-
-function updateStatsDisplay() {
-  const s = getStats();
-  const section = document.getElementById('stats-section');
-  if (s.played === 0) { section.style.display = 'none'; return; }
-  section.style.display = 'block';
-  document.getElementById('st-played').textContent   = s.played;
-  document.getElementById('st-won').textContent      = s.won;
-  const pct = s.played > 0 ? Math.round((s.won / s.played) * 100) : 0;
-  document.getElementById('st-winpct').textContent   = pct + '%';
-  document.getElementById('st-bestscore').textContent = s.bestScore > 0 ? s.bestScore : '—';
-  document.getElementById('st-bestmoves').textContent = s.bestMoves !== null ? s.bestMoves + ' movs' : '—';
+// ── WebSocket leaderboard connection ──
+function lbConnect() {
+  if (lbWs && lbWs.readyState < 2) return;
+  lbWs = new WebSocket(`wss://${location.host}`);
+  lbWs.onopen  = () => {
+    lbWs.send(JSON.stringify({ game:'solitario', type:'sol_getLeaderboard' }));
+  };
+  lbWs.onmessage = e => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'sol_leaderboard') {
+        lbData = msg;
+        renderLeaderboard();
+      }
+    } catch {}
+  };
+  lbWs.onclose = () => {
+    // Retry after 4s if menu still open
+    setTimeout(() => { if (!document.getElementById('menu-overlay').classList.contains('hidden')) lbConnect(); }, 4000);
+  };
 }
 
-function showMenu() {
-  const s = getStats();
-  const inp = document.getElementById('menu-name');
-  // Pre-fill name if known
-  if (s.name) {
-    inp.value = s.name;
-    const wm = document.getElementById('welcome-msg');
-    wm.style.display = 'block';
-    wm.textContent   = `✦ Bienvenido de vuelta, ${s.name}`;
+function lbSend(obj) {
+  if (lbWs && lbWs.readyState === 1) lbWs.send(JSON.stringify({ game:'solitario', ...obj }));
+}
+
+// ── Tab switch ──
+function switchTab(tab) {
+  lbTab = tab;
+  document.getElementById('lb-tab-score').classList.toggle('active', tab === 'score');
+  document.getElementById('lb-tab-moves').classList.toggle('active', tab === 'moves');
+  renderLeaderboard();
+}
+
+// ── Render leaderboard table ──
+function renderLeaderboard() {
+  const el    = document.getElementById('lb-table');
+  const rows  = lbTab === 'score' ? lbData.topScore : lbData.topMoves;
+  const medals = ['gold','silver','bronze'];
+
+  if (!rows || rows.length === 0) {
+    el.innerHTML = `<div class="lb-empty">Sé el primero en ganar 🕷️</div>`;
+    return;
   }
-  updateStatsDisplay();
-  document.getElementById('menu-overlay').classList.remove('hidden');
 
-  // Enter key starts game
-  inp.onkeydown = e => { if (e.key === 'Enter') startFromMenu(); };
-  // Focus the input after a tick
-  setTimeout(() => inp.focus(), 80);
+  const colLabel = lbTab === 'score' ? 'PUNTOS' : 'MOVS';
+  const subLabel = lbTab === 'score' ? 'MOVS'   : 'PUNTOS';
+
+  let html = `<div class="lb-head">
+    <span>#</span><span>JUGADOR</span><span style="text-align:right">${colLabel}</span><span style="text-align:right">${subLabel}</span>
+  </div>`;
+
+  rows.forEach((row, i) => {
+    const isMe = row.name === playerName;
+    const rankCls = medals[i] || '';
+    const main = lbTab === 'score' ? row.score : row.moves;
+    const sub  = lbTab === 'score' ? row.moves  : row.score;
+    const subTxt = lbTab === 'score' ? `${sub} movs` : `${sub} pts`;
+    html += `<div class="lb-row${isMe?' me':''}">
+      <div class="lb-rank ${rankCls}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</div>
+      <div class="lb-name${isMe?' me':''}">${row.name}</div>
+      <div class="lb-val">${main}</div>
+      <div class="lb-sub">${subTxt}</div>
+    </div>`;
+  });
+
+  el.innerHTML = html;
 }
 
-function startFromMenu() {
+// ── Show menu ──
+function showMenu() {
+  const saved = localStorage.getItem(NAME_KEY);
   const inp   = document.getElementById('menu-name');
-  const name  = inp.value.trim() || 'Jugador';
-  playerName  = name;
+  if (saved) {
+    playerName = saved;
+    inp.value  = saved;
+    const wm   = document.getElementById('welcome-msg');
+    wm.style.display = 'block';
+    wm.textContent   = `✦ Bienvenido de vuelta, ${saved}`;
+  }
+  document.getElementById('menu-overlay').classList.remove('hidden');
+  inp.onkeydown = e => { if (e.key === 'Enter') startFromMenu(); };
+  setTimeout(() => inp.focus(), 80);
+  lbConnect();
+}
 
-  // Save name
-  const s = getStats();
-  s.name  = name;
-  saveStats(s);
-
-  // Update in-game name label
+// ── Start game from menu ──
+function startFromMenu() {
+  const inp  = document.getElementById('menu-name');
+  const name = inp.value.trim() || 'Jugador';
+  playerName = name;
+  try { localStorage.setItem(NAME_KEY, name); } catch {}
   document.getElementById('ingame-name').textContent = name.toUpperCase();
-
-  // Hide menu
   document.getElementById('menu-overlay').classList.add('hidden');
-  gameStarted = false;   // will be set true on first move
+  gameStarted = false;
   newGame();
 }
 
+// ── Record first move of a game ──
 function recordGamePlayed() {
-  // Called once per game when the first move is made
   if (gameStarted) return;
   gameStarted = true;
-  const s = getStats();
-  s.played = (s.played || 0) + 1;
-  saveStats(s);
 }
 
+// ── Submit win to leaderboard ──
 function recordWin(finalScore, finalMoves) {
-  const s = getStats();
-  s.won = (s.won || 0) + 1;
-  if (finalScore > (s.bestScore || 0))   s.bestScore  = finalScore;
-  if (s.bestMoves === null || finalMoves < s.bestMoves) s.bestMoves = finalMoves;
-  saveStats(s);
+  lbConnect();
+  // Small delay to ensure connection
+  const send = () => lbSend({ type: 'sol_submitScore', name: playerName, score: finalScore, moves: finalMoves });
+  if (lbWs && lbWs.readyState === 1) send();
+  else setTimeout(send, 800);
 }
 
 // ══════════════════════════════════════════════════════════

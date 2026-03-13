@@ -29,6 +29,11 @@ function genCode(prefix, store) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// ███ SOLITARIO — LEADERBOARD STORE (in-memory, resets on server restart)
+// ═══════════════════════════════════════════════════════════════════════════════
+const solTop = { score: [], moves: [] };
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // ███ MUS
 // ═══════════════════════════════════════════════════════════════════════════════
 const musRooms = {};
@@ -2455,6 +2460,51 @@ wss.on('connection', (ws) => {
         return;
       }
     } // end playerGame===poker
+
+    // ══════════════════════════════════════════════════════
+    // ███ SOLITARIO — LEADERBOARD
+    // ══════════════════════════════════════════════════════
+    if (msg.game === 'solitario') {
+      playerGame = 'solitario';
+
+      // Get leaderboard
+      if (msg.type === 'sol_getLeaderboard') {
+        sendTo({ ws }, { type: 'sol_leaderboard', topScore: solTop.score, topMoves: solTop.moves });
+        return;
+      }
+
+      // Submit a win result
+      if (msg.type === 'sol_submitScore') {
+        const { name, score, moves } = msg;
+        if (!name || typeof score !== 'number' || typeof moves !== 'number') return;
+
+        // Top score (higher = better)
+        const existing = solTop.score.find(e => e.name === name);
+        if (!existing) {
+          solTop.score.push({ name, score, moves });
+        } else if (score > existing.score || (score === existing.score && moves < existing.moves)) {
+          existing.score = score; existing.moves = moves;
+        }
+        solTop.score.sort((a, b) => b.score - a.score || a.moves - b.moves);
+        solTop.score = solTop.score.slice(0, 10);
+
+        // Top efficiency = least moves among wins (lower = better)
+        const exMov = solTop.moves.find(e => e.name === name);
+        if (!exMov) {
+          solTop.moves.push({ name, moves, score });
+        } else if (moves < exMov.moves || (moves === exMov.moves && score > exMov.score)) {
+          exMov.moves = moves; exMov.score = score;
+        }
+        solTop.moves.sort((a, b) => a.moves - b.moves || b.score - a.score);
+        solTop.moves = solTop.moves.slice(0, 10);
+
+        // Broadcast updated leaderboard to all connected solitario listeners
+        const lb = { type: 'sol_leaderboard', topScore: solTop.score, topMoves: solTop.moves };
+        wss.clients.forEach(c => { if (c.readyState === 1) c.send(JSON.stringify(lb)); });
+        return;
+      }
+    }
+
   }); // end ws.on message
 
   ws.on('close', () => {
