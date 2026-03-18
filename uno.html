@@ -35,7 +35,12 @@ body::before {
 #lobby { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10; padding:1rem; overflow-y:auto; gap:0.8rem; }
 #lobby.hidden { display:none; }
 
-.uno-logo { font-family:'Cinzel Decorative',cursive; font-size:clamp(3rem,14vw,7rem); font-weight:900; letter-spacing:0.08em; line-height:1;
+.uno-logo {
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial Black', sans-serif;
+  font-weight: 900;
+  font-size: clamp(3rem,14vw,7rem);
+  letter-spacing: 0.04em;
+  line-height: 1;
   background: linear-gradient(135deg, var(--red) 0%, var(--yellow) 35%, var(--green) 65%, var(--blue) 100%);
   -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
   filter: drop-shadow(0 0 30px rgba(224,176,32,0.4));
@@ -73,7 +78,7 @@ body::before {
 #game.active { display:flex; }
 
 .topbar { display:flex; align-items:center; padding:0.28rem 0.65rem; background:rgba(0,0,0,0.7); border-bottom:1px solid rgba(255,255,255,0.08); flex-shrink:0; gap:0.5rem; }
-.topbar-title { font-family:'Cinzel Decorative',cursive; font-size:0.5rem; color:var(--gold); letter-spacing:0.1em; flex:1; }
+.topbar-title { font-family:'Helvetica Neue','Helvetica','Arial Black',sans-serif; font-weight:900; font-size:0.5rem; color:var(--gold); letter-spacing:0.1em; flex:1; }
 .topbar-info { font-size:0.44rem; color:var(--muted); flex:2; text-align:center; }
 .exit-btn { background:rgba(120,20,20,0.55); border:1px solid rgba(200,60,60,0.3); color:rgba(255,150,150,0.8); font-family:'Cinzel',serif; font-size:0.44rem; padding:0.2rem 0.5rem; border-radius:3px; cursor:pointer; white-space:nowrap; }
 .arcade-top-btn { font-family:'Cinzel',serif; font-size:0.44rem; letter-spacing:0.1em; color:rgba(201,168,76,0.55); text-decoration:none; padding:0.2rem 0.5rem; border:1px solid rgba(201,168,76,0.2); border-radius:3px; background:rgba(0,0,0,0.3); transition:all 0.2s; }
@@ -249,15 +254,126 @@ body::before {
 .wincon-btn:hover { border-color:var(--gold); }
 .wincon-btn.active { border-color:var(--gold); background:rgba(201,168,76,0.1); }
 
+
+/* ── NO MERCY BACKGROUND ─────────────────────────────────────────────── */
+@keyframes nm-pulse {
+  0%,100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 0.85; transform: scale(1.06); }
+}
+@keyframes nm-crack {
+  0%   { opacity: 0; transform: scaleX(0) rotate(-2deg); }
+  15%  { opacity: 1; transform: scaleX(1) rotate(-1deg); }
+  80%  { opacity: 0.7; }
+  100% { opacity: 0; transform: scaleX(1.02) rotate(0deg); }
+}
+@keyframes nm-flicker {
+  0%,100% { opacity: 1; }
+  92%     { opacity: 1; }
+  93%     { opacity: 0.3; }
+  94%     { opacity: 1; }
+  97%     { opacity: 0.5; }
+  98%     { opacity: 1; }
+}
+@keyframes nm-shake {
+  0%,100% { transform: translateX(0) rotate(0deg); }
+  20%     { transform: translateX(-3px) rotate(-0.5deg); }
+  40%     { transform: translateX(3px) rotate(0.5deg); }
+  60%     { transform: translateX(-2px) rotate(-0.3deg); }
+  80%     { transform: translateX(2px) rotate(0.3deg); }
+}
+@keyframes nm-cards-rain {
+  0%   { transform: translateY(-60px) rotate(var(--r0)) scale(0.8); opacity:0; }
+  8%   { opacity: 0.7; }
+  90%  { opacity: 0.4; }
+  100% { transform: translateY(110vh) rotate(var(--r1)) scale(1); opacity:0; }
+}
+
+/* No Mercy overlay — covers body::before when mercy mode is active */
+#nm-bg {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  opacity: 0; transition: opacity 0.6s ease;
+}
+#nm-bg.active { opacity: 1; }
+#nm-bg::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 110%, rgba(180,10,10,0.85)   0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 10% 20%,  rgba(160,5,5,0.45)     0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 90% 20%,  rgba(160,5,5,0.45)     0%, transparent 55%),
+    radial-gradient(ellipse 60% 35% at 50% 5%,   rgba(220,30,0,0.30)    0%, transparent 50%),
+    radial-gradient(ellipse 30% 30% at 50% 50%,  rgba(8,0,0,0.8)        0%, transparent 100%);
+  animation: nm-pulse 3s ease-in-out infinite;
+}
+/* Crack lines */
+#nm-bg::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(162deg, transparent 48%, rgba(255,60,0,0.12) 49%, rgba(255,60,0,0.06) 50%, transparent 51%),
+    linear-gradient(198deg, transparent 47%, rgba(255,80,0,0.10) 48%, rgba(255,80,0,0.05) 49%, transparent 50%),
+    linear-gradient(135deg, transparent 52%, rgba(255,40,0,0.08) 53%, transparent 54%);
+  animation: nm-flicker 6s ease-in-out infinite;
+}
+/* Falling skull cards */
+.nm-card-fall {
+  position: fixed; top: -80px; pointer-events: none; z-index: 0;
+  font-size: 1.8rem; opacity: 0;
+  animation: nm-cards-rain var(--dur, 4s) linear forwards;
+  filter: drop-shadow(0 0 8px rgba(255,30,0,0.6));
+}
+/* Logo shakes in No Mercy mode */
+body.mercy-mode .uno-logo {
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial Black', sans-serif;
+  font-weight: 900;
+  animation: nm-shake 0.4s ease-in-out;
+  background: linear-gradient(135deg, #ff2020 0%, #ff6000 35%, #ff0000 65%, #cc0000 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  filter: drop-shadow(0 0 20px rgba(255,30,0,0.7)) drop-shadow(0 0 50px rgba(200,0,0,0.4));
+}
+body.mercy-mode .uno-sub {
+  color: rgba(255,100,80,0.7);
+  letter-spacing: 0.35em;
+}
+/* No Mercy mode card button style */
+body.mercy-mode #mc-mercy {
+  border-color: rgba(255,50,0,0.7) !important;
+  background: rgba(180,10,10,0.25) !important;
+  box-shadow: 0 0 16px rgba(255,30,0,0.35), inset 0 0 20px rgba(180,0,0,0.15);
+}
+/* Panel glows red in No Mercy */
+body.mercy-mode .panel {
+  border-color: rgba(180,10,10,0.4);
+  box-shadow: 0 0 30px rgba(180,0,0,0.2), 0 20px 60px rgba(0,0,0,0.8);
+}
+/* Warning text for No Mercy */
+#nm-warning {
+  display: none;
+  text-align: center;
+  font-size: 0.5rem;
+  color: rgba(255,80,60,0.75);
+  letter-spacing: 0.14em;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgba(180,10,10,0.35);
+  border-radius: 4px;
+  background: rgba(100,0,0,0.15);
+  animation: nm-flicker 4s ease-in-out infinite;
+}
+body.mercy-mode #nm-warning { display: block; }
+
 </style>
 </head>
 <body>
+
+<!-- No Mercy background -->
+<div id="nm-bg"></div>
 
 <!-- ── LOBBY ── -->
 <div id="lobby">
   <div style="text-align:center">
     <div class="uno-logo">UNO</div>
-    <div class="uno-sub">SHOW 'EM · ARCADE</div>
+    <div class="uno-sub" id="uno-sub-lbl">SHOW 'EM · ARCADE</div>
+  <div id="nm-warning">💀 MODO BRUTAL · APILAMIENTO · PIEDAD · ELIMINACIONES</div>
   </div>
 
   <div class="panel" id="lform">
@@ -302,27 +418,7 @@ body::before {
         </div>
       </div>
     </div>
-    <div class="fg"><label>MODO DE JUEGO</label>
-      <div class="mode-row">
-        <div class="mode-opt sel" id="mo-classic" onclick="selMode('classic')">
-          <span class="mo-icon">🃏</span>
-          <span class="mo-name">CLÁSICO</span>
-          <span class="mo-desc">108 cartas</span>
-        </div>
-        <div class="mode-opt" id="mo-mercy" onclick="selMode('mercy')">
-          <span class="mo-icon">💀</span>
-          <span class="mo-name">NO MERCY</span>
-          <span class="mo-desc">168 cartas · Apilar</span>
-        </div>
-      </div>
-    </div>
-    <div class="fg"><label>CONDICIÓN DE VICTORIA</label>
-      <select id="pwincon">
-        <option value="hand">Primera mano (sin cartas)</option>
-        <option value="points">Puntos · primero en 1000</option>
-        <option value="last">Último en pie (Piedad activa)</option>
-      </select>
-    </div>
+
     <button class="btn btn-gold" onclick="doCreate()">✦ Crear sala</button>
     <div class="divider">· o ·</div>
     <div class="fg"><label>CÓDIGO DE SALA</label><input id="rcode" type="text" placeholder="Ej: U3X9" maxlength="5" style="text-transform:uppercase"></div>
@@ -444,9 +540,71 @@ function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'
 // LOBBY
 // ══════════════════════════════════════════════════════════
 let lobbyMode = 'classic';
+
+// ══════════════════════════════════════════════════════════
+// NO MERCY BACKGROUND EFFECTS
+// ══════════════════════════════════════════════════════════
+const NM_SYMBOLS = ['💀','🔥','⚡','💢','🃏','☠️','💣','⚠️'];
+let nmFallInterval = null;
+
+function activateMercyMode(active) {
+  const bg    = document.getElementById('nm-bg');
+  const sub   = document.getElementById('uno-sub-lbl');
+
+  // Toggle body class for CSS cascade
+  document.body.classList.toggle('mercy-mode', active);
+  if (bg) bg.classList.toggle('active', active);
+
+  // Subtitle
+  if (sub) sub.textContent = active ? "NO MERCY · BRUTAL · SIN PIEDAD" : "SHOW 'EM · ARCADE";
+
+  // Shake logo once on switch to mercy
+  if (active) {
+    const logo = document.querySelector('.uno-logo');
+    if (logo) {
+      logo.style.animation = 'none';
+      logo.offsetHeight;
+      logo.style.animation = 'nm-shake 0.45s ease-in-out';
+      setTimeout(() => { logo.style.animation = ''; }, 500);
+    }
+    startNmCards();
+  } else {
+    stopNmCards();
+  }
+}
+
+function spawnNmCard() {
+  const el = document.createElement('div');
+  el.className = 'nm-card-fall';
+  const sym  = NM_SYMBOLS[Math.floor(Math.random() * NM_SYMBOLS.length)];
+  const left = 5 + Math.random() * 90;
+  const dur  = 3.5 + Math.random() * 3.5;
+  const r0   = -25 + Math.random() * 50;
+  const r1   = r0 + (-60 + Math.random() * 120);
+  el.textContent = sym;
+  el.style.cssText = `left:${left}vw; font-size:${1.2 + Math.random() * 1.4}rem; --r0:${r0}deg; --r1:${r1}deg; --dur:${dur}s; animation-delay:${Math.random() * 0.5}s;`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), (dur + 0.8) * 1000);
+}
+
+function startNmCards() {
+  stopNmCards();
+  spawnNmCard(); spawnNmCard(); spawnNmCard();
+  setTimeout(() => { if (document.body.classList.contains('mercy-mode')) spawnNmCard(); }, 300);
+  nmFallInterval = setInterval(() => {
+    if (document.body.classList.contains('mercy-mode')) spawnNmCard();
+  }, 600);
+}
+
+function stopNmCards() {
+  if (nmFallInterval) { clearInterval(nmFallInterval); nmFallInterval = null; }
+  document.querySelectorAll('.nm-card-fall').forEach(el => el.remove());
+}
+
 function selMode(m) {
   lobbyMode = m;
   ['classic','mercy'].forEach(x => document.getElementById('mo-'+x).classList.toggle('sel', x===m));
+  activateMercyMode(m === 'mercy');
 }
 function selectMode(m) {
   window._lobbyMode = m;
@@ -454,6 +612,7 @@ function selectMode(m) {
     const el = document.getElementById('mc-'+x);
     if (el) el.classList.toggle('active', x===m);
   });
+  activateMercyMode(m === 'mercy');
 }
 function selectWinCon(w) {
   window._lobbyWinCon = w;
@@ -468,7 +627,7 @@ window._lobbyWinCon = 'hand';
 function doCreate() {
   myName = document.getElementById('pname').value.trim() || 'Jugador';
   const maxP = parseInt(document.getElementById('pmaxp').value) || 4;
-  const winCon = document.getElementById('pwincon').value;
+  const winCon = window._lobbyWinCon || 'hand';
   connect(() => send({ type:'createRoom', name:myName, maxPlayers:+document.getElementById('pmaxp').value, mode:window._lobbyMode||'classic', winCon:window._lobbyWinCon||'hand' }));
 }
 function doJoin() {
