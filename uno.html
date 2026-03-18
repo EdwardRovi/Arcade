@@ -32,7 +32,7 @@ body::before {
 }
 
 /* ── LOBBY ── */
-#lobby { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10; padding:1rem; overflow-y:auto; gap:0.8rem; }
+#lobby { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; z-index:10; padding:1rem 0.8rem 2rem; overflow-y:auto; gap:0.8rem; -webkit-overflow-scrolling:touch; }
 #lobby.hidden { display:none; }
 
 .uno-logo {
@@ -153,8 +153,8 @@ body::before {
 /* My hand */
 .my-hand-wrap { flex-shrink:0; background:rgba(0,0,0,0.5); border-top:1px solid rgba(255,255,255,0.06); padding:0.5rem 0.5rem 0.4rem; display:flex; flex-direction:column; align-items:center; gap:0.35rem; max-height:200px; }
 .my-hand-label { font-size:0.44rem; color:var(--muted); letter-spacing:0.15em; }
-.my-hand-cards { display:flex; gap:5px; overflow-x:auto; padding:4px 2px 6px; max-width:100vw; scrollbar-width:thin; scrollbar-color:rgba(201,168,76,0.2) transparent; }
-.my-hand-cards .uno-card { flex-shrink:0; }
+.my-hand-cards { display:flex; gap:5px; overflow-x:auto; overflow-y:visible; padding:4px 2px 6px; max-width:100vw; scrollbar-width:thin; scrollbar-color:rgba(201,168,76,0.2) transparent; -webkit-overflow-scrolling:touch; scroll-snap-type:x proximity; }
+.my-hand-cards .uno-card { flex-shrink:0; scroll-snap-align:start; }
 
 /* Action panel */
 .action-wrap { flex-shrink:0; min-height:44px; display:flex; align-items:center; justify-content:center; padding:0.3rem 0.6rem; background:rgba(0,0,0,0.6); border-top:1px solid rgba(255,255,255,0.05); gap:0.5rem; flex-wrap:wrap; }
@@ -239,12 +239,92 @@ body::before {
 /* No Mercy badge */
 .nm-badge { font-size:0.42rem; color:#c084fc; padding:1px 7px; border:1px solid rgba(192,132,252,0.4); border-radius:3px; background:rgba(109,40,217,0.12); letter-spacing:0.08em; }
 
+/* ══════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE (≤600px)
+   ══════════════════════════════════════════════════════════ */
 @media(max-width:600px){
-  .discard-pile, .draw-pile { width:56px; height:80px; }
-  .uno-card { width:56px; height:80px; }
-  .card-center { font-size:1.1rem; }
-  .card-oval { width:40px; height:58px; }
+  /* ── Lobby ── */
+  #lobby { padding:0.6rem; gap:0.5rem; justify-content:flex-start; padding-top:1rem; }
+  .uno-logo { font-size:clamp(2.2rem,16vw,4rem); }
+  .uno-sub { font-size:0.5rem; }
+  .panel { padding:1rem 1rem; gap:0.55rem; max-width:100%; }
+  .panel h2 { font-size:0.65rem; }
+  .fg label { font-size:0.48rem; }
+  .fg input, .fg select { font-size:0.78rem; padding:0.4rem 0.6rem; }
+  /* mode cards side by side, smaller */
+  .mode-card { padding:0.45rem 0.3rem; }
+  .mode-card > div:first-child { font-size:1.1rem !important; }
+  .mode-card > div:nth-child(2) { font-size:0.5rem !important; }
+  .mode-card > div:nth-child(3) { font-size:0.38rem !important; }
+  /* wincon buttons */
+  .wincon-btn { padding:0.3rem 0.2rem; }
+  .btn { font-size:0.58rem; padding:0.5rem 0.8rem; }
+  #nm-warning { font-size:0.44rem; padding:0.2rem 0.4rem; }
+
+  /* ── Topbar ── */
+  .topbar { padding:0.22rem 0.4rem; gap:0.3rem; }
+  .topbar-title { font-size:0.52rem; }
+  .topbar-info { font-size:0.38rem; }
+  .exit-btn { font-size:0.38rem; padding:0.15rem 0.4rem; }
+  .arcade-top-btn { font-size:0.38rem; padding:0.15rem 0.4rem; }
+
+  /* ── Table area ── smaller, tighter */
+  .table-area { min-height: 0; }
+
+  /* ── Cards: smaller on mobile ── */
+  .uno-card { width:52px; height:76px; border-radius:6px; border-width:2px; }
+  .card-oval { width:38px; height:54px; }
+  .card-center { font-size:1rem; }
+  .card-tl, .card-br { font-size:0.52rem; top:3px; left:4px; }
+  .card-br { bottom:3px; right:4px; }
+  .discard-pile { width:52px; height:76px; }
+  .draw-pile { width:52px; height:76px; font-size:0.7rem; border-radius:6px; }
+  .draw-pile .deck-n { font-size:0.38rem; }
+
+  /* ── My hand: smaller cards, always scrollable ── */
+  .my-hand-wrap { padding:0.35rem 0.3rem 0.3rem; max-height:130px; }
+  .my-hand-label { font-size:0.4rem; }
+  .my-hand-cards { gap:3px; padding:2px 2px 6px; }
+  .my-hand-cards .uno-card { width:48px; height:70px; }
+  .my-hand-cards .uno-card .card-oval { width:35px; height:50px; }
+  .my-hand-cards .uno-card .card-center { font-size:0.9rem; }
+  .my-hand-cards .uno-card .card-tl,
+  .my-hand-cards .uno-card .card-br { font-size:0.46rem; }
+
+  /* ── Actions: bigger tap targets ── */
+  .action-wrap { padding:0.4rem 0.4rem; gap:0.35rem; min-height:50px; flex-wrap:wrap; }
+  .act-btn { font-size:0.55rem; padding:0.45rem 0.9rem; border-radius:5px; }
+  .act-uno { font-size:0.6rem; padding:0.45rem 1rem; }
+  .status-msg { font-size:0.5rem; }
+
+  /* ── Log area hidden, toggle shown ── */
   #log-area { display:none; }
+  #log-toggle { display:block; }
+
+  /* ── Overlays: bigger buttons on mobile ── */
+  .color-btn { width:62px; height:62px; font-size:1.5rem; }
+  #color-picker h3, #ruleta-picker h3, #swap-picker h3 { font-size:0.8rem; letter-spacing:0.08em; }
+  .swap-btn { font-size:0.7rem; padding:0.55rem 1rem; }
+
+  /* ── Gameover overlay ── */
+  #gameover h1 { font-size:1.8rem; }
+  .score-table td, .score-table th { font-size:0.62rem; padding:0.3rem 0.5rem; }
+  #next-hand-btn, #gameover .btn { font-size:0.55rem; padding:0.45rem 0.9rem; }
+
+  /* ── Notice ── */
+  #notice { font-size:0.72rem; padding:0.7rem 1.2rem; max-width:90vw; }
+
+  /* ── UNO shout banner ── */
+  #uno-banner { font-size:clamp(3rem,22vw,7rem); }
+}
+
+/* Very small phones (≤380px) */
+@media(max-width:380px){
+  .my-hand-cards .uno-card { width:42px; height:62px; }
+  .my-hand-cards .uno-card .card-oval { width:30px; height:44px; }
+  .my-hand-cards .uno-card .card-center { font-size:0.8rem; }
+  .color-btn { width:54px; height:54px; font-size:1.2rem; }
+  .act-btn { font-size:0.5rem; padding:0.4rem 0.7rem; }
 }
 
 .mode-card { border:1px solid rgba(255,255,255,0.12); border-radius:6px; padding:0.6rem 0.5rem; cursor:pointer; text-align:center; transition:all 0.2s; background:rgba(255,255,255,0.03); }
@@ -455,7 +535,7 @@ body.mercy-mode #nm-warning { display: block; }
         <div id="stack-badge" style="display:none" class="stack-indicator"></div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <div class="draw-pile" id="draw-pile" onclick="doDraw()">
+        <div class="draw-pile" id="draw-pile" onclick="doDraw()" style="touch-action:manipulation">
           UNO<span class="deck-n" id="deck-n">—</span>
         </div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
@@ -802,12 +882,13 @@ function renderGame(state) {
   const n = others.length;
   others.forEach((p, i) => {
     const angle = (i / n) * Math.PI + Math.PI; // semicircle top
-    const rx = Math.min(window.innerWidth * 0.36, 280);
-    const ry = Math.min(window.innerHeight * 0.28, 160);
+    const isMob = window.innerWidth <= 600;
+    const rx = isMob ? Math.min(window.innerWidth * 0.40, 160) : Math.min(window.innerWidth * 0.36, 280);
+    const ry = isMob ? Math.min(window.innerHeight * 0.20, 100) : Math.min(window.innerHeight * 0.28, 160);
     const cx = window.innerWidth / 2;
-    const cy = window.innerHeight * 0.38;
-    const x = cx + rx * Math.cos(angle) - 50;
-    const y = cy + ry * Math.sin(angle) - 30;
+    const cy = isMob ? window.innerHeight * 0.30 : window.innerHeight * 0.38;
+    const x = cx + rx * Math.cos(angle) - (isMob ? 38 : 50);
+    const y = cy + ry * Math.sin(angle) - (isMob ? 22 : 30);
 
     const isTurn = p.origIdx === state.currentTurn;
     const isElim = p.eliminated;
@@ -818,16 +899,22 @@ function renderGame(state) {
     const ptsBadge = p.totalPoints ? `<span class="pts-badge">${p.totalPoints}pts</span>` : '';
 
     // Show card backs
-    const cardBacks = Array(Math.min(p.cardCount || 0, 7)).fill(0).map(() =>
-      `<div class="uno-card back" style="width:32px;height:46px;margin-left:-12px;flex-shrink:0"></div>`
+    const isMobCards = window.innerWidth <= 600;
+    const cbW = isMobCards ? 22 : 32;
+    const cbH = isMobCards ? 32 : 46;
+    const cbM = isMobCards ? -8 : -12;
+    const maxCards = isMobCards ? 5 : 7;
+    const cardBacks = Array(Math.min(p.cardCount || 0, maxCards)).fill(0).map(() =>
+      `<div class="uno-card back" style="width:${cbW}px;height:${cbH}px;margin-left:${cbM}px;flex-shrink:0"></div>`
     ).join('');
 
     const div = document.createElement('div');
     div.className = 'seat';
     div.style.cssText = `left:${Math.round(x)}px;top:${Math.round(y)}px;`;
+    const seatFontSize = window.innerWidth <= 600 ? '0.4rem' : '0.5rem';
     div.innerHTML = `
       <div style="display:flex;gap:2px;align-items:center">${cardBacks}</div>
-      <div class="seat-name${isTurn?' is-turn':''}${p.isYou?' is-you':''}">${esc(p.name)} (${p.cardCount||0})</div>
+      <div class="seat-name${isTurn?' is-turn':''}${p.isYou?' is-you':''}" style="font-size:${seatFontSize}">${esc(p.name)} (${p.cardCount||0})</div>
       <div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:center">${unoFlag}${elimBadge}${piedad}${ptsBadge}</div>`;
     seatsEl.appendChild(div);
   });
@@ -843,7 +930,7 @@ function renderGame(state) {
       const div = document.createElement('div');
       div.innerHTML = buildCard(card, { playable, selected: sel });
       const el = div.firstChild;
-      el.addEventListener('click', () => onCardClick(i, card, playable));
+      el.addEventListener('click', (e) => { e.preventDefault(); onCardClick(i, card, playable); });
       myCardsEl.appendChild(el);
     });
     // Hand label
@@ -1044,8 +1131,11 @@ const SFX = (() => {
   };
 })();
 
-// Resize seats on window resize
+// Re-render on resize AND orientation change (mobile rotate)
 window.addEventListener('resize', () => { if(gs && gs.gameState !== 'waiting') renderGame(gs); });
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => { if(gs && gs.gameState !== 'waiting') renderGame(gs); }, 200);
+});
 </script>
 </body>
 </html>
