@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Chinchón · Arcade</title>
+<meta name="theme-color" content="#050a05">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#050a05; --green:#1a4a1a; --green2:#2a6a2a; --gold:#c9a84c; --gold2:#e8c97a;
+  --red:#c03030; --text:#f5ead8; --muted:rgba(245,234,216,0.45); --border:rgba(201,168,76,0.22);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Cinzel',serif;overflow:hidden;touch-action:manipulation;}
+
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 40%, rgba(26,74,26,0.55) 0%, transparent 65%),
+    radial-gradient(ellipse 100% 40% at 50% 100%, rgba(20,50,10,0.5) 0%, transparent 60%);}
+
+/* ── LOBBY ── */
+#lobby{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;z-index:10;padding:1rem 0.8rem 2rem;overflow-y:auto;gap:0.7rem;}
+.ch-logo{font-family:'Cinzel Decorative',cursive;font-size:clamp(2rem,10vw,4.5rem);font-weight:900;color:var(--gold);text-shadow:0 0 40px rgba(201,168,76,0.5),2px 2px 0 #3a2000;letter-spacing:0.08em;line-height:1;}
+.ch-sub{font-size:0.58rem;color:var(--muted);letter-spacing:0.3em;}
+.panel{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:1.3rem 1.5rem;width:100%;max-width:400px;display:flex;flex-direction:column;gap:0.65rem;}
+.panel h2{font-family:'Cinzel Decorative',cursive;font-size:0.72rem;color:var(--gold);letter-spacing:0.14em;text-align:center;}
+.fg label{display:block;font-size:0.5rem;color:var(--muted);letter-spacing:0.12em;margin-bottom:0.2rem;}
+.fg input,.fg select{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:var(--text);font-family:'Cinzel',serif;font-size:0.82rem;padding:0.42rem 0.65rem;border-radius:4px;outline:none;}
+.fg input:focus,.fg select:focus{border-color:var(--gold);}
+.fg select option{background:#0a1a0a;}
+.var-row{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;}
+.var-btn{border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:0.5rem 0.4rem;text-align:center;cursor:pointer;background:rgba(255,255,255,0.03);transition:all 0.15s;}
+.var-btn:hover,.var-btn.active{border-color:var(--gold);background:rgba(201,168,76,0.12);}
+.var-btn .vi{font-size:1.3rem;display:block;}
+.var-btn .vn{font-size:0.52rem;color:var(--gold2);display:block;margin-top:2px;font-family:'Cinzel Decorative',cursive;letter-spacing:0.08em;}
+.var-btn .vd{font-size:0.38rem;color:var(--muted);display:block;margin-top:1px;}
+.btn{font-family:'Cinzel Decorative',cursive;font-size:0.62rem;letter-spacing:0.1em;padding:0.52rem 1rem;border-radius:5px;cursor:pointer;transition:all 0.2s;border:none;width:100%;}
+.btn-gold{background:linear-gradient(135deg,#b8922a,#d4a843);color:#1a0f00;}
+.btn-gold:hover{background:linear-gradient(135deg,#c9a84c,#e8c97a);}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--gold2);}
+.btn-outline:hover{background:rgba(201,168,76,0.08);}
+.divider{text-align:center;font-size:0.55rem;color:var(--muted);}
+.room-code{font-family:'Cinzel Decorative',cursive;font-size:2rem;color:var(--gold2);letter-spacing:0.3em;text-align:center;text-shadow:0 0 20px rgba(201,168,76,0.35);}
+.w-player{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:4px;padding:0.3rem 0.7rem;font-size:0.75rem;display:flex;justify-content:space-between;align-items:center;}
+.pts-badge{font-size:0.44rem;padding:2px 7px;border:1px solid rgba(201,168,76,0.3);border-radius:3px;background:rgba(201,168,76,0.08);color:var(--gold);}
+.err-msg{color:#f87171;font-size:0.58rem;text-align:center;min-height:1em;}
+
+/* ── GAME ── */
+#game{display:none;position:fixed;inset:0;flex-direction:column;z-index:1;}
+#game.active{display:flex;}
+.topbar{display:flex;align-items:center;padding:0.25rem 0.6rem;background:rgba(0,0,0,0.7);border-bottom:1px solid rgba(201,168,76,0.1);flex-shrink:0;gap:0.4rem;}
+.topbar-title{font-family:'Cinzel Decorative',cursive;font-size:0.5rem;color:var(--gold);letter-spacing:0.1em;flex:1;}
+.topbar-info{font-size:0.42rem;color:var(--muted);flex:2;text-align:center;}
+.exit-btn{background:rgba(120,20,20,0.55);border:1px solid rgba(200,60,60,0.3);color:rgba(255,150,150,0.8);font-family:'Cinzel',serif;font-size:0.42rem;padding:0.18rem 0.45rem;border-radius:3px;cursor:pointer;}
+.back-btn-top{font-family:'Cinzel',serif;font-size:0.42rem;color:rgba(201,168,76,0.5);text-decoration:none;padding:0.18rem 0.45rem;border:1px solid rgba(201,168,76,0.2);border-radius:3px;background:rgba(0,0,0,0.3);}
+
+/* ── TABLE AREA ── */
+.main-area{flex:1;display:flex;overflow:hidden;min-height:0;}
+.table-area{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.table-felt{position:absolute;width:min(70%,500px);height:min(65%,280px);background:radial-gradient(ellipse at 50% 45%,#1e5a1e 0%,#143d14 50%,#0a240a 100%);border-radius:50%;border:6px solid #2c1a0a;box-shadow:0 0 0 3px rgba(201,168,76,0.3),0 0 0 5px rgba(60,30,10,0.5),inset 0 0 40px rgba(0,0,0,0.5),0 8px 40px rgba(0,0,0,0.8);}
+
+/* Center piles */
+.center-area{position:absolute;display:flex;flex-direction:column;align-items:center;gap:0.5rem;z-index:2;}
+.piles-row{display:flex;align-items:center;gap:1rem;}
+
+/* ── CARDS ── */
+.ch-card{width:58px;height:84px;border-radius:7px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Cinzel',serif;box-shadow:0 3px 10px rgba(0,0,0,0.6);border:2px solid rgba(255,255,255,0.15);flex-shrink:0;transition:transform 0.15s,box-shadow 0.15s;user-select:none;}
+.ch-card.back{background:repeating-linear-gradient(135deg,rgba(20,60,20,0.92) 0px,rgba(20,60,20,0.92) 4px,rgba(8,30,8,0.92) 4px,rgba(8,30,8,0.92) 8px);border-color:rgba(201,168,76,0.45);}
+.ch-card.back::after{content:'♠';font-size:1.3rem;color:rgba(201,168,76,0.3);}
+.ch-card.face{background:linear-gradient(145deg,#fdf8f0,#f0e8d8);border-color:rgba(0,0,0,0.15);}
+.ch-card.face .ch-val{font-size:1.2rem;font-weight:700;line-height:1;}
+.ch-card.face .ch-suit-label{font-size:0.55rem;color:rgba(80,50,20,0.6);margin-top:1px;}
+.ch-card.face.red .ch-val,.ch-card.face.red .ch-suit-icon{color:#c03030;}
+.ch-card.face.black .ch-val,.ch-card.face.black .ch-suit-icon{color:#1a1a2e;}
+.ch-card.face .ch-corner{position:absolute;font-size:0.58rem;font-weight:700;line-height:1;}
+.ch-card.face .ch-corner.tl{top:3px;left:5px;text-align:left;}
+.ch-card.face .ch-corner.br{bottom:3px;right:5px;rotate:180deg;}
+.ch-card.playable{cursor:pointer;}
+.ch-card.playable:hover{transform:translateY(-6px);box-shadow:0 10px 24px rgba(0,0,0,0.7);}
+.ch-card.selected{transform:translateY(-12px) scale(1.04);box-shadow:0 14px 30px rgba(0,0,0,0.8);outline:2.5px solid var(--gold);outline-offset:1px;}
+.ch-card.in-combo{outline:2px solid #44cc66;outline-offset:1px;}
+.ch-card.sm{width:40px;height:56px;}
+.ch-card.sm .ch-val{font-size:0.9rem;}
+.ch-card.sm .ch-corner{font-size:0.44rem;}
+
+/* Draw pile */
+.draw-pile-btn{position:relative;cursor:pointer;}
+.draw-pile-btn:hover .ch-card.back{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,0.7);}
+.deck-count{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:0.38rem;color:var(--muted);white-space:nowrap;}
+
+/* Discard pile label */
+.pile-label{font-size:0.42rem;color:var(--muted);letter-spacing:0.1em;text-align:center;}
+.discard-area{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.discard-area .ch-card{cursor:pointer;}
+.discard-area .ch-card:hover{transform:translateY(-3px);}
+
+/* Opponents */
+.seat{position:absolute;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.seat-box{background:rgba(0,0,0,0.55);border:1px solid rgba(255,255,255,0.1);border-radius:5px;padding:0.18rem 0.42rem;text-align:center;min-width:56px;transition:border-color 0.3s;}
+.seat-box.is-turn{border-color:var(--gold);box-shadow:0 0 10px rgba(201,168,76,0.4);}
+.seat-box.eliminated{opacity:0.3;}
+.seat-name{font-size:0.48rem;white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis;}
+.seat-pts{font-size:0.58rem;font-family:'Cinzel Decorative',cursive;color:var(--gold2);}
+
+/* ── MY HAND ── */
+.my-hand-wrap{flex-shrink:0;background:rgba(0,0,0,0.55);border-top:1px solid rgba(201,168,76,0.1);padding:0.4rem 0.4rem 0.35rem;display:flex;flex-direction:column;align-items:center;gap:0.25rem;}
+.my-hand-label{font-size:0.42rem;color:var(--muted);letter-spacing:0.12em;}
+.my-hand-cards{display:flex;justify-content:center;align-items:flex-end;padding:4px 6px 2px;width:100%;overflow:visible;}
+.my-hand-cards .ch-card{flex-shrink:0;position:relative;}
+
+/* ── ACTIONS ── */
+.action-row{flex-shrink:0;min-height:48px;display:flex;align-items:center;justify-content:center;padding:0.35rem 0.5rem;background:rgba(0,0,0,0.6);border-top:1px solid rgba(255,255,255,0.05);gap:0.4rem;flex-wrap:wrap;}
+.act-btn{font-family:'Cinzel',serif;font-size:0.52rem;letter-spacing:0.06em;padding:0.38rem 0.8rem;border-radius:4px;cursor:pointer;transition:all 0.15s;border:1px solid;white-space:nowrap;}
+.act-draw{color:#a0d0a0;border-color:rgba(120,200,120,0.45);background:rgba(120,200,120,0.08);}
+.act-draw:hover{background:rgba(120,200,120,0.18);}
+.act-discard{color:#ffcc88;border-color:rgba(255,200,100,0.45);background:rgba(255,200,100,0.08);}
+.act-discard:hover{background:rgba(255,200,100,0.18);}
+.act-bajar{color:#88ddff;border-color:rgba(100,200,255,0.5);background:rgba(100,200,255,0.1);font-family:'Cinzel Decorative',cursive;font-size:0.58rem;}
+.act-bajar:hover{background:rgba(100,200,255,0.2);}
+.act-chinchon{color:#ffdd44;border-color:rgba(255,220,68,0.6);background:rgba(255,220,68,0.12);font-family:'Cinzel Decorative',cursive;font-size:0.58rem;animation:glow-ch 1.2s ease-in-out infinite;}
+@keyframes glow-ch{0%,100%{box-shadow:0 0 6px rgba(255,220,68,0.3)} 50%{box-shadow:0 0 18px rgba(255,220,68,0.7)}}
+.act-cancel{color:var(--muted);border-color:rgba(255,255,255,0.15);background:transparent;}
+.status-msg{font-size:0.5rem;color:var(--muted);font-style:italic;}
+
+/* ── BAJAR OVERLAY ── */
+#bajar-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:40;display:none;align-items:flex-start;justify-content:center;padding:1rem;overflow-y:auto;}
+#bajar-overlay.vis{display:flex;}
+.bajar-box{background:rgba(5,20,5,0.98);border:1px solid var(--border);border-radius:10px;padding:1.2rem 1.5rem;max-width:600px;width:100%;display:flex;flex-direction:column;gap:0.8rem;}
+.bajar-title{font-family:'Cinzel Decorative',cursive;font-size:0.9rem;color:var(--gold);text-align:center;letter-spacing:0.15em;}
+.bajar-instr{font-size:0.52rem;color:var(--muted);text-align:center;line-height:1.5;}
+.combo-area{display:flex;flex-direction:column;gap:0.5rem;}
+.combo-slot{border:1px dashed rgba(201,168,76,0.3);border-radius:6px;padding:0.5rem 0.6rem;min-height:60px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;position:relative;}
+.combo-slot-label{position:absolute;top:-9px;left:8px;background:rgba(5,20,5,0.98);padding:0 4px;font-size:0.4rem;color:var(--muted);letter-spacing:0.1em;}
+.combo-slot.valid{border-color:rgba(80,200,80,0.6);}
+.combo-slot.invalid{border-color:rgba(200,80,80,0.5);}
+.bajar-hand{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;padding:0.4rem 0;}
+.bajar-hand .ch-card{cursor:pointer;}
+.bajar-hand .ch-card:hover{transform:translateY(-4px);}
+.bajar-discard-area{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.bajar-discard-area .ch-card.selected{outline-color:var(--red);}
+.combo-actions{display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;}
+
+/* ── ROUND END / GAME OVER ── */
+#round-overlay,#go-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:50;display:none;align-items:center;justify-content:center;flex-direction:column;gap:0.8rem;padding:1rem;}
+#round-overlay.vis,#go-overlay.vis{display:flex;}
+.overlay-box{background:rgba(5,18,5,0.98);border:1px solid var(--border);border-radius:10px;padding:1.4rem 1.8rem;max-width:440px;width:100%;}
+.overlay-title{font-family:'Cinzel Decorative',cursive;font-size:1rem;color:var(--gold2);text-align:center;margin-bottom:0.8rem;}
+.score-row{display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.7rem;}
+.score-row .sr-n{color:var(--text);}
+.score-row .sr-r{color:var(--red);font-size:0.65rem;}
+.score-row .sr-t{color:var(--gold);font-family:'Cinzel Decorative',cursive;}
+.score-row.elim .sr-n{opacity:0.4;}
+.score-row.winner .sr-n{color:#ffdd44;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:180px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;border-left:1px solid rgba(255,255,255,0.05);}
+.side-log{flex:1;background:rgba(0,0,0,0.4);padding:0.5rem;overflow:hidden;display:flex;flex-direction:column;}
+.side-log h3{font-family:'Cinzel Decorative',cursive;font-size:0.48rem;color:rgba(201,168,76,0.5);letter-spacing:0.1em;margin-bottom:0.35rem;}
+#log-area{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(201,168,76,0.2) transparent;}
+.log-e{font-size:0.64rem;color:rgba(245,234,216,0.65);padding:0.08rem 0;border-bottom:1px solid rgba(255,255,255,0.03);line-height:1.35;}
+.log-e:last-child{color:var(--text);}
+.chat-area{flex-shrink:0;border-top:1px solid rgba(255,255,255,0.05);padding:0.4rem 0.5rem;display:flex;flex-direction:column;gap:0.25rem;}
+.chat-area h3{font-family:'Cinzel Decorative',cursive;font-size:0.48rem;color:rgba(201,168,76,0.5);letter-spacing:0.1em;}
+#chat-msgs{max-height:65px;overflow-y:auto;margin-bottom:0.2rem;}
+.chat-msg{font-size:0.6rem;line-height:1.3;padding:0.04rem 0;}
+.chat-from{color:var(--gold);font-weight:600;}
+.chat-row{display:flex;gap:0.25rem;}
+.chat-row input{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text);font-family:'Cinzel',serif;font-size:0.58rem;padding:0.2rem 0.35rem;border-radius:3px;outline:none;}
+.chat-row button{background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.3);color:var(--gold);font-size:0.6rem;padding:0.2rem 0.4rem;border-radius:3px;cursor:pointer;}
+
+/* ── NOTICE ── */
+#notice{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:60;pointer-events:none;background:rgba(0,0,0,0.93);border:1px solid rgba(201,168,76,0.5);border-radius:8px;padding:0.8rem 1.6rem;font-family:'Cinzel Decorative',cursive;font-size:0.78rem;color:var(--gold2);text-align:center;max-width:80vw;opacity:0;transition:opacity 0.2s;}
+#notice.show{opacity:1;}
+
+/* ── CHINCHON BANNER ── */
+#chinchon-banner{position:fixed;inset:0;pointer-events:none;z-index:55;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;}
+#chinchon-banner.vis{opacity:1;}
+#chinchon-banner span{font-family:'Cinzel Decorative',cursive;font-size:clamp(3rem,14vw,7rem);font-weight:900;color:var(--gold2);text-shadow:0 0 40px rgba(201,168,76,0.8),0 0 80px rgba(201,168,76,0.4);animation:ch-pop 0.4s cubic-bezier(0.22,1,0.36,1);}
+@keyframes ch-pop{from{transform:scale(0.5) rotate(-6deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:700px){
+  .sidebar{display:none;}
+  .ch-card{width:50px;height:72px;}
+  .ch-card .ch-val{font-size:1rem;}
+  .ch-card .ch-corner{font-size:0.5rem;}
+  .ch-card.sm{width:34px;height:48px;}
+  .act-btn{font-size:0.46rem;padding:0.32rem 0.6rem;}
+}
+@media(max-width:400px){
+  .ch-card{width:44px;height:64px;}
+  .ch-card .ch-val{font-size:0.9rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── LOBBY ── -->
+<div id="lobby">
+  <div class="ch-logo">CHINCHÓN</div>
+  <div class="ch-sub">RUMMY ESPAÑOL · 2–10 JUGADORES</div>
+
+  <div class="panel" id="lform">
+    <h2>Nueva sala</h2>
+    <div class="fg"><label>TU NOMBRE</label><input id="pname" type="text" placeholder="Jugador..." maxlength="16" autocomplete="off"></div>
+    <div class="fg"><label>JUGADORES MÁX.</label>
+      <select id="pmaxp">
+        <option value="2">2 jugadores</option>
+        <option value="3">3 jugadores</option>
+        <option value="4" selected>4 jugadores</option>
+        <option value="5">5 jugadores</option>
+        <option value="6">6 jugadores</option>
+        <option value="8">8 jugadores</option>
+        <option value="10">10 jugadores</option>
+      </select>
+    </div>
+    <div class="fg"><label>VARIANTE</label>
+      <div class="var-row">
+        <div class="var-btn active" id="vb-es" onclick="selVar('es')">
+          <span class="vi">🇪🇸</span>
+          <span class="vn">ESPAÑOLA</span>
+          <span class="vd">40 cartas · Oros, Copas, Espadas, Bastos</span>
+        </div>
+        <div class="var-btn" id="vb-fr" onclick="selVar('fr')">
+          <span class="vi">🃏</span>
+          <span class="vn">FRANCESA</span>
+          <span class="vd">52 cartas · ♠ ♥ ♦ ♣</span>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-gold" onclick="doCreate()">✦ CREAR SALA</button>
+    <div class="divider">· o ·</div>
+    <div class="fg"><label>CÓDIGO DE SALA</label><input id="rcode" type="text" placeholder="Ej: HABC" maxlength="5" style="text-transform:uppercase" autocomplete="off"></div>
+    <button class="btn btn-outline" onclick="doJoin()">Unirse</button>
+    <div class="err-msg" id="err-msg"></div>
+  </div>
+
+  <div class="panel" id="lwait" style="display:none">
+    <h2>Sala: <span id="wcode" style="color:var(--gold2);letter-spacing:0.25em">----</span></h2>
+    <p style="font-size:0.52rem;color:var(--muted);text-align:center">Comparte el código · El anfitrión inicia</p>
+    <div id="wlist" style="display:flex;flex-direction:column;gap:0.3rem;margin:0.3rem 0"></div>
+    <div id="wstart"></div>
+    <button class="btn btn-outline" onclick="exitGame()" style="border-color:rgba(180,60,60,0.4);color:rgba(220,120,120,0.8);font-size:0.6rem;margin-top:0.3rem">🚪 Abandonar</button>
+  </div>
+</div>
+
+<!-- ── GAME ── -->
+<div id="game">
+  <div class="topbar">
+    <a class="back-btn-top" href="/">← ARCADE</a>
+    <div class="topbar-title">CHINCHÓN</div>
+    <div class="topbar-info" id="tinfo"></div>
+    <button class="exit-btn" onclick="exitGame()">✕</button>
+  </div>
+  <div class="main-area">
+    <div class="table-area">
+      <div class="table-felt"></div>
+      <div class="center-area">
+        <div class="piles-row">
+          <div class="draw-pile-btn" onclick="doDrawDeck()" title="Robar del mazo">
+            <div class="ch-card back"></div>
+            <div class="deck-count" id="deck-count">—</div>
+          </div>
+          <div class="discard-area">
+            <div class="pile-label">DESCARTE</div>
+            <div id="discard-top" onclick="doDrawDiscard()" title="Tomar del descarte"></div>
+          </div>
+        </div>
+        <div id="center-info" style="font-size:0.44rem;color:var(--muted);text-align:center;letter-spacing:0.1em"></div>
+      </div>
+      <div id="seats"></div>
+    </div>
+    <div class="sidebar">
+      <div class="side-log">
+        <h3>REGISTRO</h3>
+        <div id="log-area"></div>
+      </div>
+      <div class="chat-area">
+        <h3>CHAT</h3>
+        <div id="chat-msgs"></div>
+        <div class="chat-row">
+          <input id="chat-inp" type="text" placeholder="Escribe..." maxlength="60" onkeydown="if(event.key==='Enter')sendChat()">
+          <button onclick="sendChat()">↩</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="my-hand-wrap">
+    <div class="my-hand-label" id="hand-label">TU MANO</div>
+    <div class="my-hand-cards" id="hand-cards"></div>
+  </div>
+  <div class="action-row" id="action-row"></div>
+</div>
+
+<!-- ── BAJAR OVERLAY ── -->
+<div id="bajar-overlay">
+  <div class="bajar-box">
+    <div class="bajar-title">⬇ BAJAR MANO</div>
+    <div class="bajar-instr">Selecciona las cartas de cada combinación (grupos o escaleras de 3+). Luego elige cuál descartas.</div>
+    <div class="combo-area" id="combo-area"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.3rem">
+      <span style="font-size:0.48rem;color:var(--muted)">Tus cartas:</span>
+      <button class="btn btn-outline" style="width:auto;font-size:0.48rem;padding:0.25rem 0.6rem" onclick="addComboSlot()">+ Añadir combinación</button>
+    </div>
+    <div class="bajar-hand" id="bajar-hand"></div>
+    <div style="text-align:center">
+      <div style="font-size:0.48rem;color:var(--muted);margin-bottom:6px">Carta a descartar:</div>
+      <div class="bajar-discard-area" id="bajar-discard-slot">
+        <div style="font-size:0.5rem;color:rgba(255,100,100,0.6);font-style:italic">Haz clic en una carta arriba para seleccionarla como descarte</div>
+      </div>
+    </div>
+    <div class="combo-actions">
+      <button class="btn act-bajar" onclick="confirmBajar()" style="width:auto;padding:0.45rem 1.2rem">✅ Confirmar bajada</button>
+      <button class="btn act-cancel" onclick="closeBajar()" style="width:auto;padding:0.45rem 0.8rem;border:1px solid rgba(255,255,255,0.15)">Cancelar</button>
+    </div>
+    <div class="err-msg" id="bajar-err"></div>
+  </div>
+</div>
+
+<!-- ── ROUND END ── -->
+<div id="round-overlay">
+  <div class="overlay-box">
+    <div class="overlay-title" id="round-title">FIN DE RONDA</div>
+    <div id="round-scores"></div>
+    <button class="btn btn-gold" id="next-round-btn" onclick="sendNextRound()" style="margin-top:0.8rem">▶ Siguiente ronda</button>
+  </div>
+</div>
+
+<!-- ── GAME OVER ── -->
+<div id="go-overlay">
+  <div class="overlay-box">
+    <div class="overlay-title">🏆 ¡FIN DE PARTIDA!</div>
+    <div id="go-scores"></div>
+    <button class="btn btn-gold" onclick="exitGame()" style="margin-top:0.8rem">← Volver al lobby</button>
+  </div>
+</div>
+
+<!-- ── CHINCHON BANNER ── -->
+<div id="chinchon-banner"><span>¡CHINCHÓN!</span></div>
+<div id="notice"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// CONNECTION
+// ══════════════════════════════════════════════════════════
+const SRV = `wss://${location.host}`;
+let ws=null, myId=null, myRoom=null, myName='Jugador', gs=null, reconnTimer=null;
+let lobbyVariant = 'es';
+let ntimer = null;
+
+const SUIT_ES_RED  = new Set(['copas','oros']);
+const SUIT_FR_RED  = new Set(['♥','♦']);
+
+function isRedSuit(suit, variant) {
+  return variant === 'es' ? SUIT_ES_RED.has(suit) : SUIT_FR_RED.has(suit);
+}
+
+const SUIT_ICON_ES = { oros:'🌞', copas:'🏆', espadas:'⚔️', bastos:'🌿' };
+const SUIT_ICON_FR = { '♠':'♠', '♥':'♥', '♦':'♦', '♣':'♣' };
+
+function suitIcon(suit, variant) {
+  return variant === 'es' ? (SUIT_ICON_ES[suit]||suit) : suit;
+}
+
+function valLabel(val, variant) {
+  if (variant === 'es') {
+    if (val===10) return 'S';
+    if (val===11) return 'C';
+    if (val===12) return 'R';
+  } else {
+    if (val===1)  return 'A';
+    if (val===11) return 'J';
+    if (val===12) return 'Q';
+    if (val===13) return 'K';
+  }
+  return String(val);
+}
+
+function connect(cb) {
+  if (ws && ws.readyState < 2) { if(cb) cb(); return; }
+  ws = new WebSocket(SRV);
+  ws.onopen = () => { if(cb) cb(); };
+  ws.onmessage = e => { try { handleMsg(JSON.parse(e.data)); } catch(err) { console.error('[ch]',err); } };
+  ws.onerror = () => {};
+  ws.onclose = () => {
+    if (myRoom) reconnTimer = setTimeout(() => connect(() => send({ type:'joinRoom', code:myRoom, name:myName })), 3000);
+  };
+}
+function send(o) { if(ws&&ws.readyState===1) ws.send(JSON.stringify({...o, game:'chinchon'})); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ══════════════════════════════════════════════════════════
+// LOBBY
+// ══════════════════════════════════════════════════════════
+function selVar(v) {
+  lobbyVariant = v;
+  ['es','fr'].forEach(x => document.getElementById('vb-'+x).classList.toggle('active', x===v));
+}
+function doCreate() {
+  myName = document.getElementById('pname').value.trim() || 'Jugador';
+  connect(() => send({ type:'createRoom', name:myName, maxPlayers:+document.getElementById('pmaxp').value, variant:lobbyVariant }));
+}
+function doJoin() {
+  myName = document.getElementById('pname').value.trim() || 'Jugador';
+  const code = document.getElementById('rcode').value.trim().toUpperCase();
+  if (!code) { showErr('Introduce el código de sala'); return; }
+  connect(() => send({ type:'joinRoom', code, name:myName }));
+}
+function showErr(m) { const el=document.getElementById('err-msg'); el.textContent=m; setTimeout(()=>el.textContent='',3000); }
+function exitGame() {
+  myId=null; myRoom=null; gs=null;
+  if(reconnTimer){clearTimeout(reconnTimer);reconnTimer=null;}
+  if(ws){ws.onclose=null;ws.close();ws=null;}
+  document.getElementById('game').classList.remove('active');
+  document.getElementById('lobby').style.display='flex';
+  document.getElementById('lform').style.display='block';
+  document.getElementById('lwait').style.display='none';
+  document.getElementById('round-overlay').classList.remove('vis');
+  document.getElementById('go-overlay').classList.remove('vis');
+  closeBajar();
+}
+
+// ══════════════════════════════════════════════════════════
+// CARD RENDERING
+// ══════════════════════════════════════════════════════════
+function buildCard(card, opts={}) {
+  const { variant='es', small=false, playable=false, selected=false, inCombo=false, clickFn='' } = opts;
+  if (!card) return `<div class="ch-card back${small?' sm':''}"></div>`;
+  const red = isRedSuit(card.suit, variant);
+  const vl = valLabel(card.val, variant);
+  const si = suitIcon(card.suit, variant);
+  const cls = [
+    'ch-card face',
+    red ? 'red' : 'black',
+    small ? 'sm' : '',
+    playable ? 'playable' : '',
+    selected ? 'selected' : '',
+    inCombo ? 'in-combo' : '',
+  ].filter(Boolean).join(' ');
+  const onclick = clickFn ? `onclick="${clickFn}"` : '';
+  return `<div class="${cls}" ${onclick} title="${esc(card.suit)} ${esc(vl)}" data-suit="${esc(card.suit)}" data-val="${card.val}">
+    <div class="ch-corner tl">${esc(vl)}<br><span style="font-size:0.7em">${esc(si)}</span></div>
+    <div class="ch-val">${esc(vl)}</div>
+    <div class="ch-suit-label">${esc(si)}</div>
+    <div class="ch-corner br">${esc(vl)}<br><span style="font-size:0.7em">${esc(si)}</span></div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════════
+const SEAT_ANGLES = [Math.PI*1.25, Math.PI*0.75, Math.PI*1.5, Math.PI*0.5, Math.PI*1.75, Math.PI*0.25, Math.PI, 0, Math.PI*1.1];
+
+function renderGame(state) {
+  if (!state) return;
+  gs = state;
+  const variant = state.variant || 'es';
+  const me = state.players[state.myIdx];
+  if (!me) return;
+
+  // Topbar
+  document.getElementById('tinfo').textContent = `Ronda ${state.round||1} · ${variant==='es'?'Española':'Francesa'} · Turno: ${state.players[state.currentTurn]?.name||''}`;
+
+  // Deck count
+  document.getElementById('deck-count').textContent = `${state.deckCount||0} cartas`;
+
+  // Discard top
+  const discEl = document.getElementById('discard-top');
+  if (state.topDiscard) {
+    discEl.innerHTML = buildCard(state.topDiscard, { variant, playable: !state.hasDrawn && state.myIdx===state.currentTurn });
+  } else {
+    discEl.innerHTML = `<div class="ch-card back" style="opacity:0.3"></div>`;
+  }
+
+  // Center info
+  const ci = document.getElementById('center-info');
+  ci.textContent = state.hasDrawn
+    ? 'Descarta o baja una combinación'
+    : state.myIdx===state.currentTurn ? 'Roba una carta del mazo o del descarte' : '';
+
+  // Opponents
+  const seatsEl = document.getElementById('seats');
+  seatsEl.innerHTML = '';
+  const others = state.players.map((p,i)=>({...p,origIdx:i})).filter((_,i)=>i!==state.myIdx);
+  const isMob = window.innerWidth <= 700;
+  others.forEach((p, si) => {
+    const angle = SEAT_ANGLES[si] || (Math.PI * (si+1)/(others.length+1));
+    const rx = isMob ? Math.min(window.innerWidth*0.38,150) : Math.min(window.innerWidth*0.34,260);
+    const ry = isMob ? Math.min(window.innerHeight*0.18,90)  : Math.min(window.innerHeight*0.26,145);
+    const cx = window.innerWidth/2, cy = isMob ? window.innerHeight*0.28 : window.innerHeight*0.35;
+    const x = cx + rx*Math.cos(angle) - (isMob?36:48);
+    const y = cy + ry*Math.sin(angle) - (isMob?20:26);
+    const isTurn = p.origIdx===state.currentTurn;
+    const cbW = isMob ? 20:28, cbH = isMob ? 28:40, cbM = isMob ? -7:-10;
+    const maxCB = isMob ? 4:6;
+    const backs = Array(Math.min(p.cardCount||0,maxCB)).fill(0).map(()=>
+      `<div class="ch-card back" style="width:${cbW}px;height:${cbH}px;margin-left:${cbM}px;flex-shrink:0"></div>`
+    ).join('');
+    const div = document.createElement('div');
+    div.className = 'seat';
+    div.style.cssText = `left:${Math.round(x)}px;top:${Math.round(y)}px;`;
+    div.innerHTML = `
+      <div style="display:flex;align-items:center">${backs}</div>
+      <div class="seat-box${isTurn?' is-turn':''}${p.eliminated?' eliminated':''}">
+        <div class="seat-name">${esc(p.name)} (${p.cardCount||0})</div>
+        <div class="seat-pts">${p.points||0} pts${p.anchored?` <span style="color:#f87171;font-size:0.5em">+${p.anchoredPts}</span>`:''}${p.eliminated?` 💀`:''}</div>
+      </div>`;
+    seatsEl.appendChild(div);
+  });
+
+  // My hand — fan overlap
+  renderHand(me, state);
+
+  // Actions
+  renderActions(state, me);
+}
+
+function renderHand(me, state) {
+  const el = document.getElementById('hand-cards');
+  el.innerHTML = '';
+  if (!me.hand) return;
+  const variant = state.variant || 'es';
+  const isMyTurn = state.myIdx === state.currentTurn && !me.eliminated;
+  const n = me.hand.length;
+  const isMob = window.innerWidth <= 700;
+  const isTiny = window.innerWidth <= 400;
+  const cardW = isTiny ? 44 : isMob ? 50 : 58;
+  const availW = Math.min(window.innerWidth, 700) - 24;
+  const naturalW = n * cardW;
+  let overlap = 0;
+  if (naturalW > availW && n > 1) {
+    overlap = Math.min(Math.ceil((naturalW - availW)/(n-1)), Math.floor(cardW*0.7));
+  }
+
+  me.hand.forEach((card, i) => {
+    const div = document.createElement('div');
+    div.innerHTML = buildCard(card, { variant, playable: isMyTurn });
+    const el2 = div.firstChild;
+    if (i > 0) el2.style.marginLeft = `-${overlap}px`;
+    el2.style.zIndex = i+1;
+    el2.addEventListener('click', () => onHandCardClick(i));
+    el.appendChild(el2);
+  });
+
+  document.getElementById('hand-label').textContent = `TU MANO (${n})${me.points ? ' · '+me.points+' pts' : ''}`;
+}
+
+function renderActions(state, me) {
+  const area = document.getElementById('action-row');
+  area.innerHTML = '';
+  if (!me || me.eliminated) { area.innerHTML='<span class="status-msg">Eliminado — espera la siguiente ronda</span>'; return; }
+  const isMyTurn = state.myIdx === state.currentTurn;
+  if (!isMyTurn) {
+    const cur = state.players[state.currentTurn];
+    area.innerHTML = `<span class="status-msg">⏳ Turno de <strong style="color:var(--gold2)">${esc(cur?.name||'...')}</strong></span>`;
+    return;
+  }
+  if (!state.hasDrawn) {
+    area.innerHTML = `
+      <button class="act-btn act-draw" onclick="doDrawDeck()">📥 Robar del mazo</button>
+      ${state.topDiscard ? `<button class="act-btn act-draw" onclick="doDrawDiscard()" style="color:#ffdd88;border-color:rgba(255,220,100,0.4)">🗑️ Tomar descarte</button>` : ''}`;
+  } else {
+    area.innerHTML = `
+      <button class="act-btn act-bajar" onclick="openBajar()">⬇ BAJAR</button>
+      <button class="act-btn act-chinchon" onclick="openChinchon()">★ CHINCHÓN</button>
+      <span class="status-msg" style="font-size:0.42rem">← Selecciona carta para descartar</span>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// HAND CARD CLICK (quick discard when already drawn)
+// ══════════════════════════════════════════════════════════
+let selectedDiscard = -1;
+
+function onHandCardClick(idx) {
+  if (!gs) return;
+  const isMyTurn = gs.myIdx === gs.currentTurn;
+  if (!isMyTurn || !gs.hasDrawn) return;
+  if (selectedDiscard === idx) {
+    // Second click = discard
+    doDiscard(idx);
+    selectedDiscard = -1;
+  } else {
+    selectedDiscard = idx;
+    // Highlight
+    const cards = document.getElementById('hand-cards').children;
+    Array.from(cards).forEach((c, i) => c.classList.toggle('selected', i===idx));
+    // Show discard hint in action row
+    const area = document.getElementById('action-row');
+    const discardBtn = area.querySelector('.discard-confirm');
+    if (!discardBtn) {
+      const btn = document.createElement('button');
+      btn.className = 'act-btn act-discard discard-confirm';
+      btn.textContent = '🗑️ Descartar seleccionada';
+      btn.onclick = () => { doDiscard(selectedDiscard); selectedDiscard=-1; };
+      area.appendChild(btn);
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// GAME ACTIONS
+// ══════════════════════════════════════════════════════════
+function doDrawDeck()    { send({ type:'drawDeck' }); }
+function doDrawDiscard() { send({ type:'drawDiscard' }); }
+function doDiscard(idx)  { send({ type:'discard', cardIdx:idx }); selectedDiscard=-1; }
+
+// ══════════════════════════════════════════════════════════
+// BAJAR OVERLAY
+// ══════════════════════════════════════════════════════════
+let bajarCombos   = [[]];  // array of arrays of card indices
+let bajarDiscard  = -1;
+
+function openBajar() {
+  bajarCombos  = [[]];
+  bajarDiscard = -1;
+  renderBajarOverlay();
+  document.getElementById('bajar-overlay').classList.add('vis');
+}
+function closeBajar() {
+  document.getElementById('bajar-overlay').classList.remove('vis');
+  document.getElementById('bajar-err').textContent = '';
+}
+
+function renderBajarOverlay() {
+  if (!gs) return;
+  const variant = gs.variant || 'es';
+  const hand = gs.players[gs.myIdx]?.hand || [];
+
+  // Combo slots
+  const comboArea = document.getElementById('combo-area');
+  comboArea.innerHTML = '';
+  bajarCombos.forEach((combo, ci) => {
+    const slot = document.createElement('div');
+    slot.className = 'combo-slot' + (combo.length >= 3 ? (isValidCombo(combo.map(i=>hand[i]), variant)?' valid':' invalid') : '');
+    slot.innerHTML = `<span class="combo-slot-label">Combinación ${ci+1}</span>`;
+    combo.forEach(cardIdx => {
+      slot.innerHTML += buildCard(hand[cardIdx], { variant, small:true });
+      slot.lastElementChild?.addEventListener('click', () => removeFromCombo(ci, cardIdx));
+    });
+    if (combo.length > 0) slot.innerHTML += `<button onclick="clearCombo(${ci})" style="font-size:0.38rem;color:rgba(255,100,100,0.7);background:none;border:none;cursor:pointer;padding:2px 5px;align-self:flex-start">✕ Limpiar</button>`;
+    comboArea.appendChild(slot);
+  });
+
+  // Hand cards
+  const handEl = document.getElementById('bajar-hand');
+  handEl.innerHTML = '';
+  const usedInCombo = new Set(bajarCombos.flat());
+  hand.forEach((card, i) => {
+    if (i === bajarDiscard) return; // shown separately
+    const inC = usedInCombo.has(i);
+    const div = document.createElement('div');
+    div.innerHTML = buildCard(card, { variant, small:false, inCombo:inC, selected: i===bajarDiscard });
+    const el = div.firstChild;
+    el.addEventListener('click', () => onBajarCardClick(i));
+    handEl.appendChild(el);
+  });
+
+  // Discard slot
+  const discEl = document.getElementById('bajar-discard-slot');
+  if (bajarDiscard >= 0 && hand[bajarDiscard]) {
+    discEl.innerHTML = buildCard(hand[bajarDiscard], { variant, selected:true });
+    discEl.innerHTML += `<button onclick="bajarDiscard=-1;renderBajarOverlay()" style="font-size:0.38rem;color:rgba(255,100,100,0.7);background:none;border:none;cursor:pointer">✕</button>`;
+  } else {
+    discEl.innerHTML = `<div style="font-size:0.5rem;color:rgba(255,100,100,0.6);font-style:italic">Haz clic derecho en una carta para seleccionarla como descarte</div>`;
+  }
+}
+
+function onBajarCardClick(idx) {
+  const usedInCombo = new Set(bajarCombos.flat());
+  if (usedInCombo.has(idx)) { removeFromComboByIdx(idx); return; }
+  if (bajarDiscard === idx) { bajarDiscard = -1; renderBajarOverlay(); return; }
+  if (bajarDiscard < 0) {
+    // First unassigned click: ask user — add to last combo or set as discard
+    // If holding Ctrl/Shift → discard; otherwise → add to current combo
+    bajarDiscard = idx;
+    renderBajarOverlay();
+    return;
+  }
+  // Otherwise add to last combo
+  addToLastCombo(idx);
+}
+
+function addToLastCombo(idx) {
+  if (bajarCombos[bajarCombos.length-1].includes(idx)) return;
+  if (bajarDiscard === idx) { bajarDiscard=-1; }
+  bajarCombos[bajarCombos.length-1].push(idx);
+  renderBajarOverlay();
+}
+
+function removeFromCombo(comboIdx, cardIdx) {
+  bajarCombos[comboIdx] = bajarCombos[comboIdx].filter(i => i !== cardIdx);
+  renderBajarOverlay();
+}
+
+function removeFromComboByIdx(cardIdx) {
+  bajarCombos.forEach((c,i) => { bajarCombos[i] = c.filter(x => x !== cardIdx); });
+  renderBajarOverlay();
+}
+
+function clearCombo(ci) { bajarCombos[ci] = []; renderBajarOverlay(); }
+function addComboSlot() { bajarCombos.push([]); renderBajarOverlay(); }
+
+function isValidCombo(cards, variant) {
+  if (cards.length < 3) return false;
+  // Group: same value
+  if (cards.every(c=>c.val===cards[0].val) && cards.length >= 3 && cards.length <= 4) return true;
+  // Run: same suit, consecutive
+  if (!cards.every(c=>c.suit===cards[0].suit)) return false;
+  const order = variant==='es'
+    ? [1,2,3,4,5,6,7,10,11,12]
+    : [1,2,3,4,5,6,7,8,9,10,11,12,13];
+  const sorted = [...cards].sort((a,b)=>order.indexOf(a.val)-order.indexOf(b.val));
+  for (let i=1;i<sorted.length;i++) {
+    if (order.indexOf(sorted[i].val) !== order.indexOf(sorted[i-1].val)+1) return false;
+  }
+  return true;
+}
+
+function confirmBajar() {
+  const errEl = document.getElementById('bajar-err');
+  if (bajarDiscard < 0) { errEl.textContent='Selecciona la carta a descartar'; return; }
+  const nonEmpty = bajarCombos.filter(c=>c.length>0);
+  if (nonEmpty.length === 0) { errEl.textContent='Añade al menos una combinación'; return; }
+  const variant = gs?.variant||'es';
+  const hand = gs?.players[gs.myIdx]?.hand||[];
+  for (const combo of nonEmpty) {
+    const cards = combo.map(i=>hand[i]);
+    if (!isValidCombo(cards, variant)) { errEl.textContent=`Combinación inválida: ${cards.map(c=>valLabel(c.val,variant)+c.suit).join(' ')}`; return; }
+  }
+  const allUsed = new Set([...nonEmpty.flat(), bajarDiscard]);
+  if (allUsed.size !== hand.length) { errEl.textContent=`Debes usar todas las cartas (usadas: ${allUsed.size}/${hand.length})`; return; }
+  send({ type:'bajar', combos: nonEmpty, discardIdx: bajarDiscard });
+  closeBajar();
+}
+
+// ══════════════════════════════════════════════════════════
+// CHINCHÓN
+// ══════════════════════════════════════════════════════════
+let chinchonDiscardIdx = -1;
+
+function openChinchon() {
+  if (!gs) return;
+  const hand = gs.players[gs.myIdx]?.hand||[];
+  const variant = gs.variant||'es';
+  // Try to auto-detect: which card to discard to form chinchón with the rest?
+  let bestDiscard = -1;
+  for (let i=0;i<hand.length;i++) {
+    const rest = hand.filter((_,j)=>j!==i);
+    if (rest.length===6 && isValidRun7(rest,variant)) { bestDiscard=i; break; }
+    // Also try all 7
+    if (i===0 && isValidRun7(hand,variant)) { bestDiscard=-2; break; } // perfect 7-card chinchón
+  }
+  if (bestDiscard === -2) {
+    // Declare Chinchón with discard = last drawn card
+    const lastIdx = hand.length-1;
+    send({ type:'chinchon', discardIdx: lastIdx });
+    return;
+  }
+  if (bestDiscard >= 0) {
+    if (confirm(`¡CHINCHÓN detectado! ¿Descartar ${valLabel(hand[bestDiscard].val,variant)}${hand[bestDiscard].suit} y declarar Chinchón?`)) {
+      send({ type:'chinchon', discardIdx: bestDiscard });
+    }
+    return;
+  }
+  notice('No tienes Chinchón — necesitas 7 cartas del mismo palo en secuencia', 3000);
+}
+
+function isValidRun7(cards, variant) {
+  if (cards.length !== 7) return false;
+  if (!cards.every(c=>c.suit===cards[0].suit)) return false;
+  const order = variant==='es'?[1,2,3,4,5,6,7,10,11,12]:[1,2,3,4,5,6,7,8,9,10,11,12,13];
+  const sorted = [...cards].sort((a,b)=>order.indexOf(a.val)-order.indexOf(b.val));
+  for (let i=1;i<sorted.length;i++) {
+    if (order.indexOf(sorted[i].val)!==order.indexOf(sorted[i-1].val)+1) return false;
+  }
+  return true;
+}
+
+// ══════════════════════════════════════════════════════════
+// MESSAGE HANDLER
+// ══════════════════════════════════════════════════════════
+function handleMsg(msg) {
+  if (msg.type==='joined') {
+    myId=msg.playerId; myRoom=msg.roomCode;
+    document.getElementById('lform').style.display='none';
+    document.getElementById('lwait').style.display='block';
+    document.getElementById('wcode').textContent=msg.roomCode;
+  }
+  if (msg.type==='state') {
+    gs=msg.state;
+    if (gs.gameState==='waiting') { renderWaiting(gs); return; }
+    document.getElementById('lobby').style.display='none';
+    document.getElementById('game').classList.add('active');
+    renderGame(gs);
+    if (gs.gameState==='round_end' && gs.lastBajar) showRoundEnd(gs.lastBajar);
+  }
+  if (msg.type==='log') addLog(msg.msg);
+  if (msg.type==='chat') addChat(msg.from, msg.msg);
+  if (msg.type==='notice') notice(msg.msg, 2800);
+  if (msg.type==='bajar') {
+    notice(`⬇ ${esc(msg.playerName)} baja su mano`, 2500);
+  }
+  if (msg.type==='chinchon') {
+    showChinchonBanner();
+    notice(`🌟 ¡${esc(msg.playerName)} hace CHINCHÓN! −10 puntos`, 3500);
+  }
+  if (msg.type==='round_end') showRoundEnd(msg);
+  if (msg.type==='game_over') showGameOver(msg);
+  if (msg.type==='ready_count') {
+    const btn=document.getElementById('next-round-btn');
+    if(btn) btn.textContent=`▶ Siguiente ronda (${msg.count}/${msg.total})`;
+  }
+  if (msg.type==='error') notice('⚠️ '+msg.msg, 2500);
+}
+
+function renderWaiting(state) {
+  document.getElementById('wlist').innerHTML=(state.players||[]).map(p=>
+    `<div class="w-player"><span>${esc(p.name)}${p.isYou?' <em style="opacity:0.5">(Tú)</em>':''}</span><span style="color:var(--muted);font-size:0.6rem">${p.isHost?'👑 Host':''}</span></div>`
+  ).join('');
+  const me=(state.players||[]).find(p=>p.isYou);
+  const sa=document.getElementById('wstart');
+  if(me?.isHost&&(state.players||[]).length>=2){
+    sa.innerHTML=`<button class="btn btn-gold" id="start-btn">▶ Iniciar (${state.players.length} jugadores)</button>`;
+    document.getElementById('start-btn').onclick=()=>send({type:'startGame'});
+  } else if(me?.isHost){
+    sa.innerHTML=`<div style="font-size:0.52rem;color:var(--muted);text-align:center">Necesitas al menos 2 jugadores</div>`;
+  } else {
+    sa.innerHTML=`<div style="font-size:0.52rem;color:var(--muted);text-align:center">El anfitrión iniciará la partida</div>`;
+  }
+}
+
+function showRoundEnd(data) {
+  const overlay = document.getElementById('round-overlay');
+  const scoresEl = document.getElementById('round-scores');
+  const winnerName = data.winnerName || data.playerName || '';
+  document.getElementById('round-title').textContent = data.isChinchon
+    ? `🌟 ¡${winnerName} hace CHINCHÓN!`
+    : `⬇ ${winnerName} baja — Fin de ronda`;
+
+  if (gs) {
+    scoresEl.innerHTML = gs.players.map(p => {
+      const sc = (data.scores||[]).find(s=>s.name===p.name);
+      if (!sc) return '';
+      return `<div class="score-row${sc.eliminated?' elim':''}${sc.pts===0||sc.pts===-10?' winner':''}">
+        <span class="sr-n">${esc(p.name)}${sc.eliminated?'  💀':''}</span>
+        <span class="sr-r">${sc.pts>=0?'+':''}${sc.pts} pts</span>
+        <span class="sr-t">${sc.total} total</span>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('next-round-btn').disabled=false;
+  document.getElementById('next-round-btn').textContent='▶ Siguiente ronda';
+  overlay.classList.add('vis');
+}
+
+function showGameOver(msg) {
+  document.getElementById('round-overlay').classList.remove('vis');
+  const go = document.getElementById('go-overlay');
+  document.getElementById('go-scores').innerHTML=(msg.scores||[]).map((s,i)=>
+    `<div class="score-row${s.eliminated?' elim':''}${i===0?' winner':''}">
+      <span class="sr-n">${['🥇','🥈','🥉'][i]||i+1} ${esc(s.name)}</span>
+      <span class="sr-t">${s.points} pts</span>
+    </div>`
+  ).join('');
+  go.classList.add('vis');
+}
+
+function showChinchonBanner() {
+  const el=document.getElementById('chinchon-banner');
+  el.classList.add('vis');
+  setTimeout(()=>el.classList.remove('vis'),2500);
+}
+
+function sendNextRound() { send({type:'nextRound'}); document.getElementById('next-round-btn').disabled=true; }
+
+// ══════════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════════
+function addLog(m){
+  const el=document.getElementById('log-area');
+  const d=document.createElement('div'); d.className='log-e'; d.textContent=m;
+  el.appendChild(d); el.scrollTop=el.scrollHeight;
+  if(el.children.length>100) el.removeChild(el.firstChild);
+}
+function addChat(from,m){
+  const el=document.getElementById('chat-msgs');
+  el.innerHTML+=`<div class="chat-msg"><span class="chat-from">${esc(from)}:</span> ${esc(m)}</div>`;
+  el.scrollTop=el.scrollHeight;
+}
+function sendChat(){
+  const inp=document.getElementById('chat-inp');
+  const t=inp.value.trim(); if(!t) return;
+  send({type:'chat',text:t}); inp.value='';
+}
+function notice(m,dur=2500){
+  const el=document.getElementById('notice');
+  el.textContent=m; el.classList.add('show');
+  if(ntimer) clearTimeout(ntimer);
+  ntimer=setTimeout(()=>el.classList.remove('show'),dur);
+}
+
+window.addEventListener('resize',()=>{ if(gs&&gs.gameState!=='waiting') renderGame(gs); });
+window.addEventListener('orientationchange',()=>{ setTimeout(()=>{ if(gs&&gs.gameState!=='waiting') renderGame(gs); },200); });
+</script>
+</body>
+</html>

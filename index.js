@@ -18,7 +18,7 @@ const httpServer = http.createServer((req, res) => {
     res.end(JSON.stringify(lbDB));
     return;
   }
-  const routes = { '/': 'arcade.html', '/mus': 'mus.html', '/caida': 'caida.html', '/poker': 'poker.html', '/solitario': 'solitario.html', '/uno': 'uno.html' };
+  const routes = { '/': 'arcade.html', '/mus': 'mus.html', '/caida': 'caida.html', '/poker': 'poker.html', '/solitario': 'solitario.html', '/uno': 'uno.html', '/chinchon': 'chinchon.html' };
   const file = routes[req.url] || null;
   if (!file) { res.writeHead(404); res.end('Not found'); return; }
   fs.readFile(path.join(__dirname, file), (err, data) => {
@@ -2545,6 +2545,487 @@ function unoEndHand(room, winner) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// ███ CHINCHÓN
+// ═══════════════════════════════════════════════════════════════════════════════
+// Rules:
+// - 7 cards per player. On your turn: draw 1 (from deck or discard pile), then discard 1.
+// - Goal: form combinations with all 6 remaining cards and discard the 7th = "bajar"
+// - Combination types: GROUP (3-4 same value) or RUN (3+ consecutive same suit)
+// - Chinchón: all 7 cards in one sequence of the same suit = special win (−10 pts)
+// - Points on hand = sum of unmatched cards (Jotas/Reyes/etc = face value)
+// - Spanish deck: values 1-7, 10-12 (8&9 removed). J=8,Q=9,K=10 for points
+// - French deck: standard 52 cards, A=1, J=Q=K=10 for points
+// - Elimination: reach 100 pts → eliminated, points anchored to next player
+// - Last player under 100 wins
+
+const chinchonRooms = {};
+
+// ── DECK ──────────────────────────────────────────────────────────────────────
+const CH_SUITS_ES = ['oros','copas','espadas','bastos'];
+const CH_VALS_ES  = [1,2,3,4,5,6,7,10,11,12]; // Spanish deck (no 8,9)
+const CH_SUITS_FR = ['♠','♥','♦','♣'];
+const CH_VALS_FR  = [1,2,3,4,5,6,7,8,9,10,11,12,13]; // French deck
+
+function chMakeDeck(variant) {
+  const suits = variant === 'es' ? CH_SUITS_ES : CH_SUITS_FR;
+  const vals  = variant === 'es' ? CH_VALS_ES  : CH_VALS_FR;
+  const deck = [];
+  for (const s of suits) for (const v of vals) deck.push({ suit:s, val:v, id:`${s}_${v}` });
+  return deck;
+}
+
+function chShuffle(arr) {
+  for (let i = arr.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+
+// Number of decks based on player count
+function chNumDecks(n) {
+  if (n <= 4)  return 1;
+  if (n <= 7)  return 2;
+  return 3;
+}
+
+// Point value of a card
+function chCardPoints(card, variant) {
+  if (variant === 'es') {
+    if (card.val <= 7)  return card.val;
+    if (card.val === 10) return 8;  // Sota
+    if (card.val === 11) return 9;  // Caballo
+    if (card.val === 12) return 10; // Rey
+  } else {
+    if (card.val <= 10) return card.val;
+    return 10; // J,Q,K
+  }
+  return card.val;
+}
+
+// Display label for a card value
+function chValLabel(val, variant) {
+  if (variant === 'es') {
+    if (val === 10) return 'S';
+    if (val === 11) return 'C';
+    if (val === 12) return 'R';
+  } else {
+    if (val === 1)  return 'A';
+    if (val === 11) return 'J';
+    if (val === 12) return 'Q';
+    if (val === 13) return 'K';
+  }
+  return String(val);
+}
+
+// ── COMBINATION VALIDATION ────────────────────────────────────────────────────
+// Returns { valid:bool, combos:[], deadwood:[] }
+// combos = array of arrays of card objects
+// deadwood = unmatched cards
+
+function chOrderVal(val, variant) {
+  // For sequence purposes in Spanish deck: 1,2,3,4,5,6,7,10(=8),11(=9),12(=10)
+  if (variant === 'es') {
+    const order = [1,2,3,4,5,6,7,10,11,12];
+    return order.indexOf(val);
+  }
+  return val - 1; // French: 1=A=1, 13=K=13
+}
+
+// Check if a set of cards forms a valid run (sequence, same suit, 3+)
+function chIsRun(cards, variant) {
+  if (cards.length < 3) return false;
+  const suit = cards[0].suit;
+  if (!cards.every(c => c.suit === suit)) return false;
+  const sorted = [...cards].sort((a,b) => chOrderVal(a.val, variant) - chOrderVal(b.val, variant));
+  for (let i = 1; i < sorted.length; i++) {
+    if (chOrderVal(sorted[i].val, variant) !== chOrderVal(sorted[i-1].val, variant) + 1) return false;
+  }
+  return true;
+}
+
+// Check if a set of cards forms a valid group (same value, 3-4 cards)
+function chIsGroup(cards) {
+  if (cards.length < 3 || cards.length > 4) return false;
+  const val = cards[0].val;
+  return cards.every(c => c.val === val);
+}
+
+// Check if all 7 cards form a single run (Chinchón)
+function chIsChinchon(cards, variant) {
+  return cards.length === 7 && chIsRun(cards, variant);
+}
+
+// Try to find best combination layout for given cards
+// Returns { combos, deadwood, deadwoodPoints }
+function chBestLayout(cards, variant) {
+  // Try all possible partitions to minimize deadwood
+  // For 6-7 cards with combinations of 3-4, brute force is feasible
+  const best = { combos:[], deadwood:[...cards], deadwoodPoints: cards.reduce((s,c)=>s+chCardPoints(c,variant),0) };
+
+  function tryPartition(remaining, currentCombos) {
+    if (remaining.length === 0) {
+      const pts = 0;
+      if (pts < best.deadwoodPoints) {
+        best.combos = [...currentCombos];
+        best.deadwood = [];
+        best.deadwoodPoints = 0;
+      }
+      return;
+    }
+
+    // Try each subset of size 3 and 4
+    for (let size = 3; size <= Math.min(4, remaining.length); size++) {
+      // Generate all combinations of `size` from remaining
+      const combos = combinations(remaining, size);
+      for (const combo of combos) {
+        if (chIsRun(combo, variant) || chIsGroup(combo)) {
+          const rest = remaining.filter(c => !combo.includes(c));
+          tryPartition(rest, [...currentCombos, combo]);
+        }
+      }
+    }
+
+    // Baseline: current remaining are all deadwood
+    const pts = remaining.reduce((s,c) => s+chCardPoints(c,variant), 0);
+    if (pts < best.deadwoodPoints) {
+      best.combos = [...currentCombos];
+      best.deadwood = [...remaining];
+      best.deadwoodPoints = pts;
+    }
+  }
+
+  function combinations(arr, k) {
+    if (k === 0) return [[]];
+    if (arr.length < k) return [];
+    const [first, ...rest] = arr;
+    return [
+      ...combinations(rest, k-1).map(c => [first,...c]),
+      ...combinations(rest, k)
+    ];
+  }
+
+  tryPartition(cards, []);
+  return best;
+}
+
+// Validate a player's declared bajar move
+function chValidateBajar(hand, combos, discardCard, variant) {
+  // combos: array of index arrays referring to hand positions
+  // discardCard: index of card being discarded (the 7th)
+  const usedIndices = new Set(combos.flat());
+  if (usedIndices.has(discardCard)) return { ok:false, reason:'La carta a descartar no puede estar en una combinación' };
+
+  const allIndices = [...usedIndices, discardCard];
+  if (allIndices.length !== hand.length) return { ok:false, reason:'Debes usar todas las cartas' };
+  if (new Set(allIndices).size !== allIndices.length) return { ok:false, reason:'Carta usada dos veces' };
+
+  for (const combo of combos) {
+    const cards = combo.map(i => hand[i]);
+    if (!chIsRun(cards, variant) && !chIsGroup(cards)) {
+      return { ok:false, reason:`Combinación inválida: ${cards.map(c=>chValLabel(c.val,variant)+c.suit).join(',')}` };
+    }
+  }
+  return { ok:true };
+}
+
+// Validate chinchón (all 7 form a run)
+function chValidateChinchon(hand, variant) {
+  return chIsChinchon(hand, variant);
+}
+
+// ── ROOM ──────────────────────────────────────────────────────────────────────
+function chCreateRoom(code, maxPlayers, variant) {
+  return {
+    code,
+    maxPlayers: Math.min(10, Math.max(2, maxPlayers||4)),
+    variant: variant || 'es', // 'es' | 'fr'
+    players: [], // { id, ws, name, hand, points, eliminated, anchored, anchoredFrom }
+    state: 'waiting',
+    deck: [],
+    discardPile: [], // top = last element
+    currentTurn: 0,
+    round: 0,
+    drawnCard: null,     // card drawn this turn (must discard before ending)
+    drawnFrom: null,     // 'deck' | 'discard'
+    hasDrawn: false,     // whether current player has drawn this turn
+    readyForNext: [],
+    lastBajar: null,     // { playerName, combos, discard, isChinchon }
+  };
+}
+
+function chBroadcast(room, msg) {
+  room.players.forEach(p => { if(p.ws&&p.ws.readyState===1) p.ws.send(JSON.stringify(msg)); });
+}
+function chSendTo(p, msg) { if(p.ws&&p.ws.readyState===1) p.ws.send(JSON.stringify(msg)); }
+function chLog(room, msg) { chBroadcast(room, { type:'log', msg }); }
+
+function chBuildStateFor(room, player) {
+  const myIdx = room.players.indexOf(player);
+  return {
+    roomCode: room.code,
+    gameState: room.state,
+    variant: room.variant,
+    currentTurn: room.currentTurn,
+    round: room.round,
+    hasDrawn: room.hasDrawn,
+    drawnFrom: room.drawnFrom,
+    topDiscard: room.discardPile.length ? room.discardPile[room.discardPile.length-1] : null,
+    deckCount: room.deck.length,
+    myIdx,
+    lastBajar: room.lastBajar || null,
+    players: room.players.map((p,i) => ({
+      id: p.id, name: p.name, isYou: p.id === player.id,
+      isHost: i === 0, eliminated: p.eliminated||false,
+      anchored: p.anchored||false, anchoredPts: p.anchoredPts||0,
+      points: p.points||0, cardCount: p.hand ? p.hand.length : 0,
+      hand: p.id === player.id ? p.hand : null,
+    })),
+  };
+}
+function chSendState(room) { room.players.forEach(p => chSendTo(p, { type:'state', state: chBuildStateFor(room, p) })); }
+
+// ── DEAL ──────────────────────────────────────────────────────────────────────
+function chDeal(room) {
+  const n = room.players.filter(p=>!p.eliminated).length;
+  const numDecks = chNumDecks(n);
+  let deck = [];
+  for (let i = 0; i < numDecks; i++) deck.push(...chMakeDeck(room.variant));
+  room.deck = chShuffle(deck);
+  room.discardPile = [];
+  room.hasDrawn = false;
+  room.drawnCard = null;
+  room.drawnFrom = null;
+  room.lastBajar = null;
+  room.readyForNext = [];
+
+  // Deal 7 cards to each active player
+  room.players.forEach(p => {
+    if (!p.eliminated) {
+      p.hand = room.deck.splice(0, 7);
+    } else {
+      p.hand = [];
+    }
+  });
+
+  // First discard card
+  room.discardPile.push(room.deck.pop());
+
+  // First turn: first non-eliminated player
+  room.currentTurn = room.players.findIndex(p => !p.eliminated);
+  room.state = 'playing';
+  room.round++;
+  chLog(room, `🃏 Ronda ${room.round} — ${room.players[room.currentTurn].name} empieza`);
+  chSendState(room);
+}
+
+// ── NEXT TURN ──────────────────────────────────────────────────────────────────
+function chNextTurn(room) {
+  room.hasDrawn = false;
+  room.drawnCard = null;
+  room.drawnFrom = null;
+  const n = room.players.length;
+  let idx = room.currentTurn;
+  do { idx = (idx + 1) % n; } while (room.players[idx].eliminated);
+  room.currentTurn = idx;
+  chSendState(room);
+}
+
+// ── SCORING ───────────────────────────────────────────────────────────────────
+function chScoreHand(hand, variant) {
+  return hand.reduce((s,c) => s + chCardPoints(c, variant), 0);
+}
+
+// End of round: someone bajó, score all other players
+function chEndRound(room, winnerIdx, isChinchon) {
+  const variant = room.variant;
+  room.state = 'round_end';
+
+  const scores = [];
+  room.players.forEach((p, i) => {
+    if (p.eliminated) { scores.push({ name:p.name, pts:0, total:p.points, eliminated:true }); return; }
+    let roundPts = 0;
+    if (i === winnerIdx) {
+      roundPts = isChinchon ? -10 : 0; // winner scores 0 (or -10 for chinchón)
+    } else {
+      roundPts = chScoreHand(p.hand, variant);
+    }
+    p.points = (p.points||0) + roundPts;
+    scores.push({ name:p.name, pts:roundPts, total:p.points });
+  });
+
+  chLog(room, `📊 Ronda ${room.round} terminada:`);
+  scores.filter(s=>!s.eliminated).forEach(s => chLog(room, `  ${s.name}: +${s.pts} → ${s.total} pts`));
+
+  // Check eliminations (≥100 pts) — anchor to next active player
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < room.players.length; i++) {
+      const p = room.players[i];
+      if (!p.eliminated && p.points >= 100) {
+        p.eliminated = true;
+        changed = true;
+        chLog(room, `💀 ${p.name} eliminado con ${p.points} pts`);
+        // Anchor points to next active player
+        let next = (i+1) % room.players.length;
+        while (room.players[next].eliminated && next !== i) next = (next+1) % room.players.length;
+        if (next !== i && !room.players[next].eliminated) {
+          room.players[next].points += p.points;
+          room.players[next].anchored = true;
+          room.players[next].anchoredPts = (room.players[next].anchoredPts||0) + p.points;
+          chLog(room, `🔗 ${p.points} pts anclados a ${room.players[next].name} (${room.players[next].points} total)`);
+        }
+      }
+    }
+  }
+
+  // Check win condition: only 1 player left
+  const alive = room.players.filter(p=>!p.eliminated);
+  if (alive.length <= 1) {
+    const winner = alive[0] || room.players.reduce((a,b) => a.points < b.points ? a : b);
+    chBroadcast(room, { type:'game_over', winnerName: winner.name, scores: room.players.map(p=>({name:p.name,points:p.points,eliminated:p.eliminated})).sort((a,b)=>a.points-b.points) });
+    room.state = 'game_over';
+    chSendState(room);
+    return;
+  }
+
+  chBroadcast(room, { type:'round_end', scores, lastBajar: room.lastBajar });
+  chSendState(room);
+}
+
+// ── MESSAGE HANDLERS ──────────────────────────────────────────────────────────
+function chHandleMessage(room, player, msg) {
+  const pidx = room.players.indexOf(player);
+
+  if (msg.type === 'startGame') {
+    if (room.state !== 'waiting') return;
+    if (room.players.length < 2) { chSendTo(player, {type:'error',msg:'Necesitas al menos 2 jugadores'}); return; }
+    chLog(room, `🎮 ¡Comienza el Chinchón! ${room.players.length} jugadores · Baraja ${room.variant === 'es' ? 'española' : 'francesa'}`);
+    chDeal(room);
+    return;
+  }
+
+  if (msg.type === 'drawDeck') {
+    if (room.state !== 'playing') return;
+    if (pidx !== room.currentTurn) { chSendTo(player, {type:'error',msg:'No es tu turno'}); return; }
+    if (room.hasDrawn) { chSendTo(player, {type:'error',msg:'Ya has robado esta ronda'}); return; }
+    if (room.deck.length === 0) {
+      // Reshuffle discard except top
+      const top = room.discardPile.pop();
+      room.deck = chShuffle([...room.discardPile]);
+      room.discardPile = [top];
+      chLog(room, '🔄 Mazo agotado — se rebaraja la pila de descarte');
+    }
+    const card = room.deck.pop();
+    player.hand.push(card);
+    room.hasDrawn = true;
+    room.drawnCard = card;
+    room.drawnFrom = 'deck';
+    chLog(room, `📥 ${player.name} roba del mazo`);
+    chSendState(room);
+    return;
+  }
+
+  if (msg.type === 'drawDiscard') {
+    if (room.state !== 'playing') return;
+    if (pidx !== room.currentTurn) { chSendTo(player, {type:'error',msg:'No es tu turno'}); return; }
+    if (room.hasDrawn) { chSendTo(player, {type:'error',msg:'Ya has robado esta ronda'}); return; }
+    if (!room.discardPile.length) { chSendTo(player, {type:'error',msg:'La pila de descarte está vacía'}); return; }
+    const card = room.discardPile.pop();
+    player.hand.push(card);
+    room.hasDrawn = true;
+    room.drawnCard = card;
+    room.drawnFrom = 'discard';
+    chLog(room, `📥 ${player.name} toma la carta del descarte`);
+    chSendState(room);
+    return;
+  }
+
+  if (msg.type === 'discard') {
+    if (room.state !== 'playing') return;
+    if (pidx !== room.currentTurn) { chSendTo(player, {type:'error',msg:'No es tu turno'}); return; }
+    if (!room.hasDrawn) { chSendTo(player, {type:'error',msg:'Primero debes robar una carta'}); return; }
+    const { cardIdx } = msg;
+    if (cardIdx < 0 || cardIdx >= player.hand.length) return;
+    const card = player.hand.splice(cardIdx, 1)[0];
+    room.discardPile.push(card);
+    chLog(room, `🗑️ ${player.name} descarta ${chValLabel(card.val, room.variant)}${card.suit}`);
+    chNextTurn(room);
+    return;
+  }
+
+  if (msg.type === 'bajar') {
+    if (room.state !== 'playing') return;
+    if (pidx !== room.currentTurn) { chSendTo(player, {type:'error',msg:'No es tu turno'}); return; }
+    if (!room.hasDrawn) { chSendTo(player, {type:'error',msg:'Primero debes robar una carta'}); return; }
+    const { combos, discardIdx } = msg; // combos: [[idx,idx,idx], ...], discardIdx: card index to discard
+
+    if (discardIdx < 0 || discardIdx >= player.hand.length) { chSendTo(player, {type:'error',msg:'Índice de descarte inválido'}); return; }
+
+    // Validate
+    const result = chValidateBajar(player.hand, combos, discardIdx, room.variant);
+    if (!result.ok) { chSendTo(player, {type:'error',msg:result.reason}); return; }
+
+    const discardCard = player.hand[discardIdx];
+    const comboCards = combos.map(combo => combo.map(i => player.hand[i]));
+
+    room.lastBajar = { playerName: player.name, combos: comboCards, discard: discardCard, isChinchon: false };
+
+    chLog(room, `✅ ${player.name} baja con ${combos.length} combinación(es)`);
+    chBroadcast(room, { type:'bajar', playerName: player.name, combos: comboCards, discard: discardCard });
+    chEndRound(room, pidx, false);
+    return;
+  }
+
+  if (msg.type === 'chinchon') {
+    if (room.state !== 'playing') return;
+    if (pidx !== room.currentTurn) { chSendTo(player, {type:'error',msg:'No es tu turno'}); return; }
+    if (!room.hasDrawn) { chSendTo(player, {type:'error',msg:'Primero debes robar una carta'}); return; }
+
+    // The discardIdx is the card to throw out after forming chinchón with the other 6? 
+    // Actually traditional chinchón: all 7 cards form one run — validate all 7
+    // Some variants: draw, form 7-card run, discard the last drawn? 
+    // We allow: declare chinchón with all 7 in hand (after draw = 8 cards, pick 7 to form run)
+    const { discardIdx } = msg;
+    if (discardIdx === undefined || discardIdx < 0 || discardIdx >= player.hand.length) {
+      chSendTo(player, {type:'error',msg:'Indica la carta a descartar'}); return;
+    }
+    const remaining = player.hand.filter((_,i) => i !== discardIdx);
+    if (!chIsChinchon(remaining, room.variant)) {
+      chSendTo(player, {type:'error',msg:'Tus 7 cartas no forman un Chinchón (escalera completa del mismo palo)'}); return;
+    }
+
+    const discardCard = player.hand[discardIdx];
+    room.lastBajar = { playerName: player.name, combos:[remaining], discard: discardCard, isChinchon: true };
+    chLog(room, `🎉 ¡CHINCHÓN! ${player.name} gana la ronda con -10 puntos`);
+    chBroadcast(room, { type:'chinchon', playerName: player.name, hand: remaining, discard: discardCard });
+    chEndRound(room, pidx, true);
+    return;
+  }
+
+  if (msg.type === 'nextRound') {
+    if (room.state !== 'round_end') return;
+    if (!room.readyForNext.includes(player.id)) {
+      room.readyForNext.push(player.id);
+      const alive = room.players.filter(p=>!p.eliminated).length;
+      chBroadcast(room, { type:'ready_count', count: room.readyForNext.length, total: alive });
+    }
+    if (room.readyForNext.length >= room.players.filter(p=>!p.eliminated).length) {
+      chDeal(room);
+    }
+    return;
+  }
+
+  if (msg.type === 'chat') {
+    chBroadcast(room, { type:'chat', from: player.name, msg: msg.text });
+    return;
+  }
+}
+
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // ███ WEBSOCKET UNIFICADO
 // ═══════════════════════════════════════════════════════════════════════════════
 const wss = new WebSocketServer({ server: httpServer });
@@ -2564,7 +3045,7 @@ wss.on('connection', (ws) => {
     // ── CREATE ROOM ──────────────────────────────────────────────────────────
     if (msg.type === 'getOnlineCounts') {
       const countPlayers = (store) => Object.values(store).reduce((s, r) => s + r.players.length, 0);
-      sendTo({ ws }, { type: 'online_counts', mus: countPlayers(musRooms), caida: countPlayers(caidaRooms), poker: countPlayers(pokerRooms), uno: countPlayers(unoRooms) });
+      sendTo({ ws }, { type: 'online_counts', mus: countPlayers(musRooms), caida: countPlayers(caidaRooms), poker: countPlayers(pokerRooms), uno: countPlayers(unoRooms), chinchon: countPlayers(chinchonRooms) });
       return;
     }
 
@@ -2618,13 +3099,24 @@ wss.on('connection', (ws) => {
         unoSendState(room);
         return;
       }
+      if (game === 'chinchon') {
+        const code = genCode('H', chinchonRooms);
+        chinchonRooms[code] = chCreateRoom(code, msg.maxPlayers || 4, msg.variant || 'es');
+        const room = chinchonRooms[code];
+        const p = { id: playerId, ws, name: msg.name || 'Jugador', hand: [], points: 0, eliminated: false };
+        room.players.push(p);
+        playerRoom = room; playerData = p;
+        sendTo(p, { type: 'joined', roomCode: code, playerId });
+        chSendState(room);
+        return;
+      }
     }
 
     // ── JOIN ROOM ────────────────────────────────────────────────────────────
     if (msg.type === 'joinRoom') {
       if (!game) return;
       playerGame = game;
-      const store = game === 'mus' ? musRooms : game === 'caida' ? caidaRooms : game === 'uno' ? unoRooms : pokerRooms;
+      const store = game === 'mus' ? musRooms : game === 'caida' ? caidaRooms : game === 'uno' ? unoRooms : game === 'chinchon' ? chinchonRooms : pokerRooms;
       const room = store[msg.code];
       if (!room) { ws.send(JSON.stringify({ type: 'error', msg: 'Sala no encontrada' })); return; }
       if (room.players.length >= room.maxPlayers) { ws.send(JSON.stringify({ type: 'error', msg: 'Sala llena' })); return; }
@@ -2649,6 +3141,9 @@ wss.on('connection', (ws) => {
           } else if (game === 'uno') {
             unoBroadcast(room, { type: 'log', msg: `🔄 ${existingPlayer.name} se ha reconectado` });
             unoSendState(room);
+          } else if (game === 'chinchon') {
+            chBroadcast(room, { type: 'log', msg: `🔄 ${existingPlayer.name} se ha reconectado` });
+            chSendState(room);
           }
           return;
         }
@@ -2699,6 +3194,15 @@ wss.on('connection', (ws) => {
         sendTo(p, { type: 'joined', roomCode: room.code, playerId });
         unoBroadcast(room, { type: 'log', msg: `👤 ${p.name} se unió` });
         unoSendState(room);
+        return;
+      }
+      if (game === 'chinchon') {
+        const p = { id: playerId, ws, name: msg.name || 'Jugador', hand: [], points: 0, eliminated: false };
+        room.players.push(p);
+        playerRoom = room; playerData = p;
+        sendTo(p, { type: 'joined', roomCode: room.code, playerId });
+        chBroadcast(room, { type: 'log', msg: `👤 ${p.name} se unió` });
+        chSendState(room);
         return;
       }
     }
@@ -3189,11 +3693,16 @@ wss.on('connection', (ws) => {
       pokerSendState(playerRoom);
     } else if (playerGame === 'uno') {
       unoBroadcast(playerRoom, { type: 'log', msg: `⚠️ ${playerData.name} se desconectó` });
-      // Mark as eliminated if game in progress
       if (playerRoom.state === 'playing') playerData.eliminated = true;
       else playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
       if (playerRoom.players.length === 0) { delete unoRooms[playerRoom.code]; return; }
       unoSendState(playerRoom);
+    } else if (playerGame === 'chinchon') {
+      chBroadcast(playerRoom, { type: 'log', msg: `⚠️ ${playerData.name} se desconectó` });
+      if (playerRoom.state === 'playing') playerData.eliminated = true;
+      else playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
+      if (playerRoom.players.length === 0) { delete chinchonRooms[playerRoom.code]; return; }
+      chSendState(playerRoom);
     }
   });
 }); // end wss.on connection

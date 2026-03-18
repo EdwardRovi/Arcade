@@ -129,10 +129,11 @@ body.hover-poker #bg-poker-ghost { opacity:0 !important; }
 body.hover-solitario #bg-solitario-ghost { opacity:0 !important; }
 
 /* Default state: all ghosts hidden */
-body:not(.hover-mus):not(.hover-caida):not(.hover-poker):not(.hover-solitario) #bg-mus-ghost,
-body:not(.hover-mus):not(.hover-caida):not(.hover-poker):not(.hover-solitario) #bg-caida-ghost,
-body:not(.hover-mus):not(.hover-caida):not(.hover-poker):not(.hover-solitario) #bg-poker-ghost,
-body:not(.hover-mus):not(.hover-caida):not(.hover-poker):not(.hover-solitario) #bg-solitario-ghost { opacity:0; }
+body:not(.hover-mus):not(.hover-caida):not(.hover-poker):not(.hover-solitario):not(.hover-chinchon) #bg-mus-ghost,
+body:not(.hover-mus):not(.hover-caida):not(.hover-poker):not(.hover-solitario):not(.hover-chinchon) #bg-caida-ghost,
+body:not(.hover-mus):not(.hover-caida):not(.hover-poker):not(.hover-solitario):not(.hover-chinchon) #bg-poker-ghost,
+body:not(.hover-mus):not(.hover-caida):not(.hover-poker):not(.hover-solitario):not(.hover-chinchon) #bg-solitario-ghost,
+body:not(.hover-mus):not(.hover-caida):not(.hover-poker):not(.hover-solitario):not(.hover-chinchon) #bg-chinchon-ghost { opacity:0; }
 
 /* During hover: non-active ghosts show */
 body.hover-mus   #bg-caida-ghost, body.hover-mus   #bg-poker-ghost, body.hover-mus   #bg-solitario-ghost,
@@ -283,6 +284,7 @@ body.hover-solitario .card-solitario { transform:translateY(-8px) scale(1.04); }
 .card-caida { border-color:rgba(30,80,160,0.3); }
 .card-poker { border-color:rgba(160,30,30,0.3); }
 .card-solitario { border-color:rgba(109,40,217,0.3); animation: fadeSlideUp 0.65s ease both; animation-delay: 1.2s; }
+.card-chinchon { border-color:rgba(30,120,30,0.3); animation: fadeSlideUp 0.65s ease both; animation-delay: 1.35s; }
 .card-mus:hover      { border-color:rgba(39,200,80,0.7);   box-shadow:0 14px 55px rgba(18,110,42,0.45),  0 0 0 1px rgba(39,200,80,0.25); }
 .card-caida:hover    { border-color:rgba(60,140,230,0.7);  box-shadow:0 14px 55px rgba(15,55,160,0.45),  0 0 0 1px rgba(60,140,230,0.25); }
 .card-poker:hover    { border-color:rgba(230,60,60,0.7);   box-shadow:0 14px 55px rgba(155,12,12,0.45),  0 0 0 1px rgba(230,60,60,0.25); }
@@ -296,6 +298,7 @@ body.hover-solitario .card-solitario { transform:translateY(-8px) scale(1.04); }
 .card-caida     .game-name { color:#6ab0e8; }
 .card-poker     .game-name { color:#e87a7a; }
 .card-solitario .game-name { color:#c084fc; }
+.card-chinchon  .game-name { color:#7bc47b; }
 
 .game-desc { font-size:0.6rem; color:var(--muted); text-align:center; line-height:1.5; letter-spacing:0.05em; }
 
@@ -309,6 +312,7 @@ body.hover-solitario .card-solitario { transform:translateY(-8px) scale(1.04); }
 .card-caida     .game-players { background:rgba(30,80,160,0.2);   color:#6ab0e8; border:1px solid rgba(30,80,160,0.3); }
 .card-poker     .game-players { background:rgba(160,30,30,0.2);   color:#e87a7a; border:1px solid rgba(160,30,30,0.3); }
 .card-solitario .game-players { background:rgba(109,40,217,0.2);  color:#c084fc; border:1px solid rgba(109,40,217,0.3); }
+.card-chinchon  .game-players { background:rgba(20,100,20,0.2);  color:#7bc47b; border:1px solid rgba(20,100,20,0.3); }
 
 /* Online counter */
 .online-count {
@@ -325,6 +329,7 @@ body.hover-solitario .card-solitario { transform:translateY(-8px) scale(1.04); }
 .card-caida     .online-dot { background:#6ab0e8; box-shadow:0 0 5px rgba(106,176,232,0.7); }
 .card-poker     .online-dot { background:#e87a7a; box-shadow:0 0 5px rgba(232,122,122,0.7); }
 .card-solitario .online-dot { background:#c084fc; box-shadow:0 0 5px rgba(192,132,252,0.7); }
+.card-chinchon  .online-dot { background:#7bc47b; box-shadow:0 0 5px rgba(123,196,123,0.7); }
 @keyframes dotPulse {
   0%,100% { opacity:1; transform:scale(1); }
   50%     { opacity:0.4; transform:scale(0.75); }
@@ -344,6 +349,7 @@ body.hover-mus       .footer { color:rgba(123,196,123,0.4); }
 body.hover-caida     .footer { color:rgba(106,176,232,0.4); }
 body.hover-poker     .footer { color:rgba(232,122,122,0.4); }
 body.hover-solitario .footer { color:rgba(192,132,252,0.4); }
+body.hover-chinchon  .footer { color:rgba(123,196,123,0.4); }
 
 /* ── AMBIENT PARTICLES ─────────────────────────────────────────────────────── */
 .particles { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
@@ -408,11 +414,12 @@ body.hover-solitario .footer { color:rgba(192,132,252,0.4); }
   .online-count { font-size: 0.44rem; }
 
   /* Disable hover effects on touch — use tap instead */
-  body.hover-mus   .card-caida, body.hover-mus   .card-poker, body.hover-mus   .card-solitario, body.hover-mus .card-uno,
-  body.hover-caida .card-mus,   body.hover-caida .card-poker, body.hover-caida .card-solitario, body.hover-caida .card-uno,
-  body.hover-poker .card-mus,   body.hover-poker .card-caida, body.hover-poker .card-solitario, body.hover-poker .card-uno,
-  body.hover-solitario .card-mus, body.hover-solitario .card-caida, body.hover-solitario .card-poker, body.hover-solitario .card-uno,
-  body.hover-uno .card-mus, body.hover-uno .card-caida, body.hover-uno .card-poker, body.hover-uno .card-solitario {
+  body.hover-mus .card-caida, body.hover-mus .card-poker, body.hover-mus .card-solitario, body.hover-mus .card-uno, body.hover-mus .card-chinchon,
+  body.hover-caida .card-mus, body.hover-caida .card-poker, body.hover-caida .card-solitario, body.hover-caida .card-uno, body.hover-caida .card-chinchon,
+  body.hover-poker .card-mus, body.hover-poker .card-caida, body.hover-poker .card-solitario, body.hover-poker .card-uno, body.hover-poker .card-chinchon,
+  body.hover-solitario .card-mus, body.hover-solitario .card-caida, body.hover-solitario .card-poker, body.hover-solitario .card-uno, body.hover-solitario .card-chinchon,
+  body.hover-uno .card-mus, body.hover-uno .card-caida, body.hover-uno .card-poker, body.hover-uno .card-solitario, body.hover-uno .card-chinchon,
+  body.hover-chinchon .card-mus, body.hover-chinchon .card-caida, body.hover-chinchon .card-poker, body.hover-chinchon .card-solitario, body.hover-chinchon .card-uno {
     opacity: 1; filter: none; transform: none;
   }
   body.hover-mus   .card-mus,
@@ -624,6 +631,19 @@ body.hover-solitario .footer { color:rgba(192,132,252,0.4); }
     radial-gradient(ellipse 45% 45% at 50% 90%, rgba(32,160,64,0.4)   0%, transparent 50%),
     radial-gradient(ellipse 30% 40% at 50% 50%, rgba(6,4,12,0.5)      0%, transparent 100%);
 }
+#bg-chinchon {
+  opacity:0;
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 60%, rgba(20,80,20,0.65)   0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 20% 20%, rgba(10,60,10,0.35)   0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 80% 20%, rgba(10,60,10,0.35)   0%, transparent 55%),
+    radial-gradient(ellipse 100% 35% at 50% 100%, rgba(5,30,5,0.6)    0%, transparent 55%);
+}
+#bg-chinchon-ghost {
+  position:fixed; inset:0; pointer-events:none;
+  background: radial-gradient(ellipse 70% 70% at 50% 55%, rgba(20,80,20,0.09) 0%, transparent 65%);
+  opacity:0; transition:opacity 0.9s ease;
+}
 #bg-uno-ghost {
   position:fixed; inset:0; pointer-events:none;
   background: radial-gradient(ellipse 70% 80% at 50% 50%,
@@ -664,11 +684,13 @@ body.hover-uno   .card-uno { transform:translateY(-6px) scale(1.025); }
 <div id="bg-poker"        class="bg-layer"></div>
 <div id="bg-solitario"    class="bg-layer"></div>
 <div id="bg-uno"          class="bg-layer"></div>
+<div id="bg-chinchon"     class="bg-layer"></div>
 <div id="bg-mus-ghost"></div>
 <div id="bg-caida-ghost"></div>
 <div id="bg-poker-ghost"></div>
 <div id="bg-solitario-ghost"></div>
 <div id="bg-uno-ghost"></div>
+<div id="bg-chinchon-ghost"></div>
 <div class="fall-layer" id="fall-layer"></div>
 
 <div class="page">
@@ -730,6 +752,16 @@ body.hover-uno   .card-uno { transform:translateY(-6px) scale(1.025); }
       <div class="online-count"><span class="online-dot"></span><span id="online-uno">— online</span></div>
       <div class="arrow">JUGAR →</div>
     </a>
+
+    <a class="game-card card-chinchon" href="/chinchon"
+       onmouseenter="setHover('chinchon')" onmouseleave="clearHover()">
+      <div class="game-icon">🃏</div>
+      <div class="game-name">CHINCHÓN</div>
+      <div class="game-desc">Rummy español.<br>Series, escaleras y Chinchón.</div>
+      <div class="game-players">2 – 10 jugadores</div>
+      <div class="online-count"><span class="online-dot"></span><span id="online-chinchon">— online</span></div>
+      <div class="arrow">JUGAR →</div>
+    </a>
   </div>
 
   <div class="footer" id="footer-text">SELECCIONA UN JUEGO PARA COMENZAR</div>
@@ -740,7 +772,7 @@ body.hover-uno   .card-uno { transform:translateY(-6px) scale(1.025); }
 <script>
 // ── CUSTOM CURSOR ─────────────────────────────────────────────────────────────
 const cursor = document.getElementById('cursor');
-const cursorSymbols = { mus:'♣', caida:'🎴', poker:'♠', solitario:'🕷️', uno:'🃏', default:'♠' };
+const cursorSymbols = { mus:'♣', caida:'🎴', poker:'♠', solitario:'🕷️', uno:'🃏', chinchon:'🃏', default:'♠' };
 let cursorGame = 'default';
 
 document.addEventListener('mousemove', e => {
@@ -749,7 +781,7 @@ document.addEventListener('mousemove', e => {
 });
 
 // ── BACKGROUND HOVER + FOOTER + CURSOR (unified) ─────────────────────────────
-const layers = { mus:'bg-mus', caida:'bg-caida', poker:'bg-poker', solitario:'bg-solitario', uno:'bg-uno' };
+const layers = { mus:'bg-mus', caida:'bg-caida', poker:'bg-poker', solitario:'bg-solitario', uno:'bg-uno', chinchon:'bg-chinchon' };
 let current = null;
 
 const footerEl = document.getElementById('footer-text');
@@ -761,6 +793,7 @@ const phrases = [
   'FAROL, ESCALERA O FULL HOUSE',
 ];
 const hoverPhrases = {
+  chinchon:  ['SERIES Y ESCALERAS', 'EL RUMMY ESPAÑOL', '¿TIENES CHINCHÓN?'],
   mus:       ['EL CLÁSICO VASCO', 'GRANDE · CHICA · PARES · JUEGO', '¿TIENES MUS?'],
   caida:     ['RECOGE Y ESCALA', '¡CAÍDA!', 'CANTOS Y ESCALERAS'],
   poker:     ['ALL IN', "TEXAS HOLD'EM", '¿TIENES EL FAROL?'],
@@ -782,7 +815,7 @@ setInterval(() => {
 }, 3200);
 
 const titleEl = document.querySelector('.title');
-const titleNames = { mus: 'MUS', caida: 'CAÍDA', poker: 'PÓKER', solitario: 'SOLITARIO', uno: 'UNO' };
+const titleNames = { mus: 'MUS', caida: 'CAÍDA', poker: 'PÓKER', solitario: 'SOLITARIO', uno: 'UNO', chinchon: 'CHINCHÓN' };
 
 // ── UNO title cycle ───────────────────────────────────────────────────────────
 // Tracks ALL timers so stopUnoTitle() kills everything cleanly
@@ -946,6 +979,7 @@ function connectCounter() {
           updateCount('mus',   msg.mus   || 0);
           updateCount('caida', msg.caida || 0);
           updateCount('poker', msg.poker || 0);
+          updateCount('chinchon', msg.chinchon || 0);
           updateCount('uno',   msg.uno   || 0);
         }
       } catch {}
