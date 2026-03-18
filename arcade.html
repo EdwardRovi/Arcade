@@ -794,57 +794,93 @@ function stopUnoTitle() {
   _unoTimers = [];
 }
 
-// "UNO" always white; "NO MERCY" cycles slowly through RGB via hue rotation
-function buildUnoTitleHTML(showNomMercy, hue) {
-  const unoSpan = `<span style="font-family:${UNO_FONT};font-weight:900;color:#ffffff;letter-spacing:0.04em">UNO</span>`;
-  if (!showNomMercy) return unoSpan;
-  // RGB slow cycle: hue 0=red 120=green 240=blue, saturation high
-  const nmColor  = `hsl(${hue},100%,55%)`;
-  const nmGlow   = `hsl(${hue},100%,45%)`;
-  const nmSpan = `<span style="font-family:${UNO_FONT};font-weight:900;color:${nmColor};text-shadow:0 0 25px ${nmGlow},0 0 55px ${nmGlow};letter-spacing:0.04em;font-size:0.55em;display:block;margin-top:-0.1em;transition:color 0.6s,text-shadow 0.6s">NO MERCY</span>`;
-  return unoSpan + nmSpan;
+// NO MERCY: red→orange→black color cycle, always visible except during 10s fade windows
+// nmColor(t): t in [0,1), maps to red→orange→black→red
+function nmColor(t) {
+  let r, g, b;
+  if (t < 0.35) {
+    const p = t / 0.35;
+    r = Math.round(224 + (255-224)*p);
+    g = Math.round(48  + (96 -48)*p);
+    b = 0;
+  } else if (t < 0.65) {
+    const p = (t - 0.35) / 0.30;
+    r = Math.round(255 + (18 -255)*p);
+    g = Math.round(96  + (8  -96 )*p);
+    b = 0;
+  } else {
+    const p = (t - 0.65) / 0.35;
+    r = Math.round(18  + (224-18 )*p);
+    g = Math.round(8   + (48 -8  )*p);
+    b = 0;
+  }
+  return `rgb(${r},${g},${b})`;
+}
+
+// Build the title: UNO always white, NO MERCY with current color and opacity
+function buildUnoTitleHTML(nmOpacity, t) {
+  const col  = nmColor(t);
+  const glow = nmColor((t + 0.08) % 1);
+  const op   = nmOpacity.toFixed(3);
+  return `<span style="font-family:${UNO_FONT};font-weight:900;color:#ffffff;letter-spacing:0.04em">UNO</span>` +
+         `<span style="font-family:${UNO_FONT};font-weight:900;color:${col};text-shadow:0 0 22px ${glow},0 0 45px ${glow};letter-spacing:0.04em;font-size:0.55em;display:block;margin-top:-0.05em;opacity:${op};transition:opacity 1.8s ease,color 0s">NO MERCY</span>`;
 }
 
 function startUnoTitle() {
   stopUnoTitle();
-  let hue = 0;
-  let showMercy = false;
-  let tickCount = 0;
 
-  // Show plain UNO immediately
-  titleEl.innerHTML = buildUnoTitleHTML(false, 0);
+  // State
+  let t         = 0;      // color position, advances continuously
+  let nmOpacity = 0;      // starts invisible
+  let phase     = 'hidden'; // 'hidden' | 'fadein' | 'visible' | 'fadeout'
+  let phaseTimer = 0;     // ms spent in current phase
 
-  // After 1.5s, switch to NO MERCY and start slow RGB cycle
-  const t1 = setTimeout(() => {
-    showMercy = true;
-    titleEl.innerHTML = buildUnoTitleHTML(true, hue);
+  // Show UNO immediately (white, always visible)
+  titleEl.style.opacity = '1';
+  titleEl.style.transition = 'none';
+  titleEl.innerHTML = buildUnoTitleHTML(0, t);
 
-    // Slow RGB tick every 80ms (full cycle ~360*80=28s is too slow — use 50ms = 18s full)
-    // We want about 3-4s per color sweep: step 2 every 33ms = 180 steps = ~6s per full cycle
-    const iv = setInterval(() => {
-      if (current !== 'uno') { stopUnoTitle(); return; }
-      hue = (hue + 2) % 360;
-      titleEl.innerHTML = buildUnoTitleHTML(true, hue);
-    }, 33);
-    _unoTimers.push(iv);
+  // Single interval drives everything: color + opacity
+  const TICK = 20; // ms per tick
 
-    // After 3.5s, hide NO MERCY and show plain UNO again
-    const t2 = setTimeout(() => {
-      if (current !== 'uno') return;
-      showMercy = false;
-      // Kill the rgb interval
-      clearInterval(iv);
-      _unoTimers = _unoTimers.filter(x => x !== iv);
-      titleEl.innerHTML = buildUnoTitleHTML(false, 0);
-      // Wait 1.2s then restart the whole cycle
-      const t3 = setTimeout(() => {
-        if (current === 'uno') startUnoTitle();
-      }, 1200);
-      _unoTimers.push(t3);
-    }, 3500);
-    _unoTimers.push(t2);
-  }, 1500);
-  _unoTimers.push(t1);
+  const iv = setInterval(() => {
+    if (current !== 'uno') { stopUnoTitle(); return; }
+
+    // Advance color cycle — full loop in ~5s (0.004 × 250 ticks = 1)
+    t = (t + 0.004) % 1;
+    phaseTimer += TICK;
+
+    // Phase machine
+    switch (phase) {
+      case 'hidden':
+        // Stay invisible for 10s, then start fading in
+        nmOpacity = 0;
+        if (phaseTimer >= 10000) { phase = 'fadein'; phaseTimer = 0; }
+        break;
+
+      case 'fadein':
+        // Fade in over 1.8s (CSS transition handles the smooth part — we just set target)
+        nmOpacity = Math.min(1, phaseTimer / 1800);
+        if (phaseTimer >= 1800) { nmOpacity = 1; phase = 'visible'; phaseTimer = 0; }
+        break;
+
+      case 'visible':
+        // Stay fully visible for 10s
+        nmOpacity = 1;
+        if (phaseTimer >= 10000) { phase = 'fadeout'; phaseTimer = 0; }
+        break;
+
+      case 'fadeout':
+        // Fade out over 1.8s
+        nmOpacity = Math.max(0, 1 - phaseTimer / 1800);
+        if (phaseTimer >= 1800) { nmOpacity = 0; phase = 'hidden'; phaseTimer = 0; }
+        break;
+    }
+
+    titleEl.innerHTML = buildUnoTitleHTML(nmOpacity, t);
+  }, TICK);
+
+  _unoTimers.push(iv);
 }
 
 function setTitle(text, useHtml) {
