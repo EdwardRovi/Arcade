@@ -3668,6 +3668,11 @@ wss.on('connection', (ws) => {
       }
     } // end playerGame === uno
 
+    // ── CHINCHÓN MESSAGES ────────────────────────────────────────────────────
+    if (playerGame === 'chinchon' && playerRoom && playerData) {
+      chHandleMessage(playerRoom, playerData, msg);
+    }
+
   }); // end ws.on message
 
   ws.on('close', () => {

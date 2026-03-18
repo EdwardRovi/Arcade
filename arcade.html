@@ -210,6 +210,10 @@ body.hover-caida .title { color: #6ab0e8; text-shadow: 0 0 60px rgba(60,140,230,
 body.hover-poker .title { color: #e87a7a; text-shadow: 0 0 60px rgba(230,60,60,0.7),  0 0 120px rgba(230,60,60,0.3),  0 2px 4px rgba(0,0,0,0.8); animation: titlePulseRed   2.5s ease-in-out infinite; }
 body.hover-solitario .title { color: #c084fc; text-shadow: 0 0 60px rgba(168,85,247,0.7), 0 0 120px rgba(124,58,237,0.3), 0 2px 4px rgba(0,0,0,0.8); animation: titlePulsePurple 2.5s ease-in-out infinite; }
 
+@keyframes titlePulseGold {
+  0%,100% { text-shadow: 0 0 40px rgba(201,168,76,0.4),  0 2px 4px rgba(0,0,0,0.8); }
+  50%     { text-shadow: 0 0 100px rgba(201,168,76,0.9), 0 0 30px rgba(180,130,10,0.5), 0 2px 4px rgba(0,0,0,0.8); }
+}
 @keyframes titlePulsePurple {
   0%,100% { text-shadow: 0 0 40px rgba(168,85,247,0.4),  0 2px 4px rgba(0,0,0,0.8); }
   50%     { text-shadow: 0 0 100px rgba(168,85,247,0.85), 0 0 30px rgba(124,58,237,0.4), 0 2px 4px rgba(0,0,0,0.8); }
@@ -298,7 +302,7 @@ body.hover-solitario .card-solitario { transform:translateY(-8px) scale(1.04); }
 .card-caida     .game-name { color:#6ab0e8; }
 .card-poker     .game-name { color:#e87a7a; }
 .card-solitario .game-name { color:#c084fc; }
-.card-chinchon  .game-name { color:#7bc47b; }
+.card-chinchon  .game-name { color:#e8c97a; }
 
 .game-desc { font-size:0.6rem; color:var(--muted); text-align:center; line-height:1.5; letter-spacing:0.05em; }
 
@@ -312,7 +316,7 @@ body.hover-solitario .card-solitario { transform:translateY(-8px) scale(1.04); }
 .card-caida     .game-players { background:rgba(30,80,160,0.2);   color:#6ab0e8; border:1px solid rgba(30,80,160,0.3); }
 .card-poker     .game-players { background:rgba(160,30,30,0.2);   color:#e87a7a; border:1px solid rgba(160,30,30,0.3); }
 .card-solitario .game-players { background:rgba(109,40,217,0.2);  color:#c084fc; border:1px solid rgba(109,40,217,0.3); }
-.card-chinchon  .game-players { background:rgba(20,100,20,0.2);  color:#7bc47b; border:1px solid rgba(20,100,20,0.3); }
+.card-chinchon  .game-players { background:rgba(180,130,10,0.18); color:#e8c97a; border:1px solid rgba(180,130,10,0.35); }
 
 /* Online counter */
 .online-count {
@@ -329,7 +333,7 @@ body.hover-solitario .card-solitario { transform:translateY(-8px) scale(1.04); }
 .card-caida     .online-dot { background:#6ab0e8; box-shadow:0 0 5px rgba(106,176,232,0.7); }
 .card-poker     .online-dot { background:#e87a7a; box-shadow:0 0 5px rgba(232,122,122,0.7); }
 .card-solitario .online-dot { background:#c084fc; box-shadow:0 0 5px rgba(192,132,252,0.7); }
-.card-chinchon  .online-dot { background:#7bc47b; box-shadow:0 0 5px rgba(123,196,123,0.7); }
+.card-chinchon  .online-dot { background:#e8c97a; box-shadow:0 0 5px rgba(232,201,122,0.8); }
 @keyframes dotPulse {
   0%,100% { opacity:1; transform:scale(1); }
   50%     { opacity:0.4; transform:scale(0.75); }
@@ -349,7 +353,7 @@ body.hover-mus       .footer { color:rgba(123,196,123,0.4); }
 body.hover-caida     .footer { color:rgba(106,176,232,0.4); }
 body.hover-poker     .footer { color:rgba(232,122,122,0.4); }
 body.hover-solitario .footer { color:rgba(192,132,252,0.4); }
-body.hover-chinchon  .footer { color:rgba(123,196,123,0.4); }
+body.hover-chinchon  .footer { color:rgba(201,168,76,0.45); }
 
 /* ── AMBIENT PARTICLES ─────────────────────────────────────────────────────── */
 .particles { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
@@ -426,6 +430,7 @@ body.hover-chinchon  .footer { color:rgba(123,196,123,0.4); }
   body.hover-caida .card-caida,
   body.hover-poker .card-poker,
   body.hover-solitario .card-solitario { transform: none; }
+  body.hover-chinchon .card-chinchon { transform: translateY(-8px) scale(1.04) !important; }
 
   .footer { font-size: 0.46rem; letter-spacing: 0.12em; text-align: center; }
 }
@@ -634,14 +639,15 @@ body.hover-chinchon  .footer { color:rgba(123,196,123,0.4); }
 #bg-chinchon {
   opacity:0;
   background:
-    radial-gradient(ellipse 60% 55% at 50% 60%, rgba(20,80,20,0.65)   0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 20% 20%, rgba(10,60,10,0.35)   0%, transparent 55%),
-    radial-gradient(ellipse 50% 40% at 80% 20%, rgba(10,60,10,0.35)   0%, transparent 55%),
-    radial-gradient(ellipse 100% 35% at 50% 100%, rgba(5,30,5,0.6)    0%, transparent 55%);
+    radial-gradient(ellipse 65% 60% at 50% 65%, rgba(180,130,10,0.55)  0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 15% 25%, rgba(150,100,5,0.30)   0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 85% 25%, rgba(150,100,5,0.30)   0%, transparent 55%),
+    radial-gradient(ellipse 40% 30% at 50% 10%, rgba(200,160,20,0.20)  0%, transparent 50%),
+    radial-gradient(ellipse 100% 35% at 50% 100%, rgba(80,55,0,0.6)    0%, transparent 55%);
 }
 #bg-chinchon-ghost {
   position:fixed; inset:0; pointer-events:none;
-  background: radial-gradient(ellipse 70% 70% at 50% 55%, rgba(20,80,20,0.09) 0%, transparent 65%);
+  background: radial-gradient(ellipse 70% 70% at 50% 55%, rgba(180,130,10,0.08) 0%, transparent 65%);
   opacity:0; transition:opacity 0.9s ease;
 }
 #bg-uno-ghost {
@@ -666,6 +672,8 @@ body.hover-uno .title {
 }
 body.hover-uno   .card-mus, body.hover-uno   .card-caida, body.hover-uno   .card-poker, body.hover-uno   .card-solitario { opacity:0.35; filter:saturate(0.3); transform:none; }
 body.hover-uno   .card-uno { transform:translateY(-6px) scale(1.025); }
+body.hover-chinchon .card-mus, body.hover-chinchon .card-caida, body.hover-chinchon .card-poker, body.hover-chinchon .card-solitario, body.hover-chinchon .card-uno { opacity:0.35; filter:saturate(0.3); transform:none; }
+body.hover-chinchon .card-chinchon { transform:translateY(-8px) scale(1.04); }
 
 </style>
 </head>
