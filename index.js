@@ -3032,9 +3032,17 @@ wss.on('connection', (ws) => {
         playerData.hand.splice(msg.cardIdx, 1);
         playerData.calledUno = false;
 
-        // If had 1 card left and didn't call UNO → penalty
-        if (playerData.hand.length === 0 && !playerData.calledUno) {
-          // Check if anyone catches them
+        // If player now has exactly 1 card and hasn't called UNO → open catch window
+        if (playerData.hand.length === 1 && !playerData.calledUno) {
+          // Broadcast that this player is vulnerable (others can call UNO on them)
+          room._unoVulnerable = playerId;
+          room._unoVulnerableTimer = setTimeout(() => {
+            if (room._unoVulnerable === playerId) room._unoVulnerable = null;
+          }, 4000); // 4 second window to catch
+          unoBroadcast(room, { type: 'uno_vulnerable', name: playerData.name, playerId });
+        } else {
+          // If played their last card, vulnerability cleared
+          if (playerData.hand.length === 0) room._unoVulnerable = null;
         }
 
         room.discard.push(card);
@@ -3112,8 +3120,28 @@ wss.on('connection', (ws) => {
 
       if (msg.type === 'callUno') {
         playerData.calledUno = true;
+        // Clear vulnerability if this player called for themselves
+        if (room._unoVulnerable === playerId) room._unoVulnerable = null;
         unoBroadcast(room, { type:'uno_shout', name: playerData.name });
         unoLog(room, `🎉 ¡${playerData.name} dice UNO!`);
+        return;
+      }
+
+      // Another player catches someone who didn't call UNO
+      if (msg.type === 'catchUno') {
+        if (room.state !== 'playing') return;
+        const targetId = room._unoVulnerable;
+        if (!targetId) { unoSendTo(playerData, { type:'error', msg:'No hay nadie que pillar' }); return; }
+        if (targetId === playerId) { unoSendTo(playerData, { type:'error', msg:'No puedes pillarte a ti mismo' }); return; }
+        const target = room.players.find(p => p.id === targetId);
+        if (!target || target.hand.length !== 1) { room._unoVulnerable = null; return; }
+        // Penalty: target draws 2 cards
+        room._unoVulnerable = null;
+        if (room._unoVulnerableTimer) { clearTimeout(room._unoVulnerableTimer); room._unoVulnerableTimer = null; }
+        unoForceDraw(room, room.players.indexOf(target), 2);
+        unoLog(room, `🚨 ¡${playerData.name} pilla a ${target.name} sin decir UNO! +2 cartas`);
+        unoBroadcast(room, { type:'uno_caught', catcher: playerData.name, caught: target.name });
+        unoSendState(room);
         return;
       }
 

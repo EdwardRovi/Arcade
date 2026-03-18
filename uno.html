@@ -161,7 +161,8 @@ body::before {
 .act-btn { font-family:'Cinzel',serif; font-size:0.5rem; letter-spacing:0.06em; padding:0.35rem 0.8rem; border-radius:4px; cursor:pointer; transition:all 0.15s; border:1px solid; white-space:nowrap; }
 .act-draw   { color:#a0d0ff; border-color:rgba(160,208,255,0.4); background:rgba(160,208,255,0.08); }
 .act-draw:hover { background:rgba(160,208,255,0.18); }
-.act-uno    { color:#ffcc00; border-color:rgba(255,204,0,0.5); background:rgba(255,204,0,0.1); font-family:'Cinzel Decorative',cursive; font-weight:700; }
+.act-uno    { color:#ffcc00; border-color:rgba(255,204,0,0.6); background:rgba(255,204,0,0.15); font-family:'Cinzel Decorative',cursive; font-weight:700; box-shadow:0 0 12px rgba(255,204,0,0.3); animation:glow-uno-btn 1.2s ease-in-out infinite; }
+@keyframes glow-uno-btn { 0%,100%{box-shadow:0 0 8px rgba(255,204,0,0.3)} 50%{box-shadow:0 0 22px rgba(255,204,0,0.7)} }
 .act-uno:hover { background:rgba(255,204,0,0.22); }
 .act-pass   { color:var(--muted); border-color:rgba(255,255,255,0.15); background:transparent; }
 .act-pass:hover { background:rgba(255,255,255,0.06); }
@@ -441,6 +442,39 @@ body.mercy-mode .panel {
 }
 body.mercy-mode #nm-warning { display: block; }
 
+
+/* ── CATCH UNO BUTTON ────────────────────────────────────── */
+#catch-uno-btn {
+  position: fixed;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  z-index: 30;
+  background: linear-gradient(135deg, #cc1111, #ff3030);
+  border: 2px solid rgba(255,100,100,0.7);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  font-family: 'Cinzel Decorative', cursive;
+  font-size: 0.65rem;
+  color: #fff;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(255,30,30,0.5);
+  display: none;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  animation: catch-pulse 0.6s ease-in-out infinite;
+}
+#catch-uno-btn.visible { display: block; }
+#catch-uno-btn .catch-name { display:block; font-size:0.55rem; opacity:0.85; margin-bottom:2px; }
+@keyframes catch-pulse {
+  0%,100% { box-shadow: 0 0 14px rgba(255,30,30,0.5); transform: translateY(-50%) scale(1); }
+  50%     { box-shadow: 0 0 30px rgba(255,30,30,0.9); transform: translateY(-50%) scale(1.04); }
+}
+@media(max-width:600px) {
+  #catch-uno-btn { right: 6px; font-size:0.55rem; padding:0.5rem 0.7rem; }
+}
+
 </style>
 </head>
 <body>
@@ -553,6 +587,12 @@ body.mercy-mode #nm-warning { display: block; }
   </div>
 </div>
 
+<!-- Catch UNO button -->
+<button id="catch-uno-btn" onclick="doCatch()">
+  <span class="catch-name" id="catch-target-name"></span>
+  🚨 ¡PILLAR SIN UNO!
+</button>
+
 <!-- Overlays -->
 <div id="color-picker">
   <h3>ELIGE UN COLOR</h3>
@@ -628,17 +668,13 @@ const NM_SYMBOLS = ['💀','🔥','⚡','💢','🃏','☠️','💣','⚠️'];
 let nmFallInterval = null;
 
 function activateMercyMode(active) {
-  const bg    = document.getElementById('nm-bg');
-  const sub   = document.getElementById('uno-sub-lbl');
+  const bg  = document.getElementById('nm-bg');
+  const sub = document.getElementById('uno-sub-lbl');
 
-  // Toggle body class for CSS cascade
   document.body.classList.toggle('mercy-mode', active);
   if (bg) bg.classList.toggle('active', active);
-
-  // Subtitle
   if (sub) sub.textContent = active ? "NO MERCY · BRUTAL · SIN PIEDAD" : "SHOW 'EM · ARCADE";
 
-  // Shake logo once on switch to mercy
   if (active) {
     const logo = document.querySelector('.uno-logo');
     if (logo) {
@@ -650,6 +686,30 @@ function activateMercyMode(active) {
     startNmCards();
   } else {
     stopNmCards();
+  }
+}
+
+// Apply visuals when entering/joining a room (lobby or mid-game)
+function applyRoomMode(mode) {
+  const isMercy = mode === 'mercy';
+  activateMercyMode(isMercy);
+
+  // Update UNO logo gradient
+  const logo = document.querySelector('.uno-logo');
+  if (logo) {
+    logo.style.background = isMercy
+      ? 'linear-gradient(135deg,#ff2020 0%,#cc0000 50%,#880000 100%)'
+      : 'linear-gradient(135deg,var(--red) 0%,var(--yellow) 35%,var(--green) 65%,var(--blue) 100%)';
+    logo.style.webkitBackgroundClip = 'text';
+    logo.style.webkitTextFillColor = 'transparent';
+    logo.style.backgroundClip = 'text';
+  }
+
+  // Update game topbar title style
+  const topbarTitle = document.querySelector('.topbar-title');
+  if (topbarTitle) {
+    topbarTitle.style.color = isMercy ? '#e87070' : 'var(--gold)';
+    topbarTitle.style.textShadow = isMercy ? '0 0 12px rgba(200,30,30,0.6)' : '';
   }
 }
 
@@ -743,6 +803,8 @@ function handleMsg(msg) {
   }
   if (msg.type === 'state') {
     gs = msg.state;
+    // Apply No Mercy visuals based on room mode (works for joining mid-game too)
+    applyRoomMode(gs.mode);
     renderWaiting(gs);
     if (gs.gameState !== 'waiting') {
       document.getElementById('lobby').classList.add('hidden');
@@ -753,6 +815,15 @@ function handleMsg(msg) {
   if (msg.type === 'hand_end') showHandEnd(msg);
   if (msg.type === 'game_over') showGameOver(msg);
   if (msg.type === 'uno_shout') showUnoBanner(msg.name);
+  if (msg.type === 'uno_vulnerable') {
+    // Show "catch" button for everyone except the vulnerable player
+    showCatchButton(msg.name, msg.playerId);
+  }
+  if (msg.type === 'uno_caught') {
+    hideCatchButton();
+    showNotice(`🚨 ¡${esc(msg.catcher)} pilla a ${esc(msg.caught)} sin decir UNO! +2 cartas`, 3000);
+    SFX.error();
+  }
   if (msg.type === 'ask_color')   { pendingWild = msg.cardIdx; document.getElementById('color-picker').classList.add('show'); }
   if (msg.type === 'ask_swap')    { pendingWild = msg.cardIdx; showSwapPicker(msg.targets); }
   if (msg.type === 'ask_ruleta')  { pendingWild = msg.cardIdx; document.getElementById('ruleta-picker').classList.add('show'); }
@@ -1049,6 +1120,23 @@ function doSwap(targetName) {
 function doDraw()  { SFX.chip(); send({ type:'drawCard' }); }
 function doPass()  { send({ type:'passTurn' }); }
 function doUno()   { SFX.notify(); send({ type:'callUno' }); }
+function doCatch() { send({ type:'catchUno' }); hideCatchButton(); }
+
+let _catchTimer = null;
+function showCatchButton(targetName, targetId) {
+  // Don't show catch button to the vulnerable player themselves
+  if (gs && gs.players[gs.myIdx] && gs.players[gs.myIdx].id === targetId) return;
+  const btn = document.getElementById('catch-uno-btn');
+  const nameEl = document.getElementById('catch-target-name');
+  if (nameEl) nameEl.textContent = targetName + ' no dijo UNO';
+  btn.classList.add('visible');
+  if (_catchTimer) clearTimeout(_catchTimer);
+  _catchTimer = setTimeout(hideCatchButton, 4000);
+}
+function hideCatchButton() {
+  document.getElementById('catch-uno-btn').classList.remove('visible');
+  if (_catchTimer) { clearTimeout(_catchTimer); _catchTimer = null; }
+}
 function doNextHand() { send({ type:'nextHand' }); const b = document.getElementById('next-hand-btn'); if(b) b.disabled = true; }
 
 // ══════════════════════════════════════════════════════════
@@ -1079,11 +1167,20 @@ function showGameOver(msg) {
   document.getElementById('gameover').classList.add('show');
   SFX.win();
 }
+let _unoBannerTimer = null;
 function showUnoBanner(name) {
   const el = document.getElementById('uno-banner');
-  el.textContent = name ? `¡${esc(name)} — UNO!` : '¡UNO!';
+  el.innerHTML = name
+    ? `<span style="font-size:0.45em;display:block;margin-bottom:-0.1em;opacity:0.8">${esc(name)}</span>¡UNO!`
+    : '¡UNO!';
+  el.classList.remove('pop');
+  el.offsetHeight; // reflow
   el.classList.add('pop');
-  setTimeout(() => el.classList.remove('pop'), 1800);
+  if (_unoBannerTimer) clearTimeout(_unoBannerTimer);
+  _unoBannerTimer = setTimeout(() => {
+    el.classList.remove('pop');
+    _unoBannerTimer = null;
+  }, 2500);
   SFX.notify();
 }
 

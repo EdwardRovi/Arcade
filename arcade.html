@@ -632,8 +632,18 @@ body.hover-solitario .footer { color:rgba(192,132,252,0.4); }
   opacity:0; transition:opacity 0.9s ease;
 }
 .card-uno { animation: fadeSlideUp 0.65s ease both; animation-delay: 1.2s; }
-body.hover-uno .title { color: #f5ead8; text-shadow: 0 0 40px rgba(224,48,48,0.5), 0 0 80px rgba(32,96,224,0.3), 0 2px 4px rgba(0,0,0,0.8); }
-@media(prefers-reduced-motion:no-preference){ body.hover-uno .title { animation: none; } }
+/* UNO title: Helvetica font + JS-driven color cycling, no CSS animation override */
+body.hover-uno .title {
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial Black', sans-serif !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.04em !important;
+  animation: none !important;
+  transition: color 0.15s ease, text-shadow 0.15s ease, opacity 0.2s ease, transform 0.2s ease;
+}
+@keyframes unoNomercyPulse {
+  0%,100% { color:#ffffff; text-shadow:0 0 0px transparent; }
+  50%     { color:#e03030; text-shadow:0 0 40px rgba(224,48,48,0.9), 0 0 80px rgba(180,10,10,0.5); }
+}
 body.hover-uno   .card-mus, body.hover-uno   .card-caida, body.hover-uno   .card-poker, body.hover-uno   .card-solitario { opacity:0.35; filter:saturate(0.3); transform:none; }
 body.hover-uno   .card-uno { transform:translateY(-6px) scale(1.025); }
 
@@ -774,11 +784,78 @@ setInterval(() => {
 const titleEl = document.querySelector('.title');
 const titleNames = { mus: 'MUS', caida: 'CAÍDA', poker: 'PÓKER', solitario: 'SOLITARIO', uno: 'UNO' };
 
-function setTitle(text) {
+// ── UNO title cycle ───────────────────────────────────────────────────────────
+// Tracks ALL timers so stopUnoTitle() kills everything cleanly
+const UNO_FONT = "'Helvetica Neue','Helvetica','Arial Black',sans-serif";
+let _unoTimers = [];  // pool of all pending timers for the UNO cycle
+
+function stopUnoTitle() {
+  _unoTimers.forEach(id => { clearTimeout(id); clearInterval(id); });
+  _unoTimers = [];
+}
+
+// "UNO" always white; "NO MERCY" cycles slowly through RGB via hue rotation
+function buildUnoTitleHTML(showNomMercy, hue) {
+  const unoSpan = `<span style="font-family:${UNO_FONT};font-weight:900;color:#ffffff;letter-spacing:0.04em">UNO</span>`;
+  if (!showNomMercy) return unoSpan;
+  // RGB slow cycle: hue 0=red 120=green 240=blue, saturation high
+  const nmColor  = `hsl(${hue},100%,55%)`;
+  const nmGlow   = `hsl(${hue},100%,45%)`;
+  const nmSpan = `<span style="font-family:${UNO_FONT};font-weight:900;color:${nmColor};text-shadow:0 0 25px ${nmGlow},0 0 55px ${nmGlow};letter-spacing:0.04em;font-size:0.55em;display:block;margin-top:-0.1em;transition:color 0.6s,text-shadow 0.6s">NO MERCY</span>`;
+  return unoSpan + nmSpan;
+}
+
+function startUnoTitle() {
+  stopUnoTitle();
+  let hue = 0;
+  let showMercy = false;
+  let tickCount = 0;
+
+  // Show plain UNO immediately
+  titleEl.innerHTML = buildUnoTitleHTML(false, 0);
+
+  // After 1.5s, switch to NO MERCY and start slow RGB cycle
+  const t1 = setTimeout(() => {
+    showMercy = true;
+    titleEl.innerHTML = buildUnoTitleHTML(true, hue);
+
+    // Slow RGB tick every 80ms (full cycle ~360*80=28s is too slow — use 50ms = 18s full)
+    // We want about 3-4s per color sweep: step 2 every 33ms = 180 steps = ~6s per full cycle
+    const iv = setInterval(() => {
+      if (current !== 'uno') { stopUnoTitle(); return; }
+      hue = (hue + 2) % 360;
+      titleEl.innerHTML = buildUnoTitleHTML(true, hue);
+    }, 33);
+    _unoTimers.push(iv);
+
+    // After 3.5s, hide NO MERCY and show plain UNO again
+    const t2 = setTimeout(() => {
+      if (current !== 'uno') return;
+      showMercy = false;
+      // Kill the rgb interval
+      clearInterval(iv);
+      _unoTimers = _unoTimers.filter(x => x !== iv);
+      titleEl.innerHTML = buildUnoTitleHTML(false, 0);
+      // Wait 1.2s then restart the whole cycle
+      const t3 = setTimeout(() => {
+        if (current === 'uno') startUnoTitle();
+      }, 1200);
+      _unoTimers.push(t3);
+    }, 3500);
+    _unoTimers.push(t2);
+  }, 1500);
+  _unoTimers.push(t1);
+}
+
+function setTitle(text, useHtml) {
   titleEl.style.opacity = '0';
   titleEl.style.transform = 'translateY(-8px) scale(0.95)';
   setTimeout(() => {
-    titleEl.textContent = text;
+    if (useHtml) {
+      titleEl.innerHTML = text;
+    } else {
+      titleEl.textContent = text;
+    }
     titleEl.style.opacity = '1';
     titleEl.style.transform = '';
   }, 220);
@@ -797,11 +874,16 @@ function setHover(game) {
   isHoverPhrase = true;
   const pool = hoverPhrases[game];
   setFooter(pool[Math.floor(Math.random() * pool.length)]);
-  setTitle(titleNames[game]);
+  if (game === 'uno') {
+    startUnoTitle();
+  } else {
+    setTitle(titleNames[game]);
+  }
 }
 
 function clearHover() {
   if (!current) return;
+  stopUnoTitle(); // always safe to call
   document.getElementById(layers[current]).style.opacity = '0';
   document.getElementById('bg-default').style.opacity = '1';
   document.body.className = '';
