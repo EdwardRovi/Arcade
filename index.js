@@ -2,11 +2,22 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { WebSocketServer } = require('ws');
+const LB = require('./leaderboard');
+
+// ── Persistent leaderboard DB (loaded from disk, survives restarts) ──────────
+const lbDB = LB.load();
+console.log('[leaderboard] Loaded from disk:', JSON.stringify({ sol: lbDB.solitario.score.length, mus: lbDB.mus.partidas.length, caida: lbDB.caida.top.length, poker: lbDB.poker.top.length }));
 
 const PORT = process.env.PORT || 3000;
 
 // ─── HTTP ─────────────────────────────────────────────────────────────────────
 const httpServer = http.createServer((req, res) => {
+  // JSON leaderboard endpoint (for arcade lobby)
+  if (req.url === '/leaderboard.json') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end(JSON.stringify(lbDB));
+    return;
+  }
   const routes = { '/': 'arcade.html', '/mus': 'mus.html', '/caida': 'caida.html', '/poker': 'poker.html', '/solitario': 'solitario.html' };
   const file = routes[req.url] || null;
   if (!file) { res.writeHead(404); res.end('Not found'); return; }
@@ -29,9 +40,10 @@ function genCode(prefix, store) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ███ SOLITARIO — LEADERBOARD STORE (in-memory, resets on server restart)
+// ███ SOLITARIO — LEADERBOARD STORE (persistent via leaderboard.js)
 // ═══════════════════════════════════════════════════════════════════════════════
-const solTop = { score: [], moves: [] };
+// lbDB.solitario is loaded from disk — no more in-memory-only store
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ███ MUS
@@ -530,6 +542,10 @@ function resolveRound(room) {
     room.listoNuevaPartida = [];
     musBroadcast(room, { type: 'log', msg: `🎉 ¡EQUIPO ${winnerNum} GANA LA PARTIDA! (${winnerNames})` });
     musBroadcast(room, { type: 'game_over', winnerTeam, winnerNum, winnerNames, scores: room.scores, matchHistory: room.matchHistory, playerStats: room.playerStats || {} });
+    // Persist Mus result
+    const musWinners = room.players.filter(p => p.team === winnerTeam).map(p => p.name);
+    const musLosers  = room.players.filter(p => p.team !== winnerTeam).map(p => p.name);
+    LB.musRecordWin(lbDB, musWinners, musLosers, room.scores[winnerTeam], room.scores[1 - winnerTeam]);
     musSendState(room);
     return;
   }
@@ -1576,6 +1592,7 @@ function caidaEndRound(room) {
   if (isGameOver) {
     const winnerName = room.players[winnerIdx].name;
     caidaAddLog(room, `🎉 ¡${winnerName} gana la partida con ${room.scores[winnerIdx]} pts!`);
+    LB.caidaRecordWin(lbDB, winnerName, room.scores[winnerIdx]);
   }
 
   const summary = {
@@ -1775,6 +1792,7 @@ function pokerStartHand(room) {
   if (activePlayers.length < 2) {
     const winner = activePlayers[0] || room.players.reduce((b,p) => p.chips > b.chips ? p : b);
     pokerBroadcast(room, { type: 'game_over', winner: winner.name, chips: winner.chips });
+    LB.pokerRecordWin(lbDB, winner.name, winner.chips);
     pokerAddLog(room, `🏆 ¡${winner.name} gana la partida!`);
     room.state = 'game_over';
     pokerSendState(room); return;
@@ -2466,43 +2484,23 @@ wss.on('connection', (ws) => {
     // ══════════════════════════════════════════════════════
     if (msg.game === 'solitario') {
       playerGame = 'solitario';
-
-      // Get leaderboard
       if (msg.type === 'sol_getLeaderboard') {
-        sendTo({ ws }, { type: 'sol_leaderboard', topScore: solTop.score, topMoves: solTop.moves });
+        sendTo({ ws }, { type: 'sol_leaderboard', topScore: lbDB.solitario.score, topMoves: lbDB.solitario.moves });
         return;
       }
-
-      // Submit a win result
       if (msg.type === 'sol_submitScore') {
         const { name, score, moves } = msg;
         if (!name || typeof score !== 'number' || typeof moves !== 'number') return;
-
-        // Top score (higher = better)
-        const existing = solTop.score.find(e => e.name === name);
-        if (!existing) {
-          solTop.score.push({ name, score, moves });
-        } else if (score > existing.score || (score === existing.score && moves < existing.moves)) {
-          existing.score = score; existing.moves = moves;
-        }
-        solTop.score.sort((a, b) => b.score - a.score || a.moves - b.moves);
-        solTop.score = solTop.score.slice(0, 10);
-
-        // Top efficiency = least moves among wins (lower = better)
-        const exMov = solTop.moves.find(e => e.name === name);
-        if (!exMov) {
-          solTop.moves.push({ name, moves, score });
-        } else if (moves < exMov.moves || (moves === exMov.moves && score > exMov.score)) {
-          exMov.moves = moves; exMov.score = score;
-        }
-        solTop.moves.sort((a, b) => a.moves - b.moves || b.score - a.score);
-        solTop.moves = solTop.moves.slice(0, 10);
-
-        // Broadcast updated leaderboard to all connected solitario listeners
-        const lb = { type: 'sol_leaderboard', topScore: solTop.score, topMoves: solTop.moves };
+        LB.solSubmit(lbDB, name, score, moves);
+        const lb = { type: 'sol_leaderboard', topScore: lbDB.solitario.score, topMoves: lbDB.solitario.moves };
         wss.clients.forEach(c => { if (c.readyState === 1) c.send(JSON.stringify(lb)); });
         return;
       }
+    }
+    // ███ LOBBY — CROSS-GAME LEADERBOARD
+    if (msg.type === 'getAllLeaderboard') {
+      sendTo({ ws }, { type: 'all_leaderboard', data: lbDB });
+      return;
     }
 
   }); // end ws.on message
