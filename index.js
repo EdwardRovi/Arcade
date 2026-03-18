@@ -18,7 +18,7 @@ const httpServer = http.createServer((req, res) => {
     res.end(JSON.stringify(lbDB));
     return;
   }
-  const routes = { '/': 'arcade.html', '/mus': 'mus.html', '/caida': 'caida.html', '/poker': 'poker.html', '/solitario': 'solitario.html' };
+  const routes = { '/': 'arcade.html', '/mus': 'mus.html', '/caida': 'caida.html', '/poker': 'poker.html', '/solitario': 'solitario.html', '/uno': 'uno.html' };
   const file = routes[req.url] || null;
   if (!file) { res.writeHead(404); res.end('Not found'); return; }
   fs.readFile(path.join(__dirname, file), (err, data) => {
@@ -2109,6 +2109,441 @@ function pokerHandleAction(room, playerIdx, action, amount) {
 
 // ─── WEBSOCKET ────────────────────────────────────────────────────────────────
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ███ UNO
+// ═══════════════════════════════════════════════════════════════════════════════
+const unoRooms = {};
+
+// ── DECK BUILDERS ──────────────────────────────────────────────────────────────
+function unoMakeDeck(mode) {
+  const COLORS = ['red','blue','green','yellow'];
+  const deck = [];
+
+  // Classic deck (108 cards)
+  for (const c of COLORS) {
+    deck.push({ type:'number', color:c, value:0 });             // one 0
+    for (let n = 1; n <= 9; n++) for (let r=0;r<2;r++) deck.push({ type:'number', color:c, value:n });
+    for (let r=0;r<2;r++) { deck.push({type:'skip',color:c}); deck.push({type:'reverse',color:c}); deck.push({type:'take2',color:c}); }
+  }
+  for (let r=0;r<4;r++) { deck.push({type:'wild',color:'wild'}); deck.push({type:'wild4',color:'wild'}); }
+
+  if (mode === 'mercy') {
+    // No Mercy extras: Tira un color (x4 colors x1), Salta a todos (x4 colors x1)
+    for (const c of COLORS) {
+      deck.push({ type:'throwcolor', color:c });
+      deck.push({ type:'skipall',    color:c });
+    }
+    // Wild comodines: take6 x4, take10 x4, wildrev4 x4, ruleta x4
+    for (let r=0;r<4;r++) {
+      deck.push({ type:'take6',    color:'wild' });
+      deck.push({ type:'take10',   color:'wild' });
+      deck.push({ type:'wildrev4', color:'wild' });
+      deck.push({ type:'ruleta',   color:'wild' });
+    }
+  }
+
+  return unoShuffle(deck);
+}
+
+function unoShuffle(arr) {
+  for (let i = arr.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+
+// ── ROOM ───────────────────────────────────────────────────────────────────────
+function unoCreateRoom(code, maxPlayers, mode, winCon) {
+  return {
+    code, maxPlayers, mode: mode||'classic', winCon: winCon||'hand',
+    players: [], // { id, ws, name, hand, totalPoints, eliminated, calledUno }
+    state: 'waiting',
+    deck: [], discard: [],
+    currentTurn: 0, direction: 1,   // 1=clockwise, -1=counter
+    stack: 0,         // pending draw stack
+    activeColor: null, // color override for wilds
+    hand: 1,          // current hand number
+    mustPlay: false,   // must play (after drawing match)
+    canPass: false,    // can pass after drawing non-playable
+    lastDrawn: null,   // card drawn this turn (for pass logic)
+    readyForNext: [],
+  };
+}
+
+function unoBroadcast(room, msg) { room.players.forEach(p => { if(p.ws&&p.ws.readyState===1) p.ws.send(JSON.stringify(msg)); }); }
+function unoSendTo(p, msg)       { if(p.ws&&p.ws.readyState===1) p.ws.send(JSON.stringify(msg)); }
+function unoLog(room, msg)       { unoBroadcast(room, { type:'log', msg }); }
+
+function unoBuildStateFor(room, player) {
+  const myIdx = room.players.indexOf(player);
+  const playable = myIdx === room.currentTurn && !player.eliminated
+    ? unoGetPlayable(room, player) : [];
+  return {
+    roomCode: room.code, gameState: room.state,
+    mode: room.mode, winCon: room.winCon,
+    hand: room.hand, direction: room.direction,
+    currentTurn: room.currentTurn, activeColor: room.activeColor,
+    stack: room.stack, deckCount: room.deck.length,
+    topCard: room.discard.length ? room.discard[room.discard.length-1] : null,
+    mustPlay: room.mustPlay, canPass: room.canPass,
+    myIdx,
+    playable,
+    players: room.players.map((p, i) => ({
+      id: p.id, name: p.name, isYou: p.id === player.id,
+      isHost: i === 0, eliminated: p.eliminated||false,
+      calledUno: p.calledUno||false, totalPoints: p.totalPoints||0,
+      cardCount: p.hand ? p.hand.length : 0,
+      origIdx: i,
+      hand: p.id === player.id ? p.hand : null,
+    })),
+  };
+}
+function unoSendState(room) { room.players.forEach(p => unoSendTo(p, { type:'state', state: unoBuildStateFor(room, p) })); }
+
+// ── PLAYABILITY ────────────────────────────────────────────────────────────────
+function unoCanPlay(room, card) {
+  const top = room.discard[room.discard.length-1];
+  if (!top) return true;
+  const ac = room.activeColor || top.color;
+
+  // If stack is active, can only play draw-stacking cards (equal or higher value)
+  if (room.stack > 0) {
+    const drawTypes = ['take2','wild4','take6','take10','wildrev4'];
+    if (!drawTypes.includes(card.type)) return false;
+    // Must be equal or higher draw value
+    const drawVal = { take2:2, wild4:4, take6:6, take10:10, wildrev4:4 };
+    return (drawVal[card.type]||0) >= (drawVal[top.type]||0);
+  }
+
+  // Wild cards always playable
+  if (['wild','wild4','take6','take10','wildrev4','ruleta'].includes(card.type)) return true;
+  // Match color
+  if (card.color === ac) return true;
+  // Match type/value
+  if (card.type !== 'number' && card.type === top.type) return true;
+  if (card.type === 'number' && top.type === 'number' && card.value === top.value) return true;
+  // throwcolor matches on color only
+  if (card.type === 'throwcolor' && card.color === ac) return true;
+  if (top.type === 'throwcolor' && card.color === ac) return true;
+  if (card.type === 'skipall' && card.color === ac) return true;
+  return false;
+}
+
+function unoGetPlayable(room, player) {
+  return player.hand.map((c, i) => unoCanPlay(room, c) ? i : -1).filter(i => i >= 0);
+}
+
+// ── DECK MANAGEMENT ────────────────────────────────────────────────────────────
+function unoEnsureDeck(room) {
+  if (room.deck.length > 4) return;
+  if (room.discard.length <= 1) return; // nothing to recycle
+  const top = room.discard.pop();
+  // Reshuffle discard pile back into deck
+  room.deck = unoShuffle([...room.deck, ...room.discard]);
+  room.discard = [top];
+  unoLog(room, '🔄 Mazo agotado — se ha reciclado la pila de descarte');
+}
+
+// ── DEAL ───────────────────────────────────────────────────────────────────────
+function unoStartHand(room) {
+  room.deck = unoMakeDeck(room.mode);
+  room.discard = [];
+  room.stack = 0;
+  room.activeColor = null;
+  room.mustPlay = false;
+  room.canPass = false;
+  room.readyForNext = [];
+
+  // Deal 7 cards to each active player
+  room.players.forEach(p => {
+    if (!p.eliminated) {
+      p.hand = room.deck.splice(0, 7);
+      p.calledUno = false;
+    } else {
+      p.hand = [];
+    }
+  });
+
+  // First discard card — skip action cards
+  let startCard;
+  do { startCard = room.deck.shift(); } while (startCard.type !== 'number');
+  room.discard.push(startCard);
+
+  // First player to act
+  room.currentTurn = room.players.findIndex(p => !p.eliminated);
+  room.direction = 1;
+  room.state = 'playing';
+  unoLog(room, `🃏 Mano ${room.hand} — Carta inicial: ${startCard.color} ${startCard.value}`);
+  unoSendState(room);
+}
+
+// ── ADVANCE TURN ───────────────────────────────────────────────────────────────
+function unoNextTurn(room, skip=0) {
+  const n = room.players.length;
+  let idx = room.currentTurn;
+  for (let s = 0; s <= skip; s++) {
+    do {
+      idx = ((idx + room.direction) % n + n) % n;
+    } while (room.players[idx].eliminated && room.players.filter(p=>!p.eliminated).length > 1);
+  }
+  room.currentTurn = idx;
+  room.mustPlay = false;
+  room.canPass = false;
+  unoSendState(room);
+}
+
+// ── APPLY CARD EFFECT ──────────────────────────────────────────────────────────
+function unoApplyEffect(room, card, chosenColor, playerId) {
+  const n = room.players.length;
+  const player = room.players.find(p => p.id === playerId);
+
+  // Set active color for wilds
+  if (['wild','wild4','take6','take10','wildrev4','ruleta'].includes(card.type)) {
+    room.activeColor = chosenColor || 'red';
+  } else {
+    room.activeColor = card.color;
+  }
+
+  switch (card.type) {
+    case 'skip':
+      unoLog(room, `⊘ Turno saltado`);
+      unoNextTurn(room, 1);
+      break;
+
+    case 'skipall':
+      unoLog(room, `⊘⊘ ¡Salta a todos! ${player.name} vuelve a jugar`);
+      // No advance — same player
+      unoSendState(room);
+      break;
+
+    case 'reverse':
+      room.direction *= -1;
+      unoLog(room, `↺ Sentido invertido`);
+      if (room.players.filter(p=>!p.eliminated).length === 2) {
+        // 2 players: reverse acts as skip
+        unoNextTurn(room, 1);
+      } else {
+        unoNextTurn(room);
+      }
+      break;
+
+    case 'take2':
+      room.stack += 2;
+      unoLog(room, `+2 apilado (total +${room.stack})`);
+      unoCheckStack(room);
+      break;
+
+    case 'wild4':
+      room.stack += 4;
+      unoLog(room, `+4 apilado (total +${room.stack}), color: ${chosenColor}`);
+      unoCheckStack(room);
+      break;
+
+    case 'take6':
+      room.stack += 6;
+      unoLog(room, `+6 apilado (total +${room.stack}), color: ${chosenColor}`);
+      unoCheckStack(room);
+      break;
+
+    case 'take10':
+      room.stack += 10;
+      unoLog(room, `+10 apilado (total +${room.stack}), color: ${chosenColor}`);
+      unoCheckStack(room);
+      break;
+
+    case 'wildrev4':
+      room.direction *= -1;
+      room.stack += 4;
+      unoLog(room, `↺+4 apilado (total +${room.stack}), color: ${chosenColor}`);
+      if (room.players.filter(p=>!p.eliminated).length === 2) {
+        // In 2 player game: YOU take 4 instead
+        const selfIdx = room.players.indexOf(player);
+        unoForceDraw(room, selfIdx, 4);
+        room.stack = 0;
+        unoSendState(room);
+      } else {
+        unoCheckStack(room);
+      }
+      break;
+
+    case 'throwcolor': {
+      // Discard all cards of active color from hand
+      const matching = player.hand.filter(c => c.color === card.color);
+      player.hand = player.hand.filter(c => c.color !== card.color);
+      // Place matching cards below the throwcolor card
+      room.discard.unshift(...matching);
+      unoLog(room, `🎨 ${player.name} tira ${matching.length} cartas ${card.color}`);
+      unoCheckWinCondition(room, room.players.indexOf(player));
+      unoNextTurn(room);
+      break;
+    }
+
+    case 'ruleta': {
+      // Next player draws until they get a card of chosenColor
+      const nextIdx = unoGetNextIdx(room);
+      const nextP = room.players[nextIdx];
+      let drawn = 0;
+      while (true) {
+        unoEnsureDeck(room);
+        if (room.deck.length === 0) break;
+        const c = room.deck.shift();
+        nextP.hand.push(c);
+        drawn++;
+        if (c.color === chosenColor) break;
+        if (drawn > 30) break; // safety
+      }
+      unoLog(room, `🎰 Ruleta ${chosenColor}: ${nextP.name} roba ${drawn} carta(s)`);
+      unoNextTurn(room, 1); // next player loses turn
+      break;
+    }
+
+    case 'number':
+      if (card.value === 7 && room.mode === 'mercy') {
+        // Swap is handled by server directly — state already updated
+        unoNextTurn(room);
+        break;
+      }
+      if (card.value === 0) {
+        // Everyone passes hand to next in direction
+        const active = room.players.filter(p => !p.eliminated);
+        const n2 = active.length;
+        const hands = active.map(p => [...p.hand]);
+        if (room.direction === 1) {
+          active.forEach((p, i) => { p.hand = hands[(i + 1) % n2]; });
+        } else {
+          active.forEach((p, i) => { p.hand = hands[(i - 1 + n2) % n2]; });
+        }
+        unoLog(room, `0️⃣ ¡Todos pasan la mano al siguiente!`);
+        unoNextTurn(room);
+        break;
+      }
+      unoNextTurn(room);
+      break;
+
+    default:
+      unoNextTurn(room);
+      break;
+  }
+}
+
+function unoGetNextIdx(room) {
+  const n = room.players.length;
+  let idx = room.currentTurn;
+  do { idx = ((idx + room.direction) % n + n) % n; } while (room.players[idx].eliminated);
+  return idx;
+}
+
+function unoCheckStack(room) {
+  // Next player must play a stackable card or take the full stack
+  const nextIdx = unoGetNextIdx(room);
+  const nextP = room.players[nextIdx];
+  const canStack = nextP.hand.some(c => unoCanPlay(room, c));
+  room.currentTurn = nextIdx;
+  unoSendState(room);
+}
+
+function unoForceDraw(room, playerIdx, n) {
+  const p = room.players[playerIdx];
+  for (let i = 0; i < n; i++) {
+    unoEnsureDeck(room);
+    if (room.deck.length === 0) break;
+    p.hand.push(room.deck.shift());
+  }
+  // Piedad (No Mercy): 25+ cards = eliminated
+  if ((room.mode === 'mercy' || room.winCon === 'last') && p.hand.length >= 25) {
+    p.eliminated = true;
+    unoLog(room, `💀 PIEDAD: ${p.name} tiene ${p.hand.length} cartas — eliminado`);
+    unoBroadcast(room, { type:'notice', msg: `💀 ${p.name} eliminado por Piedad (25+ cartas)` });
+    // Check if only 1 player left
+    const alive = room.players.filter(x => !x.eliminated);
+    if (alive.length === 1) {
+      unoEndHand(room, alive[0]);
+      return true; // game ended
+    }
+  }
+  return false;
+}
+
+function unoCheckWinCondition(room, playerIdx) {
+  const p = room.players[playerIdx];
+  if (p.hand.length === 0) {
+    unoEndHand(room, p);
+    return true;
+  }
+  return false;
+}
+
+// ── END HAND ───────────────────────────────────────────────────────────────────
+function unoEndHand(room, winner) {
+  room.state = 'hand_end';
+  unoLog(room, `🏆 ${winner.name} gana la mano!`);
+
+  // Calculate points for winner
+  let pts = 0;
+  const scores = [];
+  room.players.forEach(p => {
+    if (p.id !== winner.id) {
+      let ppts = 0;
+      (p.hand||[]).forEach(c => {
+        if (c.type === 'number') ppts += c.value;
+        else if (['skip','reverse','take2','skipall','throwcolor'].includes(c.type)) ppts += 20;
+        else if (['wild','wild4','take6','take10','wildrev4','ruleta'].includes(c.type)) ppts += 50;
+        else ppts += 20;
+      });
+      pts += ppts;
+      scores.push({ name: p.name, points: ppts, cards: p.hand.length });
+    } else {
+      scores.push({ name: p.name, points: 0, cards: 0, winner: true });
+    }
+  });
+
+  // Bonus for eliminations (No Mercy)
+  if (room.mode === 'mercy' || room.winCon === 'last') {
+    const elimCount = room.players.filter(p => p.eliminated && p.id !== winner.id).length;
+    pts += elimCount * 250;
+    if (elimCount > 0) unoLog(room, `+${elimCount*250} pts por ${elimCount} eliminado(s)`);
+  }
+
+  winner.totalPoints = (winner.totalPoints || 0) + pts;
+  unoLog(room, `💰 ${winner.name} gana ${pts} puntos (total: ${winner.totalPoints})`);
+
+  // Check game-over conditions
+  let gameOver = false;
+  let gameWinner = null;
+
+  if (room.winCon === 'hand') {
+    gameOver = true; gameWinner = winner;
+  } else if (room.winCon === 'points' && winner.totalPoints >= 1000) {
+    gameOver = true; gameWinner = winner;
+  } else if (room.winCon === 'last') {
+    const alive = room.players.filter(p => !p.eliminated);
+    if (alive.length === 1) { gameOver = true; gameWinner = alive[0]; }
+  }
+
+  const scoresSorted = scores.sort((a,b) => b.points - a.points);
+
+  if (gameOver) {
+    unoBroadcast(room, { type:'game_over', winnerName: gameWinner.name,
+      scores: room.players.map(p => ({ name:p.name, points:p.totalPoints||0, cards:(p.hand||[]).length }))
+        .sort((a,b) => b.points - a.points) });
+    room.state = 'game_over';
+    LB.unoRecordWin && LB.unoRecordWin(lbDB, gameWinner.name, winner.totalPoints);
+    return;
+  }
+
+  // Prepare next hand
+  room.hand++;
+  // Reset eliminations for 'points' mode only
+  if (room.winCon !== 'last') room.players.forEach(p => p.eliminated = false);
+
+  unoBroadcast(room, { type:'hand_end', winnerName: winner.name, scores: scoresSorted,
+    nextTarget: room.winCon === 'points' ? `${1000 - winner.totalPoints} más` : null,
+    gameOver: false });
+  unoSendState(room);
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // ███ WEBSOCKET UNIFICADO
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -2129,7 +2564,7 @@ wss.on('connection', (ws) => {
     // ── CREATE ROOM ──────────────────────────────────────────────────────────
     if (msg.type === 'getOnlineCounts') {
       const countPlayers = (store) => Object.values(store).reduce((s, r) => s + r.players.length, 0);
-      sendTo({ ws }, { type: 'online_counts', mus: countPlayers(musRooms), caida: countPlayers(caidaRooms), poker: countPlayers(pokerRooms) });
+      sendTo({ ws }, { type: 'online_counts', mus: countPlayers(musRooms), caida: countPlayers(caidaRooms), poker: countPlayers(pokerRooms), uno: countPlayers(unoRooms) });
       return;
     }
 
@@ -2172,13 +2607,24 @@ wss.on('connection', (ws) => {
         pokerSendState(room);
         return;
       }
+      if (game === 'uno') {
+        const code = genCode('U', unoRooms);
+        unoRooms[code] = unoCreateRoom(code, msg.maxPlayers || 4, msg.mode || 'classic', msg.winCon || 'hand');
+        const room = unoRooms[code];
+        const p = { id: playerId, ws, name: msg.name || 'Jugador', hand: [], totalPoints: 0, eliminated: false, calledUno: false };
+        room.players.push(p);
+        playerRoom = room; playerData = p;
+        sendTo(p, { type: 'joined', roomCode: code, playerId });
+        unoSendState(room);
+        return;
+      }
     }
 
     // ── JOIN ROOM ────────────────────────────────────────────────────────────
     if (msg.type === 'joinRoom') {
       if (!game) return;
       playerGame = game;
-      const store = game === 'mus' ? musRooms : game === 'caida' ? caidaRooms : pokerRooms;
+      const store = game === 'mus' ? musRooms : game === 'caida' ? caidaRooms : game === 'uno' ? unoRooms : pokerRooms;
       const room = store[msg.code];
       if (!room) { ws.send(JSON.stringify({ type: 'error', msg: 'Sala no encontrada' })); return; }
       if (room.players.length >= room.maxPlayers) { ws.send(JSON.stringify({ type: 'error', msg: 'Sala llena' })); return; }
@@ -2200,6 +2646,9 @@ wss.on('connection', (ws) => {
           } else if (game === 'poker') {
             pokerBroadcast(room, { type: 'log', msg: `🔄 ${existingPlayer.name} se ha reconectado` });
             pokerSendState(room);
+          } else if (game === 'uno') {
+            unoBroadcast(room, { type: 'log', msg: `🔄 ${existingPlayer.name} se ha reconectado` });
+            unoSendState(room);
           }
           return;
         }
@@ -2241,6 +2690,15 @@ wss.on('connection', (ws) => {
         sendTo(p, { type: 'joined', roomCode: room.code, playerId });
         pokerBroadcast(room, { type: 'log', msg: `👤 ${p.name} se unió` });
         pokerSendState(room);
+        return;
+      }
+      if (game === 'uno') {
+        const p = { id: playerId, ws, name: msg.name || 'Jugador', hand: [], totalPoints: 0, eliminated: false, calledUno: false };
+        room.players.push(p);
+        playerRoom = room; playerData = p;
+        sendTo(p, { type: 'joined', roomCode: room.code, playerId });
+        unoBroadcast(room, { type: 'log', msg: `👤 ${p.name} se unió` });
+        unoSendState(room);
         return;
       }
     }
@@ -2548,6 +3006,136 @@ wss.on('connection', (ws) => {
       return;
     }
 
+
+    // ── UNO MESSAGES ─────────────────────────────────────────────────────────
+    if (playerGame === 'uno') {
+      const room = playerRoom;
+      if (!room) return;
+
+      if (msg.type === 'startGame') {
+        if (room.state !== 'waiting') return;
+        if (room.players.length < 2) { unoSendTo(playerData, {type:'error',msg:'Necesitas al menos 2 jugadores'}); return; }
+        unoLog(room, `🎮 ¡Comienza UNO ${room.mode === 'mercy' ? 'No Mercy' : 'Clásico'}! ${room.players.length} jugadores`);
+        unoStartHand(room);
+        return;
+      }
+
+      if (msg.type === 'playCard') {
+        if (room.state !== 'playing') return;
+        const pidx = room.players.indexOf(playerData);
+        if (pidx !== room.currentTurn) { unoSendTo(playerData, {type:'error',msg:'No es tu turno'}); return; }
+        const card = playerData.hand[msg.cardIdx];
+        if (!card) return;
+        if (!unoCanPlay(room, card)) { unoSendTo(playerData, {type:'error',msg:'Esa carta no es jugable'}); return; }
+
+        // Remove from hand
+        playerData.hand.splice(msg.cardIdx, 1);
+        playerData.calledUno = false;
+
+        // If had 1 card left and didn't call UNO → penalty
+        if (playerData.hand.length === 0 && !playerData.calledUno) {
+          // Check if anyone catches them
+        }
+
+        room.discard.push(card);
+        unoLog(room, `🃏 ${playerData.name} juega ${card.color||''} ${card.type === 'number' ? card.value : card.type}`);
+
+        // Handle 7-swap
+        if (card.type === 'number' && card.value === 7 && room.mode === 'mercy') {
+          const targets = room.players.filter(p => p.id !== playerId && !p.eliminated).map(p => p.name);
+          if (targets.length > 0 && msg.swapTarget) {
+            const target = room.players.find(p => p.name === msg.swapTarget && !p.eliminated);
+            if (target) {
+              const tmp = playerData.hand; playerData.hand = target.hand; target.hand = tmp;
+              unoLog(room, `🔁 ${playerData.name} intercambia mano con ${target.name}`);
+            }
+          } else if (targets.length > 0 && !msg.swapTarget) {
+            unoSendTo(playerData, { type:'ask_swap', cardIdx: msg.cardIdx, targets });
+            playerData.hand.splice(msg.cardIdx, 0, card); // put card back
+            room.discard.pop();
+            return;
+          }
+        }
+
+        // Check win
+        if (unoCheckWinCondition(room, pidx)) return;
+
+        // Apply effect
+        unoApplyEffect(room, card, msg.chosenColor, playerId);
+        return;
+      }
+
+      if (msg.type === 'drawCard') {
+        if (room.state !== 'playing') return;
+        const pidx = room.players.indexOf(playerData);
+        if (pidx !== room.currentTurn) { unoSendTo(playerData, {type:'error',msg:'No es tu turno'}); return; }
+
+        if (room.stack > 0) {
+          // Must take the full stack
+          const n = room.stack;
+          room.stack = 0;
+          const ended = unoForceDraw(room, pidx, n);
+          if (ended) return;
+          unoLog(room, `📥 ${playerData.name} toma ${n} cartas del stack`);
+          unoNextTurn(room);
+          return;
+        }
+
+        // Normal draw
+        unoEnsureDeck(room);
+        if (room.deck.length === 0) { unoSendTo(playerData, {type:'error',msg:'Mazo vacío'}); return; }
+        const drawn = room.deck.shift();
+        playerData.hand.push(drawn);
+        unoLog(room, `📥 ${playerData.name} roba una carta`);
+
+        // Check if drawn card is playable
+        if (unoCanPlay(room, drawn)) {
+          room.canPass = true;
+          room.mustPlay = false;
+          unoSendState(room);
+        } else {
+          // Auto-pass
+          unoNextTurn(room);
+        }
+        return;
+      }
+
+      if (msg.type === 'passTurn') {
+        if (room.state !== 'playing') return;
+        const pidx = room.players.indexOf(playerData);
+        if (pidx !== room.currentTurn) return;
+        if (!room.canPass) { unoSendTo(playerData, {type:'error',msg:'No puedes pasar ahora'}); return; }
+        room.canPass = false;
+        unoNextTurn(room);
+        return;
+      }
+
+      if (msg.type === 'callUno') {
+        playerData.calledUno = true;
+        unoBroadcast(room, { type:'uno_shout', name: playerData.name });
+        unoLog(room, `🎉 ¡${playerData.name} dice UNO!`);
+        return;
+      }
+
+      if (msg.type === 'nextHand') {
+        if (room.state !== 'hand_end') return;
+        if (!room.readyForNext.includes(playerId)) {
+          room.readyForNext.push(playerId);
+          const alive = room.players.filter(p => !p.eliminated);
+          unoBroadcast(room, { type:'ready_count', count: room.readyForNext.length, total: alive.length });
+        }
+        if (room.readyForNext.length >= room.players.filter(p=>!p.eliminated).length) {
+          unoStartHand(room);
+        }
+        return;
+      }
+
+      if (msg.type === 'chat') {
+        unoBroadcast(room, { type:'chat', from: playerData.name, msg: msg.text });
+        return;
+      }
+    } // end playerGame === uno
+
   }); // end ws.on message
 
   ws.on('close', () => {
@@ -2571,6 +3159,13 @@ wss.on('connection', (ws) => {
       if (playerRoom.players.length === 0) { delete pokerRooms[playerRoom.code]; return; }
       if (playerRoom.currentTurn >= playerRoom.players.length) playerRoom.currentTurn = 0;
       pokerSendState(playerRoom);
+    } else if (playerGame === 'uno') {
+      unoBroadcast(playerRoom, { type: 'log', msg: `⚠️ ${playerData.name} se desconectó` });
+      // Mark as eliminated if game in progress
+      if (playerRoom.state === 'playing') playerData.eliminated = true;
+      else playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
+      if (playerRoom.players.length === 0) { delete unoRooms[playerRoom.code]; return; }
+      unoSendState(playerRoom);
     }
   });
 }); // end wss.on connection

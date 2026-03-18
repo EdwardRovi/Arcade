@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>UNO · Arcade</title>
+<meta name="theme-color" content="#0a0505">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #08060a;
+  --red:    #e03030; --red-d:    #8b1010;
+  --blue:   #2060e0; --blue-d:   #102080;
+  --green:  #20a040; --green-d:  #0d5020;
+  --yellow: #e0b020; --yellow-d: #806010;
+  --black:  #1a1a1a; --wild-c:   #8b30e0;
+  --gold: #c9a84c; --gold2: #e8c97a;
+  --text: #f5ead8; --muted: rgba(245,234,216,0.45);
+  --border: rgba(201,168,76,0.22);
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html,body { height:100%; background:var(--bg); color:var(--text); font-family:'Cinzel',serif; overflow:hidden; touch-action:manipulation; }
+
+/* ── BG ── */
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 50%, rgba(224,48,48,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 50%, rgba(32,96,224,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 50% 10%, rgba(224,176,32,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 50% 90%, rgba(32,160,64,0.12)  0%, transparent 55%);
+}
+
+/* ── LOBBY ── */
+#lobby { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10; padding:1rem; overflow-y:auto; gap:0.8rem; }
+#lobby.hidden { display:none; }
+
+.uno-logo { font-family:'Cinzel Decorative',cursive; font-size:clamp(3rem,14vw,7rem); font-weight:900; letter-spacing:0.08em; line-height:1;
+  background: linear-gradient(135deg, var(--red) 0%, var(--yellow) 35%, var(--green) 65%, var(--blue) 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  filter: drop-shadow(0 0 30px rgba(224,176,32,0.4));
+}
+.uno-sub { font-size:0.6rem; color:var(--muted); letter-spacing:0.3em; margin-top:-0.3rem; }
+
+.panel { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:8px; padding:1.4rem 1.8rem; width:100%; max-width:380px; display:flex; flex-direction:column; gap:0.7rem; }
+.panel h2 { font-family:'Cinzel Decorative',cursive; font-size:0.75rem; color:var(--gold); letter-spacing:0.15em; text-align:center; }
+.fg label { display:block; font-size:0.52rem; color:var(--muted); letter-spacing:0.12em; margin-bottom:0.22rem; }
+.fg input, .fg select { width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); color:var(--text); font-family:'Cinzel',serif; font-size:0.82rem; padding:0.45rem 0.7rem; border-radius:4px; outline:none; }
+.fg select option { background:#1a0f0a; }
+.fg input:focus, .fg select:focus { border-color:var(--gold); }
+
+/* Mode selector */
+.mode-row { display:flex; gap:8px; }
+.mode-opt { flex:1; border:1px solid rgba(255,255,255,0.12); border-radius:6px; padding:0.5rem 0.3rem; text-align:center; cursor:pointer; transition:all 0.15s; background:rgba(255,255,255,0.03); }
+.mode-opt.sel { border-color:var(--gold); background:rgba(201,168,76,0.12); }
+.mode-opt .mo-icon { font-size:1.4rem; display:block; }
+.mode-opt .mo-name { font-size:0.5rem; color:var(--gold); letter-spacing:0.1em; display:block; margin-top:3px; }
+.mode-opt .mo-desc { font-size:0.4rem; color:var(--muted); display:block; margin-top:1px; }
+
+.btn { font-family:'Cinzel Decorative',cursive; font-size:0.62rem; letter-spacing:0.1em; padding:0.55rem 1.2rem; border-radius:5px; cursor:pointer; transition:all 0.2s; border:none; width:100%; }
+.btn-gold { background:linear-gradient(135deg,#b8922a,#d4a843); color:#1a0f00; }
+.btn-gold:hover { background:linear-gradient(135deg,#c9a84c,#e8c97a); }
+.btn-outline { background:transparent; border:1px solid var(--border); color:var(--gold2); }
+.btn-outline:hover { background:rgba(201,168,76,0.1); }
+.divider { text-align:center; font-size:0.58rem; color:var(--muted); }
+
+.room-code { font-family:'Cinzel Decorative',cursive; font-size:2rem; color:var(--gold2); letter-spacing:0.3em; text-align:center; text-shadow:0 0 20px rgba(201,168,76,0.35); }
+.w-player { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:4px; padding:0.35rem 0.75rem; font-size:0.75rem; display:flex; justify-content:space-between; align-items:center; gap:0.5rem; }
+.w-mode-badge { font-size:0.44rem; padding:2px 7px; border-radius:3px; background:rgba(201,168,76,0.12); border:1px solid rgba(201,168,76,0.3); color:var(--gold); white-space:nowrap; }
+
+/* ── GAME ── */
+#game { display:none; position:fixed; inset:0; flex-direction:column; z-index:1; }
+#game.active { display:flex; }
+
+.topbar { display:flex; align-items:center; padding:0.28rem 0.65rem; background:rgba(0,0,0,0.7); border-bottom:1px solid rgba(255,255,255,0.08); flex-shrink:0; gap:0.5rem; }
+.topbar-title { font-family:'Cinzel Decorative',cursive; font-size:0.5rem; color:var(--gold); letter-spacing:0.1em; flex:1; }
+.topbar-info { font-size:0.44rem; color:var(--muted); flex:2; text-align:center; }
+.exit-btn { background:rgba(120,20,20,0.55); border:1px solid rgba(200,60,60,0.3); color:rgba(255,150,150,0.8); font-family:'Cinzel',serif; font-size:0.44rem; padding:0.2rem 0.5rem; border-radius:3px; cursor:pointer; white-space:nowrap; }
+.arcade-top-btn { font-family:'Cinzel',serif; font-size:0.44rem; letter-spacing:0.1em; color:rgba(201,168,76,0.55); text-decoration:none; padding:0.2rem 0.5rem; border:1px solid rgba(201,168,76,0.2); border-radius:3px; background:rgba(0,0,0,0.3); transition:all 0.2s; }
+
+/* Table layout */
+.table-area { flex:1; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; min-height:0; }
+
+/* Center pile area */
+.pile-area { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:0.4rem; z-index:2; }
+.discard-pile { position:relative; width:70px; height:100px; }
+.draw-pile { width:70px; height:100px; border-radius:8px; cursor:pointer; position:relative;
+  background:repeating-linear-gradient(135deg,rgba(100,20,180,0.9) 0px,rgba(100,20,180,0.9) 4px,rgba(60,8,120,0.9) 4px,rgba(60,8,120,0.9) 8px);
+  border:2px solid rgba(168,85,247,0.5); display:flex; align-items:center; justify-content:center;
+  font-family:'Cinzel Decorative',cursive; font-size:0.9rem; color:rgba(192,132,252,0.7);
+  box-shadow:0 4px 20px rgba(0,0,0,0.6);
+  transition:transform 0.15s, box-shadow 0.15s;
+}
+.draw-pile:hover { transform:translateY(-3px); box-shadow:0 8px 25px rgba(0,0,0,0.7); }
+.draw-pile .deck-n { position:absolute; bottom:4px; right:6px; font-size:0.44rem; font-family:'Cinzel',serif; color:rgba(192,132,252,0.7); }
+
+.direction-arrow { font-size:1.4rem; opacity:0.6; transition:transform 0.4s; }
+.pot-info { font-size:0.44rem; color:var(--muted); letter-spacing:0.1em; text-align:center; }
+
+/* UNO Cards */
+.uno-card {
+  width:70px; height:100px; border-radius:8px; position:relative;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:700; font-family:'Cinzel Decorative',cursive;
+  box-shadow:0 3px 12px rgba(0,0,0,0.6);
+  cursor:pointer; user-select:none; flex-shrink:0;
+  transition:transform 0.15s, box-shadow 0.15s, outline 0.1s;
+  border:2.5px solid rgba(255,255,255,0.25);
+}
+.uno-card:hover { transform:translateY(-8px); box-shadow:0 10px 28px rgba(0,0,0,0.7); }
+.uno-card.playable { outline:3px solid rgba(255,255,255,0.7); outline-offset:1px; }
+.uno-card.playable:hover { transform:translateY(-12px); }
+.uno-card.selected { transform:translateY(-14px) scale(1.06); outline:3px solid #fff; box-shadow:0 14px 35px rgba(0,0,0,0.8); }
+.uno-card.back {
+  background:repeating-linear-gradient(135deg,rgba(100,20,180,0.9) 0px,rgba(100,20,180,0.9) 4px,rgba(60,8,120,0.9) 4px,rgba(60,8,120,0.9) 8px);
+  border-color:rgba(168,85,247,0.4);
+}
+/* Card colors */
+.c-red    { background:radial-gradient(ellipse at 35% 35%, #ff6060 0%, var(--red) 55%, var(--red-d) 100%); }
+.c-blue   { background:radial-gradient(ellipse at 35% 35%, #6090ff 0%, var(--blue) 55%, var(--blue-d) 100%); }
+.c-green  { background:radial-gradient(ellipse at 35% 35%, #40d060 0%, var(--green) 55%, var(--green-d) 100%); }
+.c-yellow { background:radial-gradient(ellipse at 35% 35%, #ffe060 0%, var(--yellow) 55%, var(--yellow-d) 100%); }
+.c-wild   { background:conic-gradient(var(--red) 0deg 90deg, var(--blue) 90deg 180deg, var(--yellow) 180deg 270deg, var(--green) 270deg 360deg); }
+.c-mercy  { background:conic-gradient(#8b30e0 0deg 90deg, #303030 90deg 180deg, #8b30e0 180deg 270deg, #303030 270deg 360deg); }
+
+.card-oval {
+  width:50px; height:72px; border-radius:50%;
+  background:rgba(0,0,0,0.25);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.3rem; color:#fff;
+  position:relative;
+}
+.card-tl { position:absolute; top:4px; left:5px; font-size:0.62rem; line-height:1.1; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.5); }
+.card-br { position:absolute; bottom:4px; right:5px; font-size:0.62rem; line-height:1.1; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.5); transform:rotate(180deg); }
+.card-center { font-size:1.5rem; color:#fff; text-shadow:0 2px 6px rgba(0,0,0,0.4); }
+
+/* Seats around the table */
+.seat { position:absolute; display:flex; flex-direction:column; align-items:center; gap:4px; }
+.seat-name { font-size:0.5rem; letter-spacing:0.08em; padding:2px 8px; border-radius:3px; white-space:nowrap; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.1); }
+.seat-name.is-turn { border-color:var(--gold); color:var(--gold2); box-shadow:0 0 10px rgba(201,168,76,0.4); }
+.seat-name.is-you { font-style:italic; }
+.seat-cards { display:flex; gap:-4px; }
+.card-count-badge { font-size:0.6rem; color:var(--muted); }
+.uno-cry { font-size:0.55rem; color:#ff6060; font-family:'Cinzel Decorative',cursive; animation:pulse-uno 0.8s ease-in-out infinite; }
+@keyframes pulse-uno { 0%,100%{transform:scale(1)} 50%{transform:scale(1.2)} }
+.elim-badge { font-size:0.44rem; color:rgba(255,100,100,0.7); padding:1px 6px; border:1px solid rgba(255,100,100,0.3); border-radius:3px; }
+
+/* My hand */
+.my-hand-wrap { flex-shrink:0; background:rgba(0,0,0,0.5); border-top:1px solid rgba(255,255,255,0.06); padding:0.5rem 0.5rem 0.4rem; display:flex; flex-direction:column; align-items:center; gap:0.35rem; max-height:200px; }
+.my-hand-label { font-size:0.44rem; color:var(--muted); letter-spacing:0.15em; }
+.my-hand-cards { display:flex; gap:5px; overflow-x:auto; padding:4px 2px 6px; max-width:100vw; scrollbar-width:thin; scrollbar-color:rgba(201,168,76,0.2) transparent; }
+.my-hand-cards .uno-card { flex-shrink:0; }
+
+/* Action panel */
+.action-wrap { flex-shrink:0; min-height:44px; display:flex; align-items:center; justify-content:center; padding:0.3rem 0.6rem; background:rgba(0,0,0,0.6); border-top:1px solid rgba(255,255,255,0.05); gap:0.5rem; flex-wrap:wrap; }
+.act-btn { font-family:'Cinzel',serif; font-size:0.5rem; letter-spacing:0.06em; padding:0.35rem 0.8rem; border-radius:4px; cursor:pointer; transition:all 0.15s; border:1px solid; white-space:nowrap; }
+.act-draw   { color:#a0d0ff; border-color:rgba(160,208,255,0.4); background:rgba(160,208,255,0.08); }
+.act-draw:hover { background:rgba(160,208,255,0.18); }
+.act-uno    { color:#ffcc00; border-color:rgba(255,204,0,0.5); background:rgba(255,204,0,0.1); font-family:'Cinzel Decorative',cursive; font-weight:700; }
+.act-uno:hover { background:rgba(255,204,0,0.22); }
+.act-pass   { color:var(--muted); border-color:rgba(255,255,255,0.15); background:transparent; }
+.act-pass:hover { background:rgba(255,255,255,0.06); }
+.status-msg { font-size:0.52rem; color:var(--muted); letter-spacing:0.08em; font-style:italic; }
+
+/* Color picker overlay */
+#color-picker { position:fixed; inset:0; background:rgba(0,0,0,0.82); z-index:50; display:none; align-items:center; justify-content:center; flex-direction:column; gap:1rem; }
+#color-picker.show { display:flex; }
+#color-picker h3 { font-family:'Cinzel Decorative',cursive; color:var(--gold); font-size:1rem; letter-spacing:0.15em; }
+.color-btns { display:flex; gap:0.8rem; }
+.color-btn { width:70px; height:70px; border-radius:50%; border:3px solid rgba(255,255,255,0.3); cursor:pointer; transition:transform 0.15s, box-shadow 0.15s; font-size:1.3rem; display:flex; align-items:center; justify-content:center; }
+.color-btn:hover { transform:scale(1.15); box-shadow:0 0 20px rgba(255,255,255,0.3); }
+.cb-red    { background:var(--red); }
+.cb-blue   { background:var(--blue); }
+.cb-green  { background:var(--green); }
+.cb-yellow { background:var(--yellow); }
+
+/* Ruleta color overlay */
+#ruleta-picker { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:51; display:none; align-items:center; justify-content:center; flex-direction:column; gap:1rem; }
+#ruleta-picker.show { display:flex; }
+#ruleta-picker h3 { font-family:'Cinzel Decorative',cursive; color:#8b30e0; font-size:0.9rem; letter-spacing:0.12em; text-align:center; }
+
+/* 7-swap picker */
+#swap-picker { position:fixed; inset:0; background:rgba(0,0,0,0.82); z-index:52; display:none; align-items:center; justify-content:center; flex-direction:column; gap:1rem; }
+#swap-picker.show { display:flex; }
+#swap-picker h3 { font-family:'Cinzel Decorative',cursive; color:var(--gold); font-size:0.9rem; letter-spacing:0.12em; }
+.swap-btn { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.2); color:var(--text); font-family:'Cinzel',serif; font-size:0.75rem; padding:0.5rem 1.2rem; border-radius:5px; cursor:pointer; transition:all 0.15s; }
+.swap-btn:hover { background:rgba(255,255,255,0.14); }
+
+/* Notice */
+#notice { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:60; pointer-events:none;
+  background:rgba(0,0,0,0.92); border:1px solid rgba(201,168,76,0.5); border-radius:8px;
+  padding:1rem 2rem; font-family:'Cinzel Decorative',cursive; font-size:0.85rem; color:var(--gold2);
+  text-align:center; max-width:80vw; opacity:0; transition:opacity 0.2s; }
+#notice.show { opacity:1; }
+
+/* UNO shout banner */
+#uno-banner { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); z-index:65; pointer-events:none;
+  font-family:'Cinzel Decorative',cursive; font-size:clamp(4rem,18vw,9rem); font-weight:900;
+  background:linear-gradient(135deg,var(--red),var(--yellow),var(--green),var(--blue));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  filter:drop-shadow(0 0 30px rgba(224,176,32,0.8));
+  transition:transform 0.25s cubic-bezier(0.22,1,0.36,1), opacity 0.3s;
+  opacity:0;
+}
+#uno-banner.pop { transform:translate(-50%,-50%) scale(1); opacity:1; }
+
+/* Game over overlay */
+#gameover { position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:70; display:none; align-items:center; justify-content:center; flex-direction:column; gap:1rem; }
+#gameover.show { display:flex; }
+#gameover h1 { font-family:'Cinzel Decorative',cursive; font-size:clamp(2rem,8vw,4rem); color:var(--gold2); text-shadow:0 0 40px rgba(201,168,76,0.5); }
+.score-table { border-collapse:collapse; width:100%; max-width:380px; }
+.score-table td, .score-table th { padding:0.4rem 0.8rem; font-size:0.72rem; border-bottom:1px solid rgba(255,255,255,0.07); }
+.score-table th { font-family:'Cinzel Decorative',cursive; color:var(--gold); font-size:0.55rem; letter-spacing:0.12em; }
+.score-table .winner-row td { color:var(--gold2); }
+
+/* Stack counter */
+.stack-indicator { position:absolute; top:-12px; right:-8px; background:#e03030; color:#fff; font-size:0.55rem; font-family:'Cinzel Decorative',cursive; padding:1px 6px; border-radius:10px; font-weight:700; border:1px solid rgba(255,100,100,0.5); animation:bounce-stack 0.4s ease-out; z-index:3; }
+@keyframes bounce-stack { 0%{transform:scale(0.5)} 60%{transform:scale(1.2)} 100%{transform:scale(1)} }
+
+/* Piedad badge */
+.piedad-badge { font-size:0.4rem; color:#ff6060; border:1px solid rgba(255,96,96,0.4); border-radius:3px; padding:1px 5px; background:rgba(255,0,0,0.08); }
+
+/* Log */
+#log-area { position:fixed; bottom:0; right:0; width:220px; max-height:120px; overflow-y:auto; padding:4px 8px; z-index:5; pointer-events:none; }
+.log-e { font-size:0.44rem; color:rgba(245,234,216,0.55); line-height:1.5; }
+.log-e:last-child { color:var(--text); }
+
+/* Sidebar log toggle (mobile) */
+#log-toggle { position:fixed; bottom:8px; left:8px; z-index:20; background:rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.15); border-radius:4px; font-size:0.44rem; color:var(--muted); padding:3px 8px; cursor:pointer; font-family:'Cinzel',serif; }
+
+/* Points display */
+.pts-badge { font-size:0.46rem; color:var(--gold); padding:1px 6px; border:1px solid rgba(201,168,76,0.3); border-radius:3px; background:rgba(201,168,76,0.08); }
+
+/* No Mercy badge */
+.nm-badge { font-size:0.42rem; color:#c084fc; padding:1px 7px; border:1px solid rgba(192,132,252,0.4); border-radius:3px; background:rgba(109,40,217,0.12); letter-spacing:0.08em; }
+
+@media(max-width:600px){
+  .discard-pile, .draw-pile { width:56px; height:80px; }
+  .uno-card { width:56px; height:80px; }
+  .card-center { font-size:1.1rem; }
+  .card-oval { width:40px; height:58px; }
+  #log-area { display:none; }
+}
+
+.mode-card { border:1px solid rgba(255,255,255,0.12); border-radius:6px; padding:0.6rem 0.5rem; cursor:pointer; text-align:center; transition:all 0.2s; background:rgba(255,255,255,0.03); }
+.mode-card:hover { border-color:var(--gold); }
+.mode-card.active { border-color:var(--gold); background:rgba(201,168,76,0.12); }
+.wincon-btn { border:1px solid rgba(255,255,255,0.1); border-radius:5px; padding:0.4rem 0.3rem; cursor:pointer; text-align:center; background:rgba(255,255,255,0.03); transition:all 0.18s; }
+.wincon-btn:hover { border-color:var(--gold); }
+.wincon-btn.active { border-color:var(--gold); background:rgba(201,168,76,0.1); }
+
+</style>
+</head>
+<body>
+
+<!-- ── LOBBY ── -->
+<div id="lobby">
+  <div style="text-align:center">
+    <div class="uno-logo">UNO</div>
+    <div class="uno-sub">SHOW 'EM · ARCADE</div>
+  </div>
+
+  <div class="panel" id="lform">
+    <h2>Nueva sala</h2>
+    <div class="fg"><label>TU NOMBRE</label><input id="pname" type="text" placeholder="Jugador..." maxlength="16" autocomplete="off"></div>
+    <div class="fg"><label>JUGADORES (2–6)</label>
+      <select id="pmaxp">
+        <option value="2">2 jugadores</option>
+        <option value="3">3 jugadores</option>
+        <option value="4" selected>4 jugadores</option>
+        <option value="5">5 jugadores</option>
+        <option value="6">6 jugadores</option>
+      </select>
+    </div>
+    <div class="fg"><label>MODO DE JUEGO</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">
+        <div class="mode-card active" id="mc-classic" onclick="selectMode('classic')">
+          <div style="font-size:1.3rem">🃏</div>
+          <div style="font-family:'Cinzel Decorative',cursive;font-size:0.58rem;color:var(--gold2);letter-spacing:0.08em">CLÁSICO</div>
+          <div style="font-size:0.44rem;color:var(--muted);margin-top:2px;line-height:1.4">108 cartas<br>Reglas originales</div>
+        </div>
+        <div class="mode-card" id="mc-mercy" onclick="selectMode('mercy')">
+          <div style="font-size:1.3rem">💀</div>
+          <div style="font-family:'Cinzel Decorative',cursive;font-size:0.58rem;color:var(--gold2);letter-spacing:0.08em">NO MERCY</div>
+          <div style="font-size:0.44rem;color:var(--muted);margin-top:2px;line-height:1.4">168 cartas<br>+6 +10 Ruleta Piedad</div>
+        </div>
+      </div>
+    </div>
+    <div class="fg"><label>CONDICIÓN DE VICTORIA</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.4rem">
+        <div class="wincon-btn active" id="wc-hand" onclick="selectWinCon('hand')">
+          <span style="display:block;font-size:0.9rem;font-family:'Cinzel Decorative',cursive;color:var(--gold);margin-bottom:2px">1</span>
+          <span style="font-size:0.42rem;color:var(--muted);line-height:1.3">Ganar<br>una mano</span>
+        </div>
+        <div class="wincon-btn" id="wc-points" onclick="selectWinCon('points')">
+          <span style="display:block;font-size:0.75rem;font-family:'Cinzel Decorative',cursive;color:var(--gold);margin-bottom:2px">1000</span>
+          <span style="font-size:0.42rem;color:var(--muted);line-height:1.3">Primero en<br>1000 pts</span>
+        </div>
+        <div class="wincon-btn" id="wc-last" onclick="selectWinCon('last')">
+          <span style="display:block;font-size:0.9rem;margin-bottom:2px">💀</span>
+          <span style="font-size:0.42rem;color:var(--muted);line-height:1.3">Último<br>en pie</span>
+        </div>
+      </div>
+    </div>
+    <div class="fg"><label>MODO DE JUEGO</label>
+      <div class="mode-row">
+        <div class="mode-opt sel" id="mo-classic" onclick="selMode('classic')">
+          <span class="mo-icon">🃏</span>
+          <span class="mo-name">CLÁSICO</span>
+          <span class="mo-desc">108 cartas</span>
+        </div>
+        <div class="mode-opt" id="mo-mercy" onclick="selMode('mercy')">
+          <span class="mo-icon">💀</span>
+          <span class="mo-name">NO MERCY</span>
+          <span class="mo-desc">168 cartas · Apilar</span>
+        </div>
+      </div>
+    </div>
+    <div class="fg"><label>CONDICIÓN DE VICTORIA</label>
+      <select id="pwincon">
+        <option value="hand">Primera mano (sin cartas)</option>
+        <option value="points">Puntos · primero en 1000</option>
+        <option value="last">Último en pie (Piedad activa)</option>
+      </select>
+    </div>
+    <button class="btn btn-gold" onclick="doCreate()">✦ Crear sala</button>
+    <div class="divider">· o ·</div>
+    <div class="fg"><label>CÓDIGO DE SALA</label><input id="rcode" type="text" placeholder="Ej: U3X9" maxlength="5" style="text-transform:uppercase"></div>
+    <button class="btn btn-outline" onclick="doJoin()">Unirse</button>
+  </div>
+
+  <div class="panel" id="lwait" style="display:none">
+    <h2>Sala: <span id="wcode" style="color:var(--gold2)">----</span></h2>
+    <div style="font-size:0.52rem;color:var(--muted);text-align:center">Comparte el código · El anfitrión inicia la partida</div>
+    <div id="wlist" style="display:flex;flex-direction:column;gap:0.35rem;margin:0.3rem 0"></div>
+    <div id="wmodeinfo" style="font-size:0.5rem;color:var(--muted);text-align:center"></div>
+    <div id="wstart"></div>
+    <button class="btn btn-outline" onclick="exitGame()" style="font-size:0.55rem;border-color:rgba(180,60,60,0.4);color:rgba(220,120,120,0.8)">🚪 Salir</button>
+  </div>
+</div>
+
+<!-- ── GAME ── -->
+<div id="game">
+  <div class="topbar">
+    <a class="arcade-top-btn" href="/">← ARCADE</a>
+    <div class="topbar-title">UNO</div>
+    <div class="topbar-info" id="tinfo"></div>
+    <button class="exit-btn" onclick="exitGame()">🚪 Salir</button>
+  </div>
+
+  <div class="table-area" id="table-area">
+    <!-- Opponents rendered here dynamically -->
+    <div id="seats"></div>
+
+    <!-- Center -->
+    <div class="pile-area">
+      <div id="stack-indicator-wrap" style="position:relative;display:inline-block">
+        <div class="discard-pile" id="discard"></div>
+        <div id="stack-badge" style="display:none" class="stack-indicator"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="draw-pile" id="draw-pile" onclick="doDraw()">
+          UNO<span class="deck-n" id="deck-n">—</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+          <div class="direction-arrow" id="dir-arrow">↻</div>
+          <div class="pot-info" id="pot-info"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="action-wrap" class="action-wrap"></div>
+  <div class="my-hand-wrap" id="my-hand-wrap">
+    <div class="my-hand-label" id="hand-label">TU MANO</div>
+    <div class="my-hand-cards" id="my-cards"></div>
+  </div>
+</div>
+
+<!-- Overlays -->
+<div id="color-picker">
+  <h3>ELIGE UN COLOR</h3>
+  <div class="color-btns">
+    <div class="color-btn cb-red"    onclick="pickColor('red')">🔴</div>
+    <div class="color-btn cb-blue"   onclick="pickColor('blue')">🔵</div>
+    <div class="color-btn cb-green"  onclick="pickColor('green')">🟢</div>
+    <div class="color-btn cb-yellow" onclick="pickColor('yellow')">🟡</div>
+  </div>
+</div>
+<div id="ruleta-picker">
+  <h3>🎰 RULETA DE COLOR<br><span style="font-size:0.6rem;color:var(--muted)">Elige — el rival roba hasta ese color</span></h3>
+  <div class="color-btns">
+    <div class="color-btn cb-red"    onclick="pickRuleta('red')">🔴</div>
+    <div class="color-btn cb-blue"   onclick="pickRuleta('blue')">🔵</div>
+    <div class="color-btn cb-green"  onclick="pickRuleta('green')">🟢</div>
+    <div class="color-btn cb-yellow" onclick="pickRuleta('yellow')">🟡</div>
+  </div>
+</div>
+<div id="swap-picker">
+  <h3>🔁 INTERCAMBIO CON 7<br><span style="font-size:0.6rem;color:var(--muted)">Elige con quién intercambias</span></h3>
+  <div id="swap-list" style="display:flex;flex-direction:column;gap:0.5rem;width:100%;max-width:300px"></div>
+</div>
+<div id="uno-banner">¡UNO!</div>
+<div id="notice"></div>
+<div id="gameover">
+  <h1 id="go-title">🏆 ¡GANASTE!</h1>
+  <table class="score-table">
+    <thead><tr><th>#</th><th>JUGADOR</th><th>PUNTOS</th><th>CARTAS</th></tr></thead>
+    <tbody id="go-scores"></tbody>
+  </table>
+  <div style="display:flex;gap:0.6rem;margin-top:0.5rem">
+    <button class="btn btn-gold" id="next-hand-btn" onclick="doNextHand()" style="width:auto;padding:0.5rem 1.2rem;font-size:0.6rem">🔄 Siguiente mano</button>
+    <button class="btn btn-outline" onclick="exitGame()" style="width:auto;padding:0.5rem 1.2rem;font-size:0.6rem">🚪 Salir</button>
+  </div>
+  <div id="go-sub" style="font-size:0.5rem;color:var(--muted);margin-top:0.3rem"></div>
+</div>
+
+<div id="log-area"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// CONNECTION
+// ══════════════════════════════════════════════════════════
+const SRV = `wss://${location.host}`;
+let ws = null, myId = null, myRoom = null, gs = null, myName = 'Jugador';
+let pendingWild = null; // card waiting for color pick
+let reconnTimer = null;
+let selectedCard = null; // index in hand
+
+function connect(cb) {
+  if (ws && ws.readyState < 2) { if(cb) cb(); return; }
+  ws = new WebSocket(SRV);
+  ws.onopen = () => { if(cb) cb(); };
+  ws.onmessage = e => { try { handleMsg(JSON.parse(e.data)); } catch(err) { console.error('[uno]', err); } };
+  ws.onerror = () => {};
+  ws.onclose = () => {
+    if (myRoom) reconnTimer = setTimeout(() => connect(() => send({ type:'joinRoom', code:myRoom, name:myName })), 3000);
+  };
+}
+function send(o) { if(ws && ws.readyState === 1) ws.send(JSON.stringify({...o, game:'uno'})); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ══════════════════════════════════════════════════════════
+// LOBBY
+// ══════════════════════════════════════════════════════════
+let lobbyMode = 'classic';
+function selMode(m) {
+  lobbyMode = m;
+  ['classic','mercy'].forEach(x => document.getElementById('mo-'+x).classList.toggle('sel', x===m));
+}
+function selectMode(m) {
+  window._lobbyMode = m;
+  ['classic','mercy'].forEach(x => {
+    const el = document.getElementById('mc-'+x);
+    if (el) el.classList.toggle('active', x===m);
+  });
+}
+function selectWinCon(w) {
+  window._lobbyWinCon = w;
+  ['hand','points','last'].forEach(x => {
+    const el = document.getElementById('wc-'+x);
+    if (el) el.classList.toggle('active', x===w);
+  });
+}
+window._lobbyMode = 'classic';
+window._lobbyWinCon = 'hand';
+
+function doCreate() {
+  myName = document.getElementById('pname').value.trim() || 'Jugador';
+  const maxP = parseInt(document.getElementById('pmaxp').value) || 4;
+  const winCon = document.getElementById('pwincon').value;
+  connect(() => send({ type:'createRoom', name:myName, maxPlayers:+document.getElementById('pmaxp').value, mode:window._lobbyMode||'classic', winCon:window._lobbyWinCon||'hand' }));
+}
+function doJoin() {
+  myName = document.getElementById('pname').value.trim() || 'Jugador';
+  const code = document.getElementById('rcode').value.trim().toUpperCase();
+  if (!code) { showNotice('Introduce el código de sala'); return; }
+  connect(() => send({ type:'joinRoom', code, name:myName }));
+}
+function exitGame() {
+  myId = null; myRoom = null; gs = null; pendingWild = null; selectedCard = null;
+  if(reconnTimer){ clearTimeout(reconnTimer); reconnTimer = null; }
+  if(ws){ ws.onclose=null; ws.close(); ws=null; }
+  document.getElementById('game').classList.remove('active');
+  document.getElementById('lobby').classList.remove('hidden');
+  document.getElementById('lform').style.display = 'flex';
+  document.getElementById('lwait').style.display = 'none';
+  document.getElementById('gameover').classList.remove('show');
+  document.getElementById('color-picker').classList.remove('show');
+  document.getElementById('swap-picker').classList.remove('show');
+  document.getElementById('ruleta-picker').classList.remove('show');
+}
+
+// ══════════════════════════════════════════════════════════
+// MESSAGES
+// ══════════════════════════════════════════════════════════
+function handleMsg(msg) {
+  if (msg.type === 'joined') {
+    myId = msg.playerId;
+    myRoom = msg.roomCode;
+    document.getElementById('wcode').textContent = msg.roomCode;
+    document.getElementById('lform').style.display = 'none';
+    document.getElementById('lwait').style.display = 'flex';
+  }
+  if (msg.type === 'state') {
+    gs = msg.state;
+    renderWaiting(gs);
+    if (gs.gameState !== 'waiting') {
+      document.getElementById('lobby').classList.add('hidden');
+      document.getElementById('game').classList.add('active');
+      renderGame(gs);
+    }
+  }
+  if (msg.type === 'hand_end') showHandEnd(msg);
+  if (msg.type === 'game_over') showGameOver(msg);
+  if (msg.type === 'uno_shout') showUnoBanner(msg.name);
+  if (msg.type === 'ask_color')   { pendingWild = msg.cardIdx; document.getElementById('color-picker').classList.add('show'); }
+  if (msg.type === 'ask_swap')    { pendingWild = msg.cardIdx; showSwapPicker(msg.targets); }
+  if (msg.type === 'ask_ruleta')  { pendingWild = msg.cardIdx; document.getElementById('ruleta-picker').classList.add('show'); }
+  if (msg.type === 'log')  addLog(msg.msg);
+  if (msg.type === 'notice') showNotice(msg.msg, 2500);
+  if (msg.type === 'ready_count') {
+    const btn = document.getElementById('next-hand-btn');
+    if (btn) btn.textContent = `🔄 Siguiente mano (${msg.count}/${msg.total})`;
+  }
+  if (msg.type === 'error') showNotice('⚠️ ' + msg.msg, 2500);
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER WAITING
+// ══════════════════════════════════════════════════════════
+function renderWaiting(state) {
+  document.getElementById('wlist').innerHTML = (state.players||[]).map(p =>
+    `<div class="w-player"><span>${esc(p.name)}${p.isYou?' <em style="opacity:0.5">(Tú)</em>':''}</span>
+     <span class="pts-badge">💰 ${p.totalPoints||0} pts</span></div>`
+  ).join('');
+  const modeStr = state.mode === 'mercy' ? '💀 No Mercy' : '🃏 Clásico';
+  const winStr = state.winCon === 'hand' ? 'Primera mano' : state.winCon === 'points' ? '1000 puntos' : 'Último en pie';
+  document.getElementById('wmodeinfo').innerHTML = `${modeStr} · ${winStr}`;
+  const me = (state.players||[]).find(p => p.isYou);
+  const sa = document.getElementById('wstart');
+  if (me?.isHost && (state.players||[]).length >= 2) {
+    sa.innerHTML = `<button class="btn btn-gold" style="cursor:pointer" id="start-btn">▶ Iniciar (${state.players.length} jugadores)</button>`;
+    document.getElementById('start-btn').addEventListener('click', () => send({ type:'startGame' }));
+  } else if (me?.isHost) {
+    sa.innerHTML = `<div style="font-size:0.52rem;color:var(--muted)">Necesitas al menos 2 jugadores</div>`;
+  } else {
+    sa.innerHTML = `<div style="font-size:0.52rem;color:var(--muted)">El anfitrión iniciará la partida</div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER GAME
+// ══════════════════════════════════════════════════════════
+const COLOR_EMOJI = { red:'🔴', blue:'🔵', green:'🟢', yellow:'🟡' };
+const COLOR_NAMES = { red:'Rojo', blue:'Azul', green:'Verde', yellow:'Amarillo' };
+
+function cardColorClass(card) {
+  if (!card) return '';
+  if (card.type === 'wild' || card.type === 'wild4' || card.type === 'take6' || card.type === 'take10' || card.type === 'wildrev4' || card.type === 'ruleta') return 'c-wild';
+  if (card.color === 'red')    return 'c-red';
+  if (card.color === 'blue')   return 'c-blue';
+  if (card.color === 'green')  return 'c-green';
+  if (card.color === 'yellow') return 'c-yellow';
+  return 'c-wild';
+}
+
+function cardLabel(card) {
+  if (!card) return '?';
+  const t = card.type;
+  if (t === 'number') return card.value;
+  if (t === 'skip')   return '⊘';
+  if (t === 'reverse') return '↺';
+  if (t === 'take2')  return '+2';
+  if (t === 'take4')  return '+4';
+  if (t === 'wild')   return '★';
+  if (t === 'wild4')  return '★+4';
+  if (t === 'skipall') return '⊘⊘';
+  if (t === 'throwcolor') return '🎨';
+  if (t === 'take6')  return '+6';
+  if (t === 'take10') return '+10';
+  if (t === 'wildrev4') return '↺+4';
+  if (t === 'ruleta') return '🎰';
+  return t;
+}
+
+function buildCard(card, opts = {}) {
+  const { playable, selected, back, small } = opts;
+  if (back) return `<div class="uno-card back" style="${small?'width:40px;height:56px':''}"></div>`;
+  const cls = cardColorClass(card);
+  const lbl = cardLabel(card);
+  const selCls = selected ? ' selected' : '';
+  const playCls = playable ? ' playable' : '';
+  const sz = small ? 'width:40px;height:56px;font-size:0.7rem;' : '';
+  return `<div class="uno-card ${cls}${selCls}${playCls}" style="${sz}" ${opts.onclick ? `onclick="${opts.onclick}"` : ''} title="${esc(card.color||'')} ${esc(lbl)}">
+    <div class="card-tl">${esc(lbl)}</div>
+    <div class="card-center">${esc(lbl)}</div>
+    <div class="card-br">${esc(lbl)}</div>
+  </div>`;
+}
+
+function renderGame(state) {
+  if (!state) return;
+  const me = state.players[state.myIdx];
+  if (!me) return;
+
+  // Topbar
+  const modeTag = state.mode === 'mercy' ? '<span class="nm-badge">NO MERCY</span>' : '';
+  const winTag = state.winCon === 'points' ? '· 1000pts' : state.winCon === 'last' ? '· Último en pie' : '';
+  document.getElementById('tinfo').innerHTML = `Mano ${state.hand||1} ${modeTag} ${winTag}`;
+
+  // Deck count
+  document.getElementById('deck-n').textContent = state.deckCount || '?';
+
+  // Direction
+  const dirEl = document.getElementById('dir-arrow');
+  dirEl.textContent = state.direction === 1 ? '↻' : '↺';
+  dirEl.style.transform = state.direction === 1 ? '' : 'scaleX(-1)';
+
+  // Stack indicator
+  const stackEl = document.getElementById('stack-badge');
+  if (state.stack > 0) {
+    stackEl.style.display = 'block';
+    stackEl.textContent = `+${state.stack}`;
+  } else {
+    stackEl.style.display = 'none';
+  }
+
+  // Discard pile - show top card with active color override
+  const discard = document.getElementById('discard');
+  if (state.topCard) {
+    const displayCard = { ...state.topCard };
+    if (state.activeColor) displayCard.color = state.activeColor;
+    discard.innerHTML = buildCard(displayCard);
+    const colorDot = state.activeColor ? ` ${COLOR_EMOJI[state.activeColor]}` : '';
+    document.getElementById('pot-info').textContent = state.activeColor ? `Color: ${COLOR_NAMES[state.activeColor]}` : '';
+  }
+
+  // Opponents (all players except me)
+  const seatsEl = document.getElementById('seats');
+  const others = state.players.filter((_, i) => i !== state.myIdx);
+  seatsEl.innerHTML = '';
+  const n = others.length;
+  others.forEach((p, i) => {
+    const angle = (i / n) * Math.PI + Math.PI; // semicircle top
+    const rx = Math.min(window.innerWidth * 0.36, 280);
+    const ry = Math.min(window.innerHeight * 0.28, 160);
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight * 0.38;
+    const x = cx + rx * Math.cos(angle) - 50;
+    const y = cy + ry * Math.sin(angle) - 30;
+
+    const isTurn = p.origIdx === state.currentTurn;
+    const isElim = p.eliminated;
+    const unoFlag = p.cardCount === 1 ? `<span class="uno-cry">¡UNO!</span>` : '';
+    const elimBadge = isElim ? `<span class="elim-badge">Eliminado</span>` : '';
+    const piedad = (state.mode === 'mercy' || state.winCon === 'last') && p.cardCount >= 20
+      ? `<span class="piedad-badge">⚠️ ${p.cardCount} cartas</span>` : '';
+    const ptsBadge = p.totalPoints ? `<span class="pts-badge">${p.totalPoints}pts</span>` : '';
+
+    // Show card backs
+    const cardBacks = Array(Math.min(p.cardCount || 0, 7)).fill(0).map(() =>
+      `<div class="uno-card back" style="width:32px;height:46px;margin-left:-12px;flex-shrink:0"></div>`
+    ).join('');
+
+    const div = document.createElement('div');
+    div.className = 'seat';
+    div.style.cssText = `left:${Math.round(x)}px;top:${Math.round(y)}px;`;
+    div.innerHTML = `
+      <div style="display:flex;gap:2px;align-items:center">${cardBacks}</div>
+      <div class="seat-name${isTurn?' is-turn':''}${p.isYou?' is-you':''}">${esc(p.name)} (${p.cardCount||0})</div>
+      <div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:center">${unoFlag}${elimBadge}${piedad}${ptsBadge}</div>`;
+    seatsEl.appendChild(div);
+  });
+
+  // My hand
+  const myCardsEl = document.getElementById('my-cards');
+  myCardsEl.innerHTML = '';
+  if (me.hand) {
+    const isMyTurn = state.myIdx === state.currentTurn && !me.eliminated;
+    me.hand.forEach((card, i) => {
+      const playable = isMyTurn && state.playable && state.playable.includes(i);
+      const sel = selectedCard === i;
+      const div = document.createElement('div');
+      div.innerHTML = buildCard(card, { playable, selected: sel });
+      const el = div.firstChild;
+      el.addEventListener('click', () => onCardClick(i, card, playable));
+      myCardsEl.appendChild(el);
+    });
+    // Hand label
+    const handLbl = document.getElementById('hand-label');
+    handLbl.innerHTML = `TU MANO (${me.hand.length})` +
+      (me.hand.length === 1 ? ' <span class="uno-cry">¡UNO!</span>' : '') +
+      (me.totalPoints ? ` <span class="pts-badge">${me.totalPoints}pts</span>` : '');
+  }
+
+  // Actions
+  renderActions(state, me);
+}
+
+function renderActions(state, me) {
+  const wrap = document.getElementById('action-wrap');
+  const isMyTurn = state.myIdx === state.currentTurn && !me?.eliminated;
+
+  if (me?.eliminated) {
+    wrap.innerHTML = `<span class="status-msg">Has sido eliminado — solo observas 👀</span>`;
+    return;
+  }
+  if (!isMyTurn) {
+    const cur = state.players[state.currentTurn];
+    wrap.innerHTML = `<span class="status-msg">⏳ Turno de ${esc(cur?.name || '...')}</span>`;
+    return;
+  }
+
+  let html = '';
+
+  // Stack situation
+  if (state.stack > 0) {
+    html += `<span class="status-msg" style="color:#ff8080">📥 Debes robar ${state.stack} — o apila una carta para tomar</span>`;
+  }
+
+  // Draw button
+  if (!state.mustPlay) {
+    html += `<button class="act-btn act-draw" onclick="doDraw()">📥 Robar carta</button>`;
+  }
+
+  // Pass (after drawing if no play available)
+  if (state.canPass) {
+    html += `<button class="act-btn act-pass" onclick="doPass()">➡️ Pasar</button>`;
+  }
+
+  // UNO button when 1 card left
+  if (me?.hand?.length === 2 && state.playable?.length > 0) {
+    html += `<button class="act-btn act-uno" onclick="doUno()">🎉 ¡UNO!</button>`;
+  }
+
+  wrap.innerHTML = html || `<span class="status-msg">Tu turno — juega una carta</span>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// CARD INTERACTION
+// ══════════════════════════════════════════════════════════
+function onCardClick(idx, card, playable) {
+  SFX.card();
+  if (!playable) {
+    showNotice('Esa carta no se puede jugar ahora', 1500);
+    return;
+  }
+  // Wild cards need color picker first (unless mercy wilds)
+  const needsColor = ['wild','wild4','take6','take10','wildrev4'].includes(card.type);
+  const needsRuleta = card.type === 'ruleta';
+  const needsSwap = card.type === 'number' && card.value === 7 && gs?.mode === 'mercy';
+
+  if (needsRuleta) {
+    pendingWild = idx;
+    document.getElementById('ruleta-picker').classList.add('show');
+    return;
+  }
+  if (needsColor) {
+    pendingWild = idx;
+    document.getElementById('color-picker').classList.add('show');
+    return;
+  }
+  if (needsSwap) {
+    pendingWild = idx;
+    const targets = gs.players.filter(p => !p.isYou && !p.eliminated).map(p => p.name);
+    showSwapPicker(targets);
+    return;
+  }
+  // Play directly
+  send({ type:'playCard', cardIdx: idx });
+  selectedCard = null;
+}
+
+function pickColor(color) {
+  document.getElementById('color-picker').classList.remove('show');
+  if (pendingWild !== null) {
+    send({ type:'playCard', cardIdx: pendingWild, chosenColor: color });
+    pendingWild = null;
+  }
+}
+function pickRuleta(color) {
+  document.getElementById('ruleta-picker').classList.remove('show');
+  if (pendingWild !== null) {
+    send({ type:'playCard', cardIdx: pendingWild, chosenColor: color });
+    pendingWild = null;
+  }
+}
+function showSwapPicker(targets) {
+  const list = document.getElementById('swap-list');
+  list.innerHTML = targets.map(name =>
+    `<button class="swap-btn" onclick="doSwap('${esc(name)}')">${esc(name)}</button>`
+  ).join('');
+  document.getElementById('swap-picker').classList.add('show');
+}
+function doSwap(targetName) {
+  document.getElementById('swap-picker').classList.remove('show');
+  if (pendingWild !== null) {
+    send({ type:'playCard', cardIdx: pendingWild, swapTarget: targetName });
+    pendingWild = null;
+  }
+}
+function doDraw()  { SFX.chip(); send({ type:'drawCard' }); }
+function doPass()  { send({ type:'passTurn' }); }
+function doUno()   { SFX.notify(); send({ type:'callUno' }); }
+function doNextHand() { send({ type:'nextHand' }); const b = document.getElementById('next-hand-btn'); if(b) b.disabled = true; }
+
+// ══════════════════════════════════════════════════════════
+// HAND END / GAME OVER
+// ══════════════════════════════════════════════════════════
+function showHandEnd(msg) {
+  // Show briefly, then offer next hand
+  const scores = (msg.scores||[]).map(s =>
+    `<tr${s.winner?' class="winner-row"':''}><td>${s.winner?'🏆':''}</td><td>${esc(s.name)}</td><td>${s.points||0}</td><td>${s.cards||0}</td></tr>`
+  ).join('');
+  document.getElementById('go-title').textContent = `🃏 ${esc(msg.winnerName)} gana la mano`;
+  document.getElementById('go-scores').innerHTML = scores;
+  document.getElementById('go-sub').textContent = msg.nextTarget
+    ? `Necesitas ${msg.nextTarget} puntos para ganar la partida`
+    : '';
+  document.getElementById('next-hand-btn').style.display = msg.gameOver ? 'none' : '';
+  document.getElementById('gameover').classList.add('show');
+  SFX.win();
+}
+function showGameOver(msg) {
+  const scores = (msg.scores||[]).map((s, i) =>
+    `<tr${i===0?' class="winner-row"':''}><td>${['🥇','🥈','🥉'][i]||i+1}</td><td>${esc(s.name)}</td><td>${s.points||0}</td><td>${s.cards||0}</td></tr>`
+  ).join('');
+  document.getElementById('go-title').textContent = `🏆 ¡${esc(msg.winnerName)} gana la partida!`;
+  document.getElementById('go-scores').innerHTML = scores;
+  document.getElementById('go-sub').textContent = '';
+  document.getElementById('next-hand-btn').style.display = 'none';
+  document.getElementById('gameover').classList.add('show');
+  SFX.win();
+}
+function showUnoBanner(name) {
+  const el = document.getElementById('uno-banner');
+  el.textContent = name ? `¡${esc(name)} — UNO!` : '¡UNO!';
+  el.classList.add('pop');
+  setTimeout(() => el.classList.remove('pop'), 1800);
+  SFX.notify();
+}
+
+// ══════════════════════════════════════════════════════════
+// LOG / NOTICE
+// ══════════════════════════════════════════════════════════
+function addLog(msg) {
+  const el = document.getElementById('log-area');
+  const div = document.createElement('div');
+  div.className = 'log-e'; div.textContent = msg;
+  el.appendChild(div);
+  while(el.children.length > 12) el.removeChild(el.firstChild);
+  el.scrollTop = el.scrollHeight;
+}
+let ntimer = null;
+function showNotice(msg, dur=2500) {
+  const el = document.getElementById('notice');
+  el.textContent = msg; el.classList.add('show');
+  if(ntimer) clearTimeout(ntimer);
+  ntimer = setTimeout(() => el.classList.remove('show'), dur);
+}
+
+// ══════════════════════════════════════════════════════════
+// SOUNDS
+// ══════════════════════════════════════════════════════════
+const SFX = (() => {
+  let ctx = null;
+  function getCtx() { if(!ctx) try{ ctx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} return ctx; }
+  function play(opts={}) {
+    const c=getCtx(); if(!c) return;
+    try {
+      const g=c.createGain(); g.gain.setValueAtTime(opts.vol||0.15,c.currentTime); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+(opts.dur||0.2)); g.connect(c.destination);
+      const o=c.createOscillator(); o.type=opts.wave||'sine'; o.frequency.setValueAtTime(opts.freq||440,c.currentTime);
+      if(opts.freq2) o.frequency.exponentialRampToValueAtTime(opts.freq2,c.currentTime+(opts.dur||0.2));
+      o.connect(g); o.start(); o.stop(c.currentTime+(opts.dur||0.2)+0.05);
+    }catch(e){}
+  }
+  function chord(notes,dur=0.35,vol=0.12){ notes.forEach((f,i)=>setTimeout(()=>play({freq:f,dur,vol,wave:'sine'}),i*60)); }
+  return {
+    card:   ()=>play({freq:800,freq2:600,dur:0.08,vol:0.12,wave:'triangle'}),
+    chip:   ()=>play({freq:1200,freq2:900,dur:0.1,vol:0.14,wave:'triangle'}),
+    notify: ()=>play({freq:660,freq2:880,dur:0.18,vol:0.12,wave:'sine'}),
+    win:    ()=>chord([523,659,784,1047],0.4,0.14),
+    error:  ()=>play({freq:180,freq2:120,dur:0.2,vol:0.15,wave:'square'}),
+  };
+})();
+
+// Resize seats on window resize
+window.addEventListener('resize', () => { if(gs && gs.gameState !== 'waiting') renderGame(gs); });
+</script>
+</body>
+</html>

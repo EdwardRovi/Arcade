@@ -408,10 +408,11 @@ body.hover-solitario .footer { color:rgba(192,132,252,0.4); }
   .online-count { font-size: 0.44rem; }
 
   /* Disable hover effects on touch — use tap instead */
-  body.hover-mus   .card-caida, body.hover-mus   .card-poker, body.hover-mus   .card-solitario,
-  body.hover-caida .card-mus,   body.hover-caida .card-poker, body.hover-caida .card-solitario,
-  body.hover-poker .card-mus,   body.hover-poker .card-caida, body.hover-poker .card-solitario,
-  body.hover-solitario .card-mus, body.hover-solitario .card-caida, body.hover-solitario .card-poker {
+  body.hover-mus   .card-caida, body.hover-mus   .card-poker, body.hover-mus   .card-solitario, body.hover-mus .card-uno,
+  body.hover-caida .card-mus,   body.hover-caida .card-poker, body.hover-caida .card-solitario, body.hover-caida .card-uno,
+  body.hover-poker .card-mus,   body.hover-poker .card-caida, body.hover-poker .card-solitario, body.hover-poker .card-uno,
+  body.hover-solitario .card-mus, body.hover-solitario .card-caida, body.hover-solitario .card-poker, body.hover-solitario .card-uno,
+  body.hover-uno .card-mus, body.hover-uno .card-caida, body.hover-uno .card-poker, body.hover-uno .card-solitario {
     opacity: 1; filter: none; transform: none;
   }
   body.hover-mus   .card-mus,
@@ -613,6 +614,29 @@ body.hover-solitario .footer { color:rgba(192,132,252,0.4); }
   transition: all 0.15s;
 }
 .lb-sub-tab.active { background: rgba(201,168,76,0.2); border-color: rgba(201,168,76,0.5); color: var(--gold2); }
+
+#bg-uno {
+  opacity:0;
+  background:
+    radial-gradient(ellipse 50% 60% at 20% 50%, rgba(224,48,48,0.5)   0%, transparent 55%),
+    radial-gradient(ellipse 50% 60% at 80% 50%, rgba(32,96,224,0.5)   0%, transparent 55%),
+    radial-gradient(ellipse 45% 45% at 50% 10%, rgba(224,176,32,0.4)  0%, transparent 50%),
+    radial-gradient(ellipse 45% 45% at 50% 90%, rgba(32,160,64,0.4)   0%, transparent 50%),
+    radial-gradient(ellipse 30% 40% at 50% 50%, rgba(6,4,12,0.5)      0%, transparent 100%);
+}
+#bg-uno-ghost {
+  position:fixed; inset:0; pointer-events:none;
+  background: radial-gradient(ellipse 70% 80% at 50% 50%,
+    rgba(224,48,48,0.08) 0%, rgba(32,96,224,0.08) 33%,
+    rgba(224,176,32,0.08) 66%, transparent 100%);
+  opacity:0; transition:opacity 0.9s ease;
+}
+.card-uno { animation: fadeSlideUp 0.65s ease both; animation-delay: 1.2s; }
+body.hover-uno .title { color: #f5ead8; text-shadow: 0 0 40px rgba(224,48,48,0.5), 0 0 80px rgba(32,96,224,0.3), 0 2px 4px rgba(0,0,0,0.8); }
+@media(prefers-reduced-motion:no-preference){ body.hover-uno .title { animation: none; } }
+body.hover-uno   .card-mus, body.hover-uno   .card-caida, body.hover-uno   .card-poker, body.hover-uno   .card-solitario { opacity:0.35; filter:saturate(0.3); transform:none; }
+body.hover-uno   .card-uno { transform:translateY(-6px) scale(1.025); }
+
 </style>
 </head>
 <body>
@@ -629,10 +653,12 @@ body.hover-solitario .footer { color:rgba(192,132,252,0.4); }
 <div id="bg-caida"        class="bg-layer"></div>
 <div id="bg-poker"        class="bg-layer"></div>
 <div id="bg-solitario"    class="bg-layer"></div>
+<div id="bg-uno"          class="bg-layer"></div>
 <div id="bg-mus-ghost"></div>
 <div id="bg-caida-ghost"></div>
 <div id="bg-poker-ghost"></div>
 <div id="bg-solitario-ghost"></div>
+<div id="bg-uno-ghost"></div>
 <div class="fall-layer" id="fall-layer"></div>
 
 <div class="page">
@@ -684,6 +710,16 @@ body.hover-solitario .footer { color:rgba(192,132,252,0.4); }
       <div class="online-count"><span class="online-dot"></span><span id="online-solitario"></span></div>
       <div class="arrow">JUGAR →</div>
     </a>
+
+    <a class="game-card card-uno" href="/uno"
+       onmouseenter="setHover('uno')" onmouseleave="clearHover()">
+      <div class="game-icon" style="font-family:'Cinzel Decorative',cursive;font-size:1.6rem;background:linear-gradient(135deg,#e03030,#e0b020,#20a040,#2060e0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">UNO</div>
+      <div class="game-name">UNO</div>
+      <div class="game-desc">Clásico + No Mercy.<br>Apilar, Piedad, Ruleta.</div>
+      <div class="game-players">2 – 6 jugadores</div>
+      <div class="online-count"><span class="online-dot"></span><span id="online-uno">— online</span></div>
+      <div class="arrow">JUGAR →</div>
+    </a>
   </div>
 
   <div class="footer" id="footer-text">SELECCIONA UN JUEGO PARA COMENZAR</div>
@@ -694,7 +730,7 @@ body.hover-solitario .footer { color:rgba(192,132,252,0.4); }
 <script>
 // ── CUSTOM CURSOR ─────────────────────────────────────────────────────────────
 const cursor = document.getElementById('cursor');
-const cursorSymbols = { mus:'♣', caida:'🎴', poker:'♠', solitario:'🕷️', default:'♠' };
+const cursorSymbols = { mus:'♣', caida:'🎴', poker:'♠', solitario:'🕷️', uno:'🃏', default:'♠' };
 let cursorGame = 'default';
 
 document.addEventListener('mousemove', e => {
@@ -703,7 +739,7 @@ document.addEventListener('mousemove', e => {
 });
 
 // ── BACKGROUND HOVER + FOOTER + CURSOR (unified) ─────────────────────────────
-const layers = { mus:'bg-mus', caida:'bg-caida', poker:'bg-poker', solitario:'bg-solitario' };
+const layers = { mus:'bg-mus', caida:'bg-caida', poker:'bg-poker', solitario:'bg-solitario', uno:'bg-uno' };
 let current = null;
 
 const footerEl = document.getElementById('footer-text');
@@ -719,6 +755,7 @@ const hoverPhrases = {
   caida:     ['RECOGE Y ESCALA', '¡CAÍDA!', 'CANTOS Y ESCALERAS'],
   poker:     ['ALL IN', "TEXAS HOLD'EM", '¿TIENES EL FAROL?'],
   solitario: ['UN JUGADOR', 'KLONDIKE CLÁSICO', '¿PUEDES GANAR?'],
+  uno:       ['UNO CLÁSICO · NO MERCY', '¡SALTA, REVERSA, +10!', '¿TIENES EL ÚLTIMO UNO?'],
 };
 let phraseIdx = 0;
 let isHoverPhrase = false;
@@ -735,7 +772,7 @@ setInterval(() => {
 }, 3200);
 
 const titleEl = document.querySelector('.title');
-const titleNames = { mus: 'MUS', caida: 'CAÍDA', poker: 'PÓKER', solitario: 'SOLITARIO' };
+const titleNames = { mus: 'MUS', caida: 'CAÍDA', poker: 'PÓKER', solitario: 'SOLITARIO', uno: 'UNO' };
 
 function setTitle(text) {
   titleEl.style.opacity = '0';
@@ -791,6 +828,7 @@ function connectCounter() {
           updateCount('mus',   msg.mus   || 0);
           updateCount('caida', msg.caida || 0);
           updateCount('poker', msg.poker || 0);
+          updateCount('uno',   msg.uno   || 0);
         }
       } catch {}
     };
@@ -825,6 +863,7 @@ const fallConfig = {
   caida:     { logo:'🎴', extras:['♣','♠','♥','♦','7','3','1'], opacity:0.24, glow:'rgba(60,140,230,0.5)' },
   poker:     { logo:'♠',  extras:['♥','♦','♣','A','K','Q','J'], opacity:0.28, glow:'rgba(230,60,60,0.5)' },
   solitario: { logo:'🕷️', extras:['♠','♥','♦','♣','A','K','Q'], opacity:0.26, glow:'rgba(168,85,247,0.5)' },
+  uno:       { logo:'🃏', extras:['🔴','🔵','🟢','🟡','+2','+4','↺'], opacity:0.28, glow:'rgba(224,48,48,0.5)' },
 };
 
 function pickSymbol(game) {
@@ -973,6 +1012,9 @@ for (let i = 0; i < 22; i++) {
     </button>
     <button class="lb-tab" onclick="lbSetTab('pok')" id="lbt-pok">
       <span class="tab-icon">♠️</span>PÓKER
+    </button>
+    <button class="lb-tab" onclick="lbSetTab('uno')" id="lbt-uno">
+      <span class="tab-icon">🃏</span>UNO
     </button>
   </div>
   <div class="lb-body" id="lb-body">
