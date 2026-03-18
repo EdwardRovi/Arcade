@@ -4,14 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Póker · Arcade</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0a0305;--felt:#180404;--gold:#c9a84c;--gold2:#e8c97a;
+  --bg:#0a0305;--felt:#1a0808;--felt2:#120505;
+  --gold:#c9a84c;--gold2:#e8c97a;--gold3:#f5dc9a;
+  --red-neon:#d42020;--red-felt:#8b1a1a;
   --text:#f5ead8;--muted:rgba(245,234,216,0.42);--border:rgba(201,168,76,0.22);
+  --chip-red:#c0392b;--chip-blue:#2980b9;--chip-green:#27ae60;--chip-black:#1a1a1a;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Cinzel',serif;overflow:hidden;touch-action:manipulation;}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 110%, rgba(140,10,10,0.55) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 30% at 5%  50%,  rgba(100,8,8,0.25)   0%, transparent 55%),
+    radial-gradient(ellipse 40% 30% at 95% 50%,  rgba(100,8,8,0.25)   0%, transparent 55%);
+}
 
 /* ── BUTTONS ── */
 .btn{font-family:'Cinzel Decorative',cursive;font-size:0.62rem;letter-spacing:0.1em;padding:0.55rem 1.2rem;border-radius:5px;cursor:pointer;transition:all 0.2s;border:none;width:100%;}
@@ -22,9 +32,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Cinzel
 .btn-outline:hover,.btn-outline:active{background:rgba(201,168,76,0.1);}
 
 /* ── LOBBY ── */
-#lobby{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;background:radial-gradient(ellipse 100% 100% at 50% 40%,#2a0a0d 0%,#0a0305 100%);padding:1rem;overflow-y:auto;}
+#lobby{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;background:radial-gradient(ellipse 90% 80% at 50% 110%,#2a0808 0%,#1a0404 40%,#0a0305 100%);padding:1rem;overflow-y:auto;}
 .title-suits{font-size:1.3rem;letter-spacing:0.5rem;color:var(--gold);margin-bottom:0.4rem;}
-.title-main{font-family:'Cinzel Decorative',cursive;font-size:2.8rem;color:var(--gold2);text-shadow:0 0 40px rgba(201,168,76,0.35);letter-spacing:0.15em;}
+.title-main{font-family:'Cinzel Decorative',cursive;font-size:2.8rem;color:#e87070;text-shadow:0 0 30px rgba(180,30,30,0.8),0 0 60px rgba(180,30,30,0.4),0 0 100px rgba(180,30,30,0.2);letter-spacing:0.15em;}
 .title-sub{font-size:0.6rem;color:var(--muted);letter-spacing:0.3em;margin-bottom:1.5rem;}
 .panel{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:1.5rem 1.8rem;width:100%;max-width:380px;display:flex;flex-direction:column;gap:0.7rem;}
 .panel h2{font-family:'Cinzel Decorative',cursive;font-size:0.75rem;color:var(--gold);letter-spacing:0.15em;text-align:center;}
@@ -52,7 +62,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Cinzel
 /* ── MAIN AREA ── */
 .main-area{flex:1;display:flex;overflow:hidden;min-height:0;}
 .table-wrap{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-.table-oval{position:absolute;width:min(72%,580px);height:min(78%,340px);background:radial-gradient(ellipse at 50% 45%,#7a1a1a 0%,#4f0f0f 50%,#2e0909 100%);border-radius:50%;border:7px solid #2c1a0a;box-shadow:0 0 0 3px #6b4a1a,0 0 0 5px #3d2808,inset 0 0 50px rgba(0,0,0,0.45),0 8px 50px rgba(0,0,0,0.7);}
+.table-oval{position:absolute;width:min(72%,580px);height:min(78%,340px);background:radial-gradient(ellipse at 50% 45%,#1e5c2a 0%,#143d1c 45%,#0a2610 100%);border-radius:50%;border:7px solid #2c1a0a;box-shadow:0 0 0 3px #8b6914,0 0 0 6px #3d2808,0 0 0 8px #1a0d04,inset 0 0 60px rgba(0,0,0,0.5),0 12px 60px rgba(0,0,0,0.8);}
 .center-area{position:absolute;top:50%;left:50%;transform:translate(-50%,-56%);display:flex;flex-direction:column;align-items:center;gap:0.28rem;z-index:2;}
 .street-lbl{font-size:0.44rem;color:var(--muted);letter-spacing:0.25em;border:1px solid rgba(255,255,255,0.1);border-radius:2px;padding:0.08rem 0.5rem;}
 .comm-cards{display:flex;gap:0.28rem;align-items:center;}
@@ -256,6 +266,97 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Cinzel
   .showdown-name{font-size:0.6rem;min-width:55px;}
   .showdown-handname{font-size:0.52rem;}
 }
+
+/* ── NOIR CASINO EXTRAS ─────────────────────────────────────────── */
+@keyframes pot-tick {
+  0%,100% { transform: scale(1); }
+  50%     { transform: scale(1.12); color: var(--gold3); }
+}
+@keyframes neon-flicker {
+  0%,100% { opacity:1; }
+  92%     { opacity:1; }
+  93%     { opacity:0.4; }
+  94%     { opacity:1; }
+  96%     { opacity:0.6; }
+  97%     { opacity:1; }
+}
+@keyframes chip-toss {
+  0%   { transform: translateY(-30px) rotate(-180deg) scale(0.5); opacity:0; }
+  70%  { transform: translateY(4px) rotate(10deg) scale(1.05); opacity:1; }
+  100% { transform: translateY(0) rotate(0deg) scale(1); opacity:1; }
+}
+.pot-lbl {
+  animation: none;
+  transition: transform 0.15s, color 0.15s;
+}
+.pot-lbl.ticking { animation: pot-tick 0.3s ease-out; }
+/* Chip decorations */
+.chip-stack {
+  display:inline-flex; gap:1px; align-items:flex-end;
+}
+.chip {
+  width:12px; height:4px; border-radius:2px;
+  border: 0.5px solid rgba(255,255,255,0.25);
+}
+/* ALL IN banner */
+#allin-banner {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  z-index:50; pointer-events:none;
+  font-family:'Cinzel Decorative',cursive;
+  font-size:clamp(3rem,10vw,6rem); font-weight:900;
+  color:#d42020;
+  text-shadow: 0 0 20px #d42020, 0 0 60px rgba(212,32,32,0.5), 2px 2px 0 #8b0000;
+  opacity:0; transition:opacity 0.2s;
+  letter-spacing:0.05em;
+}
+#allin-banner.show { opacity:1; }
+/* Neón rojo lateral decorativo */
+.neon-accent {
+  position:fixed; top:0; bottom:0; width:3px; z-index:0;
+  pointer-events:none;
+  background: linear-gradient(180deg, transparent 0%, #d42020 20%, #d42020 80%, transparent 100%);
+  opacity:0.15;
+  animation: neon-flicker 8s ease-in-out infinite;
+}
+.neon-accent.left  { left:0; }
+.neon-accent.right { right:0; }
+/* Win hand display */
+.hand-name-badge {
+  display:inline-block;
+  background:rgba(201,168,76,0.15);
+  border:1px solid rgba(201,168,76,0.4);
+  border-radius:3px;
+  padding:0.1rem 0.5rem;
+  font-family:'Cinzel Decorative',cursive;
+  font-style:italic;
+  color:var(--gold2);
+  font-size:0.75rem;
+}
+
+/* ── CARD DEAL ANIMATION ────────────────────────────────── */
+@keyframes deal-from-deck {
+  0%   { opacity:0; transform: translate(-50vw, -30vh) rotate(-25deg) scale(0.6); }
+  60%  { opacity:1; transform: translate(0, 4px) rotate(2deg) scale(1.04); }
+  100% { opacity:1; transform: translate(0, 0) rotate(0deg) scale(1); }
+}
+.card.dealing {
+  animation: deal-from-deck 0.38s cubic-bezier(0.22,1,0.36,1) both;
+}
+@keyframes flip-card {
+  0%   { transform: rotateY(90deg) scale(0.9); opacity:0.5; }
+  100% { transform: rotateY(0deg) scale(1); opacity:1; }
+}
+.card.flip-in {
+  animation: flip-card 0.22s ease-out both;
+}
+
+/* ── CHIP STACKS ─────────────────────────────────────────── */
+.chips-display { display:flex; gap:2px; align-items:flex-end; justify-content:center; flex-wrap:wrap; margin-top:2px; }
+.chip-vis { width:14px; height:6px; border-radius:3px; border:0.5px solid rgba(255,255,255,0.3); }
+.chip-w { background:#e0ddd5; } /* white  = 10  */
+.chip-r { background:#c0392b; } /* red    = 100 */
+.chip-b { background:#2c3e50; } /* black  = 500 */
+.chip-g { background:#27ae60; } /* green  = 50  */
 </style>
 </head>
 <body>
@@ -321,6 +422,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Cinzel
 </div>
 
 <!-- GAME -->
+<div class="neon-accent left"></div>
+<div class="neon-accent right"></div>
+<div id="allin-banner">ALL IN</div>
 <div id="game">
   <div class="g-inner">
     <div class="topbar">
@@ -487,15 +591,39 @@ function seatStyle(i){return Object.entries(SEATS[i%SEATS.length]).map(([k,v])=>
 // ══════════════════════════════════════════════════════════
 // RENDER GAME
 // ══════════════════════════════════════════════════════════
+
+function chipsToHTML(amount) {
+  if (!amount || amount <= 0) return '';
+  let rem = amount;
+  const stacks = [];
+  const denoms = [{v:500,cls:'chip-b'},{v:100,cls:'chip-r'},{v:50,cls:'chip-g'},{v:10,cls:'chip-w'}];
+  denoms.forEach(d => {
+    const n = Math.min(Math.floor(rem/d.v), 5); // max 5 chips of each shown
+    if (n > 0) { stacks.push({n, cls: d.cls}); rem -= n * d.v; }
+  });
+  if (!stacks.length) return '';
+  const chips = stacks.flatMap(s => Array(s.n).fill(`<div class="chip-vis ${s.cls}"></div>`));
+  return `<div class="chips-display">${chips.join('')}</div>`;
+}
+
 function renderGame(state){
   if(!state)return;
   const streets={preflop:'PRE-FLOP',flop:'FLOP',turn:'TURN',river:'RIVER',showdown:'SHOWDOWN'};
   document.getElementById('tinfo').textContent=`Mano ${state.round} · ${streets[state.street]||state.street} · Blinds ${state.smallBlind}/${state.bigBlind}`;
   document.getElementById('slbl').textContent=streets[state.street]||state.street;
   const commEl=document.getElementById('comm');
-  commEl.innerHTML=state.community&&state.community.length
-    ?state.community.map(c=>mkCard(c,'sz-comm')).join('')
-    :'<span style="font-size:0.5rem;color:rgba(255,255,255,0.14);letter-spacing:0.2em">· · · · ·</span>';
+  const prevComm = commEl.dataset.commKey || '';
+  const newComm = (state.community||[]).map(c=>c.rank+c.suit).join('');
+  if(prevComm !== newComm) {
+    commEl.dataset.commKey = newComm;
+    commEl.innerHTML = state.community&&state.community.length
+      ? state.community.map((c,i) => {
+          const isNew = i >= prevComm.split('').length/2;
+          return mkCard(c,'sz-comm', isNew?' flip-in':'').replace('<div class="card',
+            `<div style="animation-delay:${isNew?((i - Math.floor(prevComm.length/4))*0.15):0}s" class="card`);
+        }).join('')
+      : '<span style="font-size:0.5rem;color:rgba(255,255,255,0.14);letter-spacing:0.2em">· · · · ·</span>';
+  }
   document.getElementById('pot').textContent=`Bote: ${state.pot}`;
 
   // Opponents
@@ -518,7 +646,7 @@ function renderGame(state){
       <div class="s-cards">${cards}</div>
       <div class="seat-box ${cls}">
         <div class="s-name">${esc(p.name)}${dTag}</div>
-        <div class="s-chips">💰${p.chips}</div>
+        <div class="s-chips">💰${p.chips}</div>${chipsToHTML(p.chips)}
         ${betStr}${status?`<div class="s-status">${esc(status)}</div>`:''}${handTag}
       </div>
     </div>`;
@@ -526,8 +654,17 @@ function renderGame(state){
 
   // My hand
   const myHand=document.getElementById('myhand');
-  if(me&&me.hand&&me.hand.length&&!me.folded)
-    myHand.innerHTML=me.hand.map(c=>mkCard(c,'sz-hole')).join('');
+  if(me&&me.hand&&me.hand.length&&!me.folded){
+    const prevHandKey = myHand.dataset.handKey || '';
+    const newHandKey = me.hand.map(c=>c.rank+c.suit).join('');
+    const isNewDeal = prevHandKey !== newHandKey;
+    myHand.dataset.handKey = newHandKey;
+    myHand.innerHTML = me.hand.map((c,i) => {
+      const cls = isNewDeal ? ' dealing' : '';
+      const delay = isNewDeal ? `style="animation-delay:${i*0.12}s"` : '';
+      return mkCard(c,'sz-hole',cls).replace('<div class="card', `<div ${delay} class="card`);
+    }).join('');
+  }
   else if(me&&me.folded)
     myHand.innerHTML='<div style="font-size:0.58rem;color:rgba(220,100,100,0.4)">Retirado</div>';
   else myHand.innerHTML='';
@@ -542,7 +679,7 @@ function renderGame(state){
     }
     document.getElementById('mymeta').innerHTML=`
       <div class="my-name">${esc(me.name)}${dTag}</div>
-      <div class="my-chips">💰 ${me.chips}</div>
+      <div class="my-chips">💰 ${me.chips}</div>${chipsToHTML(me.chips)}
       ${me.bet>0?`<div class="my-bet">Apuesta: ${me.bet}</div>`:''}
       ${me.allIn?'<div style="color:#e74c3c;font-size:0.52rem;margin-top:2px">🔴 ALL-IN</div>':''}
       ${badge}`;
@@ -573,8 +710,57 @@ function renderActions(state){
       <button class="ab raise" onclick="doRaise()">Subir</button>`:''}
     ${me.chips>0?`<button class="ab allin" onclick="doAct('allin')">All-In (${me.chips})</button>`:''}`;
 }
-function doAct(a){send({type:'action',action:a});}
-function doRaise(){const a=parseInt(document.getElementById('ramt')?.value||0);send({type:'action',action:'raise',amount:a});}
+
+// ══════════════════════════════════════════════════════════
+// SOUNDS — Web Audio API (no external files needed)
+// ══════════════════════════════════════════════════════════
+const SFX = (() => {
+  let ctx = null;
+  function getCtx() {
+    if (!ctx) {
+      try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+    }
+    return ctx;
+  }
+  function play(type, opts = {}) {
+    const c = getCtx(); if (!c) return;
+    try {
+      const g = c.createGain();
+      g.gain.setValueAtTime(opts.vol || 0.18, c.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + (opts.dur || 0.25));
+      g.connect(c.destination);
+      const o = c.createOscillator();
+      o.type = opts.wave || 'sine';
+      o.frequency.setValueAtTime(opts.freq || 440, c.currentTime);
+      if (opts.freq2) o.frequency.exponentialRampToValueAtTime(opts.freq2, c.currentTime + (opts.dur || 0.25));
+      o.connect(g); o.start(); o.stop(c.currentTime + (opts.dur || 0.25) + 0.05);
+    } catch(e) {}
+  }
+  function chord(notes, dur = 0.35, vol = 0.12) {
+    notes.forEach((f, i) => setTimeout(() => play('tone', { freq: f, dur, vol, wave: 'sine' }), i * 60));
+  }
+  return {
+    card:    () => play('card',    { freq: 800, freq2: 600, dur: 0.08, vol: 0.12, wave: 'triangle' }),
+    chip:    () => play('chip',    { freq: 1200, freq2: 900, dur: 0.1, vol: 0.14, wave: 'triangle' }),
+    deal:    () => play('deal',    { freq: 600, freq2: 400, dur: 0.12, vol: 0.10, wave: 'triangle' }),
+    win:     () => chord([523, 659, 784, 1047], 0.4, 0.14),
+    caida:   () => play('caida',  { freq: 200, freq2: 80, dur: 0.35, vol: 0.22, wave: 'sawtooth' }),
+    ordago:  () => chord([220, 277, 330, 440, 554], 0.5, 0.18),
+    allin:   () => chord([196, 247, 294, 392], 0.45, 0.20),
+    error:   () => play('error',  { freq: 180, freq2: 120, dur: 0.2, vol: 0.15, wave: 'square' }),
+    click:   () => play('click',  { freq: 1000, freq2: 800, dur: 0.05, vol: 0.08, wave: 'triangle' }),
+    notify:  () => play('notify', { freq: 660, freq2: 880, dur: 0.18, vol: 0.12, wave: 'sine' }),
+  };
+})();
+
+function doAct(a){
+  if(a==='fold') SFX.card();
+  else if(a==='allin') SFX.allin();
+  else if(a==='call'||a==='check') SFX.chip();
+  else SFX.click();
+  send({type:'action',action:a});
+}
+function doRaise(){ SFX.chip();const a=parseInt(document.getElementById('ramt')?.value||0);send({type:'action',action:'raise',amount:a});}
 
 // ══════════════════════════════════════════════════════════
 // WAITING LOBBY
@@ -610,7 +796,11 @@ function renderHandEnd(data){
 }
 
 function toggleReveal(name){
-  if(revealedFolded.has(name)) revealedFolded.delete(name);
+  const isCurrentlyRevealed = revealedFolded.has(name);
+  // Send to server — server broadcasts to everyone
+  send(isCurrentlyRevealed ? { type:'hideFolded', name } : { type:'revealFolded', name });
+  // Optimistic local update
+  if(isCurrentlyRevealed) revealedFolded.delete(name);
   else revealedFolded.add(name);
   _buildHandEnd(lastHandData);
 }
@@ -728,7 +918,7 @@ function _buildHandEnd(data){
   handLog = [];
 }
 
-function sendNext(){send({type:'nextHand'});const b=document.getElementById('next-btn');if(b)b.disabled=true;}
+function sendNext(){ SFX.deal(); send({type:'nextHand'});const b=document.getElementById('next-btn');if(b)b.disabled=true;}
 
 // ══════════════════════════════════════════════════════════
 // LOG / CHAT
@@ -792,16 +982,38 @@ function handleMsg(msg){
     notice('🔴 ALL-IN — ¡Descubriendo cartas!',2000);
   }
   if(msg.type==='log') addLog(msg.msg);
+        if (msg.msg && msg.msg.includes('ALL-IN')) {
+          const b = document.getElementById('allin-banner');
+          if (b) { b.classList.add('show'); setTimeout(() => b.classList.remove('show'), 1800); }
+        }
   if(msg.type==='chat') addChat(msg.from,msg.msg);
   if(msg.type==='hand_end'){
     renderHandEnd(msg);
     notice((msg.winners||[]).map(w=>`🏆 ${w.name} — ${w.handName}`).join(' | ')||'Fin de mano',4000);
   }
+  if(msg.type==='revealFolded'){
+    // Another player (or ourselves) revealed their folded hand — update for everyone
+    revealedFolded.add(msg.name);
+    // Merge the revealed hand into lastHandData so it shows the actual cards
+    if(lastHandData && lastHandData.playerHands){
+      const p = lastHandData.playerHands.find(p => p.name === msg.name);
+      if(p){
+        if(msg.hand && msg.hand.length) p.hand = msg.hand;
+        if(msg.handName) p.handName = msg.handName;
+      }
+    }
+    if(lastHandData) _buildHandEnd(lastHandData);
+    notice(`🃏 ${msg.name} muestra su mano`, 2500);
+  }
+  if(msg.type==='hideFolded'){
+    revealedFolded.delete(msg.name);
+    if(lastHandData) _buildHandEnd(lastHandData);
+  }
   if(msg.type==='ready_count'){
     const b=document.getElementById('next-btn');
     if(b)b.textContent=`✅ Siguiente mano (${msg.count}/${msg.total})`;
   }
-  if(msg.type==='game_over'){
+  if(msg.type==='game_over'){ SFX.win();
     document.getElementById('go-msg').textContent=`${msg.winner} gana con ${msg.chips} fichas`;
     document.getElementById('gameover-overlay').classList.add('vis');
     notice(`🏆 ¡${msg.winner} gana!`,5000);

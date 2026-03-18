@@ -2182,7 +2182,29 @@ wss.on('connection', (ws) => {
       const room = store[msg.code];
       if (!room) { ws.send(JSON.stringify({ type: 'error', msg: 'Sala no encontrada' })); return; }
       if (room.players.length >= room.maxPlayers) { ws.send(JSON.stringify({ type: 'error', msg: 'Sala llena' })); return; }
-      if (room.state !== 'waiting') { ws.send(JSON.stringify({ type: 'error', msg: 'Partida en curso' })); return; }
+
+      // ── RECONNECTION: if game is in progress, allow player to rejoin by name ──
+      if (room.state !== 'waiting') {
+        const existingPlayer = room.players.find(p => p.name === (msg.name || 'Jugador'));
+        if (existingPlayer) {
+          // Update WebSocket reference for this player
+          existingPlayer.ws = ws;
+          playerRoom = room; playerData = existingPlayer;
+          sendTo(existingPlayer, { type: 'joined', roomCode: room.code, playerId: existingPlayer.id });
+          if (game === 'mus') {
+            musBroadcast(room, { type: 'log', msg: `🔄 ${existingPlayer.name} se ha reconectado` });
+            musSendState(room);
+          } else if (game === 'caida') {
+            caidaBroadcast(room, { type: 'log', msg: `🔄 ${existingPlayer.name} se ha reconectado` });
+            caidaSendState(room);
+          } else if (game === 'poker') {
+            pokerBroadcast(room, { type: 'log', msg: `🔄 ${existingPlayer.name} se ha reconectado` });
+            pokerSendState(room);
+          }
+          return;
+        }
+        ws.send(JSON.stringify({ type: 'error', msg: 'Partida en curso' })); return;
+      }
 
       if (game === 'mus') {
         const seatIdx = room.players.length;
@@ -2475,6 +2497,29 @@ wss.on('connection', (ws) => {
 
       if (msg.type === 'chat') {
         pokerBroadcast(room, { type: 'chat', from: playerData.name, msg: msg.text });
+        return;
+      }
+
+      // ── REVEAL FOLDED HAND ─────────────────────────────────────────────────
+      // A folded player can choose to show their hand to everyone at hand_end
+      if (msg.type === 'revealFolded') {
+        if (!room || room.state !== 'hand_end') return;
+        const revealPlayer = room.players.find(p => p.id === playerId);
+        if (!revealPlayer || !revealPlayer.folded || !revealPlayer.hand || !revealPlayer.hand.length) return;
+        // Broadcast the revealed hand to all players
+        pokerBroadcast(room, {
+          type: 'revealFolded',
+          name: revealPlayer.name,
+          hand: revealPlayer.hand,
+          handName: revealPlayer.handName || null,
+        });
+        return;
+      }
+
+      // ── HIDE FOLDED HAND ───────────────────────────────────────────────────
+      if (msg.type === 'hideFolded') {
+        if (!room || room.state !== 'hand_end') return;
+        pokerBroadcast(room, { type: 'hideFolded', name: playerData.name });
         return;
       }
     } // end playerGame===poker

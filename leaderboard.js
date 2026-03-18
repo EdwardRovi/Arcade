@@ -1,117 +1,100 @@
 /**
- * leaderboard.js — Persistent leaderboard storage for Arcade
- * Saves to leaderboard.json next to this file so rankings survive server restarts.
+ * leaderboard.js — Persistent leaderboard for Render.com
+ * Guarda en memoria + env var LEADERBOARD_DATA via Render API (opcional).
+ * Sin credenciales: dura mientras el servidor está vivo.
+ *
+ * Para persistencia real: añadir en Render → Environment:
+ *   RENDER_API_KEY   = tu API key de Render (render.com → Account → API Keys)
+ *   RENDER_SERVICE_ID = el ID de tu servicio (render.com → tu servicio → URL: .../services/srv-XXXX)
  */
 
-const fs   = require('fs');
-const path = require('path');
-
-const FILE = path.join(__dirname, 'leaderboard.json');
-
-// ── Default structure ──────────────────────────────────────────────────────
-const DEFAULT = {
+const DEFAULT = () => ({
   solitario: { score: [], moves: [] },
-  mus:        { partidas: [] },   // { name, team, wins, losses, tantos }
-  caida:      { top: [] },        // { name, wins, pts }
-  poker:      { top: [] },        // { name, wins, chips }
-};
+  mus:       { partidas: [] },
+  caida:     { top: [] },
+  poker:     { top: [] },
+});
 
-// ── Load from disk ─────────────────────────────────────────────────────────
-function load() {
-  try {
-    if (fs.existsSync(FILE)) {
-      const raw = fs.readFileSync(FILE, 'utf8');
-      const data = JSON.parse(raw);
-      // Merge with defaults so new keys survive upgrades
-      return Object.assign({}, DEFAULT, data);
-    }
-  } catch (e) {
-    console.error('[leaderboard] Error loading:', e.message);
+let db = DEFAULT();
+
+try {
+  if (process.env.LEADERBOARD_DATA) {
+    db = Object.assign(DEFAULT(), JSON.parse(process.env.LEADERBOARD_DATA));
+    console.log('[leaderboard] Cargado desde env var LEADERBOARD_DATA');
   }
-  return JSON.parse(JSON.stringify(DEFAULT));
-}
+} catch(e) { console.error('[leaderboard] Error al parsear env var:', e.message); }
 
-// ── Save to disk ───────────────────────────────────────────────────────────
+const RENDER_KEY = process.env.RENDER_API_KEY;
+const SERVICE_ID = process.env.RENDER_SERVICE_ID;
+
 let saveTimer = null;
-function save(db) {
-  // Debounce writes — max one write per second
+async function persistToRender() {
+  if (!RENDER_KEY || !SERVICE_ID) return;
+  try {
+    const res = await fetch(`https://api.render.com/v1/services/${SERVICE_ID}/env-vars`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${RENDER_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify([{ key: 'LEADERBOARD_DATA', value: JSON.stringify(db) }]),
+    });
+    if (res.ok) console.log('[leaderboard] Guardado en Render');
+    else console.warn('[leaderboard] Render API error:', res.status);
+  } catch(e) { console.error('[leaderboard] Error al guardar:', e.message); }
+}
+
+function scheduleSave() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    try {
-      fs.writeFileSync(FILE, JSON.stringify(db, null, 2), 'utf8');
-    } catch (e) {
-      console.error('[leaderboard] Error saving:', e.message);
-    }
-  }, 800);
+  saveTimer = setTimeout(persistToRender, 3000);
 }
 
-// ── Solitario helpers ──────────────────────────────────────────────────────
-function solSubmit(db, name, score, moves) {
-  const lb = db.solitario;
+function load() { return db; }
 
-  // Top score (higher = better, tiebreak: fewer moves)
+function solSubmit(lbDB, name, score, moves) {
+  const lb = lbDB.solitario;
   const ex = lb.score.find(e => e.name === name);
-  if (!ex) {
-    lb.score.push({ name, score, moves });
-  } else if (score > ex.score || (score === ex.score && moves < ex.moves)) {
-    ex.score = score; ex.moves = moves;
-  }
-  lb.score.sort((a, b) => b.score - a.score || a.moves - b.moves);
+  if (!ex) lb.score.push({ name, score, moves });
+  else if (score > ex.score || (score === ex.score && moves < ex.moves)) { ex.score = score; ex.moves = moves; }
+  lb.score.sort((a,b) => b.score - a.score || a.moves - b.moves);
   lb.score = lb.score.slice(0, 10);
-
-  // Top efficiency (fewer moves = better, tiebreak: higher score)
   const exM = lb.moves.find(e => e.name === name);
-  if (!exM) {
-    lb.moves.push({ name, moves, score });
-  } else if (moves < exM.moves || (moves === exM.moves && score > exM.score)) {
-    exM.moves = moves; exM.score = score;
-  }
-  lb.moves.sort((a, b) => a.moves - b.moves || b.score - a.score);
+  if (!exM) lb.moves.push({ name, moves, score });
+  else if (moves < exM.moves || (moves === exM.moves && score > exM.score)) { exM.moves = moves; exM.score = score; }
+  lb.moves.sort((a,b) => a.moves - b.moves || b.score - a.score);
   lb.moves = lb.moves.slice(0, 10);
-
-  save(db);
+  scheduleSave();
 }
 
-// ── Mus helpers ────────────────────────────────────────────────────────────
-function musRecordWin(db, winnerNames, loserNames, winScore, loseScore) {
-  const lb = db.mus;
-
-  const upsert = (name, won, tantos, against) => {
+function musRecordWin(lbDB, winnerNames, loserNames, winScore, loseScore) {
+  const lb = lbDB.mus;
+  const upsert = (name, won) => {
     let p = lb.partidas.find(e => e.name === name);
     if (!p) { p = { name, wins: 0, losses: 0, tantos: 0 }; lb.partidas.push(p); }
-    if (won) p.wins++; else p.losses++;
-    p.tantos += tantos;
+    if (won) { p.wins++; p.tantos += winScore; } else { p.losses++; p.tantos += loseScore; }
   };
-
-  winnerNames.forEach(n => upsert(n, true,  winScore,  loseScore));
-  loserNames.forEach(n  => upsert(n, false, loseScore, winScore));
-
-  // Sort: wins desc, then tantos desc
-  lb.partidas.sort((a, b) => b.wins - a.wins || b.tantos - a.tantos);
+  winnerNames.forEach(n => upsert(n, true));
+  loserNames.forEach(n => upsert(n, false));
+  lb.partidas.sort((a,b) => b.wins - a.wins || b.tantos - a.tantos);
   lb.partidas = lb.partidas.slice(0, 20);
-  save(db);
+  scheduleSave();
 }
 
-// ── Caída helpers ──────────────────────────────────────────────────────────
-function caidaRecordWin(db, winnerName, pts) {
-  const lb = db.caida;
+function caidaRecordWin(lbDB, winnerName, pts) {
+  const lb = lbDB.caida;
   let p = lb.top.find(e => e.name === winnerName);
   if (!p) { p = { name: winnerName, wins: 1, pts }; lb.top.push(p); }
   else { p.wins++; p.pts += pts; }
-  lb.top.sort((a, b) => b.wins - a.wins || b.pts - a.pts);
+  lb.top.sort((a,b) => b.wins - a.wins || b.pts - a.pts);
   lb.top = lb.top.slice(0, 20);
-  save(db);
+  scheduleSave();
 }
 
-// ── Poker helpers ──────────────────────────────────────────────────────────
-function pokerRecordWin(db, winnerName, chips) {
-  const lb = db.poker;
+function pokerRecordWin(lbDB, winnerName, chips) {
+  const lb = lbDB.poker;
   let p = lb.top.find(e => e.name === winnerName);
   if (!p) { p = { name: winnerName, wins: 1, bestChips: chips }; lb.top.push(p); }
   else { p.wins++; if (chips > p.bestChips) p.bestChips = chips; }
-  lb.top.sort((a, b) => b.wins - a.wins || b.bestChips - a.bestChips);
+  lb.top.sort((a,b) => b.wins - a.wins || b.bestChips - a.bestChips);
   lb.top = lb.top.slice(0, 20);
-  save(db);
+  scheduleSave();
 }
 
-module.exports = { load, save, solSubmit, musRecordWin, caidaRecordWin, pokerRecordWin };
+module.exports = { load, solSubmit, musRecordWin, caidaRecordWin, pokerRecordWin };

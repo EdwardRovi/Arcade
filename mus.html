@@ -10,20 +10,25 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MUS">
 <link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230d0a07'/><text y='75' x='50' font-size='70' text-anchor='middle'>🃏</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=IM+Fell+English:ital@0;1&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0d0a07;
+  --bg: #0b0906;
   --felt: #1a3a1a;
   --felt2: #152e15;
   --gold: #c9a84c;
   --gold2: #e8c97a;
+  --gold3: #f0d898;
+  --copper: #b87333;
+  --copper2: #d4956a;
   --red: #8b1a1a;
+  --red2: #a02020;
   --cream: #f5ead8;
+  --parchment: #f0e0c0;
   --ink: #2a1a0a;
-  --shadow: rgba(0,0,0,0.7);
-  --team0: #4a9ccc;
-  --team1: #cc5a2a;
+  --shadow: rgba(0,0,0,0.75);
+  --team0: #5aacdc;
+  --team1: #e06a30;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -31,20 +36,20 @@
 body {
   background: var(--bg);
   color: var(--cream);
-  font-family: 'Crimson Text', serif;
+  font-family: 'Cinzel', serif;
   font-size: 19px;
   min-height: 100vh;
   overflow-x: hidden;
 }
 
-/* FELT TABLE BACKGROUND */
+/* TABERNA VASCA BACKGROUND */
 body::before {
   content:'';
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse 80% 60% at 50% 50%, #1e4a1e 0%, #0d1f0d 60%, #050a05 100%);
-  background-size: 100% 100%;
+    radial-gradient(ellipse 70% 60% at 50% 40%, #1e4a1e 0%, #0e2a0e 50%, #060f06 100%),
+    radial-gradient(ellipse 100% 40% at 50% 100%, rgba(60,30,10,0.6) 0%, transparent 60%);
   z-index: 0;
 }
 
@@ -52,9 +57,21 @@ body::after {
   content:'';
   position: fixed;
   inset: 0;
+  /* Wood grain lines + felt texture */
   background-image:
-    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.012) 3px, rgba(255,255,255,0.012) 4px),
-    repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(255,255,255,0.012) 3px, rgba(255,255,255,0.012) 4px);
+    repeating-linear-gradient(
+      172deg,
+      transparent 0px,
+      transparent 18px,
+      rgba(30,12,4,0.18) 18px,
+      rgba(30,12,4,0.18) 19px,
+      transparent 19px,
+      transparent 36px
+    ),
+    repeating-linear-gradient(0deg,
+      transparent, transparent 4px,
+      rgba(255,255,255,0.008) 4px, rgba(255,255,255,0.008) 5px
+    );
   z-index: 0;
   pointer-events: none;
 }
@@ -90,7 +107,7 @@ body::after {
 }
 
 .title-block .subtitle {
-  font-family: 'IM Fell English', serif;
+  font-family: 'Cinzel', serif;
   font-style: italic;
   color: rgba(201,168,76,0.7);
   font-size: 1.1rem;
@@ -144,7 +161,7 @@ input[type="text"] {
   border: 1px solid rgba(201,168,76,0.3);
   border-radius: 2px;
   color: var(--cream);
-  font-family: 'Crimson Text', serif;
+  font-family: 'Cinzel', serif;
   font-size: 1.1rem;
   padding: 0.6rem 0.8rem;
   outline: none;
@@ -391,7 +408,7 @@ input[type="text"]:focus {
 }
 
 .player-name-tag {
-  font-family: 'IM Fell English', serif;
+  font-family: 'Cinzel', serif;
   font-size: 1.05rem;
   padding: 0.25rem 1rem;
   border-radius: 2px;
@@ -474,7 +491,7 @@ input[type="text"]:focus {
   position: relative;
   transition: transform 0.15s, box-shadow 0.15s;
   user-select: none;
-  font-family: 'Crimson Text', serif;
+  font-family: 'Cinzel', serif;
 }
 
 .card-back {
@@ -606,7 +623,7 @@ input[type="text"]:focus {
   border: 1px solid;
   border-radius: 2px;
   background: transparent;
-  font-family: 'Crimson Text', serif;
+  font-family: 'Cinzel', serif;
   font-size: 1.05rem;
   cursor: pointer;
   transition: all 0.15s;
@@ -692,7 +709,7 @@ input[type="text"]:focus {
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(201,168,76,0.3);
   color: var(--cream);
-  font-family: 'Crimson Text', serif;
+  font-family: 'Cinzel', serif;
   font-size: 1rem;
   border-radius: 2px;
   outline: none;
@@ -722,7 +739,7 @@ input[type="text"]:focus {
 }
 
 .my-hand-label {
-  font-family: 'IM Fell English', serif;
+  font-family: 'Cinzel', serif;
   font-style: italic;
   color: rgba(201,168,76,0.6);
   font-size: 1.05rem;
@@ -796,7 +813,7 @@ input[type="text"]:focus {
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(201,168,76,0.2);
   color: var(--cream);
-  font-family: 'Crimson Text', serif;
+  font-family: 'Cinzel', serif;
   font-size: 0.9rem;
   border-radius: 2px;
   outline: none;
@@ -822,7 +839,7 @@ input[type="text"]:focus {
   border-radius: 3px;
   padding: 0.5rem 1rem;
   text-align: center;
-  font-family: 'IM Fell English', serif;
+  font-family: 'Cinzel', serif;
   color: var(--gold2);
   font-size: 1rem;
 }
@@ -913,7 +930,7 @@ input[type="text"]:focus {
 
 /* Status msg */
 .status-msg {
-  font-family: 'IM Fell English', serif;
+  font-family: 'Cinzel', serif;
   font-style: italic;
   color: rgba(245,234,216,0.6);
   font-size: 0.9rem;
@@ -1064,7 +1081,7 @@ input[type="text"]:focus {
 }
 
 .victory-names {
-  font-family: 'IM Fell English', serif;
+  font-family: 'Cinzel', serif;
   font-style: italic;
   font-size: 1.3rem;
   color: var(--cream);
@@ -1096,7 +1113,7 @@ input[type="text"]:focus {
 .vscore-num-1 { color: var(--team1); }
 
 .victory-countdown {
-  font-family: 'Crimson Text', serif;
+  font-family: 'Cinzel', serif;
   font-style: italic;
   color: rgba(245,234,216,0.55);
   font-size: 1rem;
@@ -1269,6 +1286,70 @@ input[type="text"]:focus {
 .exit-modal-box h3 { font-family: 'Cinzel Decorative', cursive; color: var(--gold); font-size: 1rem; margin-bottom: 0.5rem; letter-spacing: 0.1em; }
 .exit-modal-box p { color: rgba(245,234,216,0.65); font-size: 0.95rem; margin-bottom: 1.5rem; font-style: italic; }
 .exit-modal-btns { display: flex; gap: 0.8rem; justify-content: center; }
+
+/* ── TABERNA VASCA ATMOSPHERE ──────────────────────────────────── */
+@keyframes candle-flicker {
+  0%,100% { opacity:0.7; transform:scaleX(1) scaleY(1); }
+  25%     { opacity:0.85; transform:scaleX(0.96) scaleY(1.04); }
+  50%     { opacity:0.65; transform:scaleX(1.04) scaleY(0.98); }
+  75%     { opacity:0.8;  transform:scaleX(0.98) scaleY(1.02); }
+}
+@keyframes ordago-pulse {
+  0%,100% { text-shadow: 0 0 20px #e8c97a; transform:scale(1); }
+  50%     { text-shadow: 0 0 60px #e8c97a, 0 0 100px rgba(232,201,122,0.5); transform:scale(1.04); }
+}
+@keyframes card-deal {
+  0%   { transform: translateY(-20px) rotate(-5deg) scale(0.9); opacity:0; }
+  100% { transform: translateY(0) rotate(0deg) scale(1); opacity:1; }
+}
+/* Vela decorativa en esquinas */
+.candle-glow {
+  position:fixed; pointer-events:none; z-index:0;
+  width:200px; height:200px; border-radius:50%;
+  animation: candle-flicker 3s ease-in-out infinite;
+}
+.candle-glow.tl {
+  top:-80px; left:-80px;
+  background: radial-gradient(circle, rgba(201,168,76,0.12) 0%, transparent 70%);
+}
+.candle-glow.tr {
+  top:-80px; right:-80px;
+  background: radial-gradient(circle, rgba(201,168,76,0.10) 0%, transparent 70%);
+  animation-delay: 1.3s;
+}
+.candle-glow.bl {
+  bottom:-80px; left:-80px;
+  background: radial-gradient(circle, rgba(184,115,51,0.10) 0%, transparent 70%);
+  animation-delay: 0.7s;
+}
+/* ÓRDAGO text upgrade */
+.ordago-text {
+  font-family: 'Cinzel Decorative', cursive !important;
+  color: var(--gold3) !important;
+  animation: ordago-pulse 1.5s ease-in-out infinite;
+}
+/* Better phase indicator */
+.phase-banner {
+  background: linear-gradient(90deg, transparent, rgba(201,168,76,0.08), rgba(201,168,76,0.15), rgba(201,168,76,0.08), transparent);
+  border-top: 1px solid rgba(201,168,76,0.2);
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+  text-align:center;
+  padding: 0.3rem;
+  font-family: 'Cinzel', serif;
+  font-style: italic;
+  letter-spacing: 0.25em;
+  color: var(--gold);
+  font-size: 0.9rem;
+}
+/* Copper team badges */
+.team-badge-0 { background: rgba(90,172,220,0.12); border:1px solid rgba(90,172,220,0.35); color:#8ad0f0; }
+.team-badge-1 { background: rgba(224,106,48,0.12); border:1px solid rgba(224,106,48,0.35); color:#f09060; }
+/* Score counter upgrade */
+.score-big {
+  font-family: 'Cinzel Decorative', cursive;
+  font-size: 2.5rem;
+  text-shadow: 0 0 20px currentColor;
+}
 </style>
 <script>
 // ── PWA MANIFEST (inline, works as static HTML on GitHub Pages) ──
@@ -1362,6 +1443,9 @@ self.addEventListener('fetch', e => {
     </div>
   </div>
 </div>
+<div class="candle-glow tl"></div>
+<div class="candle-glow tr"></div>
+<div class="candle-glow bl"></div>
 <div id="app">
 
 <!-- Victory overlay -->
@@ -1385,7 +1469,7 @@ self.addEventListener('fetch', e => {
     <h1>MUS</h1>
     <div class="card-deco">🂡 🂱 🃁 🃑</div>
     <div class="subtitle">Juego tradicional vasco · 4 jugadores · 25 tantos</div>
-    <div style="margin-top:0.5rem;font-family:'Crimson Text',serif;font-size:0.8rem;color:rgba(201,168,76,0.45);letter-spacing:0.06em">🌐 mus-online-cydx.onrender.com</div>
+    <div style="margin-top:0.5rem;font-family:'Cinzel',serif;font-size:0.8rem;color:rgba(201,168,76,0.45);letter-spacing:0.06em">🌐 mus-online-cydx.onrender.com</div>
   </div>
 
   <div class="lobby-panel" id="lobby-form">
@@ -1602,7 +1686,7 @@ function handleMessage(msg) {
     if (btn) btn.textContent = `🔄 Listo para nueva partida (${msg.count}/${msg.total})`;
   }
 
-  if (msg.type === 'new_game') {
+  if (msg.type === 'new_game') { SFX.deal();
     document.getElementById('victory-overlay').style.display = 'none';
     document.getElementById('show-hands-area').innerHTML = '';
     selectedCards.clear();
@@ -1692,6 +1776,12 @@ function renderGame(state) {
     discardSent = false;
   } else if (state.discardTurn !== myIdx) {
     discardSent = false; // clear so we're ready when our turn comes
+  } else if (state.phase === 'cambio' && state.discardTurn === myIdx && discardSent) {
+    // Safety: if server says it's our turn again (2nd mus round), reset flag
+    // Only keep discardSent=true if we actually already sent for THIS discard turn
+    // We track this via a session key: phase+round+discardTurn
+    const turnKey = `${state.round}_${state.musCount || 0}_${myIdx}`;
+    if (window._discardSentKey !== turnKey) discardSent = false;
   }
   // Clear show-hands area when phase moves on
   if (state.phase !== 'show_hands') {
@@ -1703,9 +1793,13 @@ function renderGame(state) {
   document.getElementById('score0').textContent = state.scores[0];
   document.getElementById('score1').textContent = state.scores[1];
   // Solo mostrar tantos del reparto en la pantalla de resultados, no durante el juego
-  if (state.phase === 'show_hands') {
-    document.getElementById('rscore0').textContent = `(+${state.roundScores[0]})`;
-    document.getElementById('rscore1').textContent = `(+${state.roundScores[1]})`;
+  // Show round scores live during all betting phases
+  const activePhases = ['grande','chica','pares','juego','punto','cambio','show_hands'];
+  if (activePhases.includes(state.phase)) {
+    const r0 = state.roundScores[0] || 0;
+    const r1 = state.roundScores[1] || 0;
+    document.getElementById('rscore0').textContent = r0 > 0 ? `(+${r0})` : '';
+    document.getElementById('rscore1').textContent = r1 > 0 ? `(+${r1})` : '';
   } else {
     document.getElementById('rscore0').textContent = '';
     document.getElementById('rscore1').textContent = '';
@@ -1851,7 +1945,7 @@ function buildCardHTML(card) {
   `;
 }
 
-function toggleCardSelect(i) {
+function toggleCardSelect(i) { SFX.card();
   if (selectedCards.has(i)) selectedCards.delete(i);
   else selectedCards.add(i);
   if (gameState) renderGame(gameState);
@@ -2283,10 +2377,53 @@ function toggleStats() {
   panel.style.display = hidden ? 'block' : 'none';
   if (icon) icon.textContent = hidden ? '▼' : '▶';
 }
+
+// ══════════════════════════════════════════════════════════
+// SOUNDS — Web Audio API (no external files needed)
+// ══════════════════════════════════════════════════════════
+const SFX = (() => {
+  let ctx = null;
+  function getCtx() {
+    if (!ctx) {
+      try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+    }
+    return ctx;
+  }
+  function play(type, opts = {}) {
+    const c = getCtx(); if (!c) return;
+    try {
+      const g = c.createGain();
+      g.gain.setValueAtTime(opts.vol || 0.18, c.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + (opts.dur || 0.25));
+      g.connect(c.destination);
+      const o = c.createOscillator();
+      o.type = opts.wave || 'sine';
+      o.frequency.setValueAtTime(opts.freq || 440, c.currentTime);
+      if (opts.freq2) o.frequency.exponentialRampToValueAtTime(opts.freq2, c.currentTime + (opts.dur || 0.25));
+      o.connect(g); o.start(); o.stop(c.currentTime + (opts.dur || 0.25) + 0.05);
+    } catch(e) {}
+  }
+  function chord(notes, dur = 0.35, vol = 0.12) {
+    notes.forEach((f, i) => setTimeout(() => play('tone', { freq: f, dur, vol, wave: 'sine' }), i * 60));
+  }
+  return {
+    card:    () => play('card',    { freq: 800, freq2: 600, dur: 0.08, vol: 0.12, wave: 'triangle' }),
+    chip:    () => play('chip',    { freq: 1200, freq2: 900, dur: 0.1, vol: 0.14, wave: 'triangle' }),
+    deal:    () => play('deal',    { freq: 600, freq2: 400, dur: 0.12, vol: 0.10, wave: 'triangle' }),
+    win:     () => chord([523, 659, 784, 1047], 0.4, 0.14),
+    caida:   () => play('caida',  { freq: 200, freq2: 80, dur: 0.35, vol: 0.22, wave: 'sawtooth' }),
+    ordago:  () => chord([220, 277, 330, 440, 554], 0.5, 0.18),
+    allin:   () => chord([196, 247, 294, 392], 0.45, 0.20),
+    error:   () => play('error',  { freq: 180, freq2: 120, dur: 0.2, vol: 0.15, wave: 'square' }),
+    click:   () => play('click',  { freq: 1000, freq2: 800, dur: 0.05, vol: 0.08, wave: 'triangle' }),
+    notify:  () => play('notify', { freq: 660, freq2: 880, dur: 0.18, vol: 0.12, wave: 'sine' }),
+  };
+})();
+
 // Auto-load stats on page ready
 document.addEventListener('DOMContentLoaded', () => { renderStatsInLobby(); });
 
-function showVictory(msg) {
+function showVictory(msg) { SFX.win();
   const overlay = document.getElementById('victory-overlay');
   document.getElementById('v-title').textContent = `¡EQUIPO ${msg.winnerNum} GANA!`;
   document.getElementById('v-names').textContent = msg.winnerNames;
@@ -2365,6 +2502,10 @@ function sendListo() { send({ type: 'listo' }); }
 function sendListoNuevaPartida() { send({ type: 'listoNuevaPartida' }); }
 
 function sendDiscard() {
+  // Track which discard turn we've sent for (prevents double-send on mus re-deal)
+  if (gameState) {
+    window._discardSentKey = `${gameState.round}_${gameState.musCount || 0}_${gameState.myIdx}`;
+  }
   if (selectedCards.size < 1) {
     alert('Debes seleccionar al menos 1 carta para pedir Mus');
     return;

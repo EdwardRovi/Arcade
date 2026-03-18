@@ -4,45 +4,60 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Caída – Juego de Cartas</title>
-<meta name="theme-color" content="#0d0a07">
+<meta name="theme-color" content="#040c1c">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Caída">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=IM+Fell+English:ital@0;1&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0a0705;
-  --felt: #1a1a2e;
-  --gold: #c9a84c;
-  --gold2: #e8c97a;
-  --red: #8b1a1a;
-  --cream: #f5ead8;
-  --ink: #2a1a0a;
-  --shadow: rgba(0,0,0,0.7);
-  --accent: #6b3fa0; /* Venezuelan purple accent */
+  --bg: #040c1c;
+  --ocean: #071830;
+  --blue-deep: #0a2448;
+  --blue-mid: #1456cc;
+  --gold: #e8b020;
+  --gold2: #f5c840;
+  --red-tropic: #e84030;
+  --cyan: #20c8d0;
+  --cream: #f8f4e8;
+  --ink: #040c1c;
+  --shadow: rgba(0,0,0,0.8);
+  --accent: #e84030;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
   background: var(--bg);
   color: var(--cream);
-  font-family: 'Crimson Text', serif;
-  font-size: 19px;
+  font-family: 'Cinzel', serif;
+  font-size: 18px;
   min-height: 100vh;
   overflow-x: hidden;
 }
+/* Fondo: noche caribeña con estrellas */
 body::before {
   content:'';
   position: fixed; inset: 0;
-  background: radial-gradient(ellipse 80% 60% at 50% 50%, #1a1a3a 0%, #0a0a1e 60%, #050508 100%);
+  background:
+    radial-gradient(ellipse 100% 60% at 50% 110%, #0a2448 0%, transparent 65%),
+    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(20,86,204,0.25) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 30% at 10% 30%, rgba(232,176,32,0.08) 0%, transparent 50%),
+    #040c1c;
   z-index: 0;
   pointer-events: none;
 }
+/* Estrellas sutiles */
 body::after {
   content:'';
   position: fixed; inset: 0;
   background-image:
-    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.008) 3px, rgba(255,255,255,0.008) 4px),
-    repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(255,255,255,0.008) 3px, rgba(255,255,255,0.008) 4px);
+    radial-gradient(circle 1px at 15% 12%, rgba(255,255,255,0.6) 0%, transparent 1px),
+    radial-gradient(circle 1px at 72% 8%, rgba(255,255,255,0.5) 0%, transparent 1px),
+    radial-gradient(circle 1px at 38% 22%, rgba(255,255,255,0.4) 0%, transparent 1px),
+    radial-gradient(circle 1px at 88% 18%, rgba(255,255,255,0.7) 0%, transparent 1px),
+    radial-gradient(circle 1px at 55% 5%, rgba(255,255,255,0.5) 0%, transparent 1px),
+    radial-gradient(circle 1px at 25% 35%, rgba(255,255,255,0.3) 0%, transparent 1px),
+    radial-gradient(circle 1px at 92% 42%, rgba(255,255,255,0.4) 0%, transparent 1px),
+    radial-gradient(circle 2px at 60% 15%, rgba(248,200,64,0.5) 0%, transparent 2px);
   z-index: 0; pointer-events: none;
 }
 #app { position: relative; z-index: 1; }
@@ -54,23 +69,24 @@ body::after {
 }
 .title-block { text-align: center; margin-bottom: 2.5rem; }
 .title-block h1 {
-  font-family: 'Cinzel Decorative', cursive;
-  font-size: clamp(3rem, 10vw, 6rem); font-weight: 900;
-  color: var(--gold);
-  text-shadow: 0 0 30px rgba(201,168,76,0.5), 2px 2px 0 #3a2000, 4px 4px 0 #1a0f00;
-  letter-spacing: 0.1em; line-height: 1;
+  font-family: 'Cinzel', serif;
+  font-size: clamp(4rem, 14vw, 8rem); font-weight: 900;
+  color: var(--cream);
+  text-transform: uppercase;
+  letter-spacing: -0.02em; line-height: 0.9;
+  text-shadow: 0 0 40px rgba(20,86,204,0.8), 0 0 80px rgba(20,86,204,0.4), 4px 4px 0 #e84030, 6px 6px 0 #8b1a1a;
 }
 .title-block .subtitle {
-  font-family: 'IM Fell English', serif; font-style: italic;
-  color: rgba(201,168,76,0.7); font-size: 1.1rem;
-  margin-top: 0.5rem; letter-spacing: 0.15em;
+  font-family: 'Cinzel', serif;
+  color: rgba(255,255,255,0.55); font-size: 0.85rem;
+  margin-top: 0.5rem; letter-spacing: 0.2em;
 }
 .card-deco { display:flex; gap:1rem; justify-content:center; margin:1rem 0; font-size:2rem; }
 .lobby-panel {
-  background: rgba(8,5,15,0.9);
-  border: 1px solid rgba(201,168,76,0.3); border-radius: 4px;
+  background: rgba(4,12,28,0.92);
+  border: 1px solid rgba(20,86,204,0.4); border-radius: 4px;
   padding: 2.5rem; width: 100%; max-width: 420px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(201,168,76,0.1);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.85), inset 0 1px 0 rgba(20,86,204,0.2);
 }
 .lobby-panel h2 {
   font-family: 'Cinzel Decorative', cursive; color: var(--gold);
@@ -84,7 +100,7 @@ body::after {
 input[type="text"] {
   width: 100%; background: rgba(255,255,255,0.06);
   border: 1px solid rgba(201,168,76,0.3); border-radius: 2px;
-  color: var(--cream); font-family: 'Crimson Text', serif; font-size: 1.1rem;
+  color: var(--cream); font-family: 'Cinzel', serif; font-size: 0.95rem;
   padding: 0.6rem 0.8rem; outline: none; transition: border-color 0.2s;
 }
 input[type="text"]:focus { border-color: var(--gold); background: rgba(255,255,255,0.09); }
@@ -94,12 +110,12 @@ input[type="text"]:focus { border-color: var(--gold); background: rgba(255,255,2
   cursor: pointer; letter-spacing: 0.1em; transition: all 0.15s; margin-top: 0.5rem;
 }
 .btn-gold {
-  background: linear-gradient(135deg, #a07830, #c9a84c, #a07830);
-  color: #1a0f00; box-shadow: 0 4px 15px rgba(201,168,76,0.3);
+  background: linear-gradient(135deg, #1456cc, #2070e8, #1456cc);
+  color: #ffffff; box-shadow: 0 4px 20px rgba(20,86,204,0.5);
 }
-.btn-gold:hover { background: linear-gradient(135deg, #b08840, #e8c97a, #b08840); transform: translateY(-1px); }
-.btn-outline { background: transparent; color: var(--gold); border: 1px solid rgba(201,168,76,0.4); }
-.btn-outline:hover { background: rgba(201,168,76,0.1); }
+.btn-gold:hover { background: linear-gradient(135deg, #1a66dd, #2880f5, #1a66dd); transform: translateY(-1px); box-shadow: 0 6px 25px rgba(20,86,204,0.6); }
+.btn-outline { background: transparent; color: #6ab0f5; border: 1px solid rgba(20,86,204,0.5); }
+.btn-outline:hover { background: rgba(20,86,204,0.15); }
 .divider {
   text-align:center; color: rgba(201,168,76,0.4); margin: 1.5rem 0;
   font-size: 0.8rem; letter-spacing: 0.2em; position: relative;
@@ -205,7 +221,7 @@ input[type="text"]:focus { border-color: var(--gold); background: rgba(255,255,2
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   gap:0.5rem; position:relative;
 }
-.mesa-label { font-family:'IM Fell English',serif; font-style:italic; color:rgba(201,168,76,0.5); font-size:0.85rem; letter-spacing:0.1em; }
+.mesa-label { font-family:'Cinzel',serif; font-style:italic; color:rgba(201,168,76,0.5); font-size:0.85rem; letter-spacing:0.1em; }
 .mesa-cards { display:flex; gap:0.5rem; flex-wrap:wrap; justify-content:center; }
 .last-played-area { display:flex; flex-direction:column; align-items:center; gap:0.2rem; margin-top:0.4rem; }
 .last-played-label { font-size:0.7rem; color:rgba(245,234,216,0.35); letter-spacing:0.08em; }
@@ -220,7 +236,7 @@ input[type="text"]:focus { border-color: var(--gold); background: rgba(255,255,2
   border-radius:4px; padding:0.7rem 1.2rem; text-align:center; width:100%;
 }
 .action-title { font-family:'Cinzel Decorative',cursive; font-size:0.75rem; color:var(--gold); letter-spacing:0.1em; margin-bottom:0.5rem; }
-.status-msg { font-family:'IM Fell English',serif; font-style:italic; color:rgba(245,234,216,0.6); font-size:1rem; text-align:center; padding:0.4rem; }
+.status-msg { font-family:'Cinzel',serif; font-style:italic; color:rgba(245,234,216,0.6); font-size:1rem; text-align:center; padding:0.4rem; }
 
 /* My hand */
 .my-hand-area {
@@ -232,7 +248,7 @@ input[type="text"]:focus { border-color: var(--gold); background: rgba(255,255,2
   background: rgba(201,168,76,0.06); border:1px solid rgba(201,168,76,0.25);
   box-shadow: 0 0 15px rgba(201,168,76,0.08);
 }
-.my-hand-label { font-family:'IM Fell English',serif; font-style:italic; color:rgba(201,168,76,0.6); font-size:0.95rem; letter-spacing:0.1em; }
+.my-hand-label { font-family:'Cinzel',serif; font-style:italic; color:rgba(201,168,76,0.6); font-size:0.95rem; letter-spacing:0.1em; }
 .card-row { display:flex; gap:0.5rem; flex-wrap:wrap; justify-content:center; }
 
 /* CARDS */
@@ -262,7 +278,7 @@ input[type="text"]:focus { border-color: var(--gold); background: rgba(255,255,2
 .card-face.last-card { width:55px; height:80px; cursor:default; opacity:0.7; }
 .card-face.last-card:hover { transform:none; }
 .card-val-corner {
-  position:absolute; font-family:'Crimson Text',serif; font-weight:600;
+  position:absolute; font-family:'Cinzel',serif; font-weight:600;
   font-size:0.8rem; color:#1a1a1a; line-height:1;
 }
 .card-val-corner.top { top:3px; left:5px; }
@@ -331,7 +347,7 @@ input[type="text"]:focus { border-color: var(--gold); background: rgba(255,255,2
 .chat-msg { font-size:0.8rem; padding:0.1rem 0; line-height:1.3; }
 .chat-from { color:var(--gold); font-weight:600; }
 .chat-input-row { display:flex; gap:0.4rem; }
-.chat-input-row input { flex:1; padding:0.3rem 0.4rem; background:rgba(255,255,255,0.05); border:1px solid rgba(201,168,76,0.2); color:var(--cream); font-family:'Crimson Text',serif; font-size:0.85rem; border-radius:2px; outline:none; }
+.chat-input-row input { flex:1; padding:0.3rem 0.4rem; background:rgba(255,255,255,0.05); border:1px solid rgba(201,168,76,0.2); color:var(--cream); font-family:'Cinzel',serif; font-size:0.85rem; border-radius:2px; outline:none; }
 .chat-input-row button { padding:0.3rem 0.6rem; background:rgba(201,168,76,0.15); border:1px solid rgba(201,168,76,0.3); color:var(--gold); cursor:pointer; border-radius:2px; font-size:0.8rem; }
 .chat-input-row button:hover { background:rgba(201,168,76,0.25); }
 
@@ -374,6 +390,83 @@ input[type="text"]:focus { border-color: var(--gold); background: rgba(255,255,2
   .log-panel, .chat-panel { font-size:0.6rem; }
   #round-log, #chat-log { max-height:80px; }
 }
+
+/* ── CAÍDA ANIMATIONS ─────────────────────────────────────────────── */
+@keyframes caida-flash {
+  0%,100% { opacity:0; transform:scale(0.7) rotate(-3deg); }
+  15%      { opacity:1; transform:scale(1.15) rotate(1deg); }
+  30%      { opacity:1; transform:scale(1.0) rotate(-1deg); }
+  70%      { opacity:0.9; transform:scale(1.0); }
+}
+@keyframes caida-card-fall {
+  0%   { transform: translateY(-40px) rotate(-15deg); opacity:0; }
+  60%  { transform: translateY(4px) rotate(3deg); opacity:1; }
+  80%  { transform: translateY(-6px) rotate(-1deg); }
+  100% { transform: translateY(0) rotate(0deg); opacity:1; }
+}
+@keyframes star-pop {
+  0%   { transform: scale(0) rotate(0deg); opacity:0; }
+  60%  { transform: scale(1.3) rotate(20deg); opacity:1; }
+  100% { transform: scale(1) rotate(15deg); opacity:0.8; }
+}
+@keyframes ocean-wave {
+  0%,100% { transform: scaleX(1); }
+  50%     { transform: scaleX(1.02) translateX(2px); }
+}
+#caida-banner {
+  position:fixed; inset:0; z-index:200;
+  display:flex; align-items:center; justify-content:center;
+  pointer-events:none; opacity:0;
+  animation: caida-flash 2.2s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+#caida-banner.active { display:flex; }
+#caida-banner:not(.active) { display:none; }
+.caida-text {
+  font-family:'Cinzel Decorative',cursive; font-weight:900;
+  font-size:clamp(4rem,18vw,10rem); text-transform:uppercase;
+  color:#fff;
+  text-shadow:
+    0 0 20px #e84030,
+    0 0 60px #e84030,
+    4px 4px 0 #8b1a1a,
+    -2px -2px 0 #e8b020;
+  letter-spacing:-0.03em; line-height:1;
+}
+.caida-sub {
+  font-family:'Cinzel',serif; font-size:clamp(1rem,4vw,2rem);
+  color:var(--gold2); letter-spacing:0.3em; text-transform:uppercase;
+  display:block; text-align:center; margin-top:0.3rem;
+}
+/* Mesa de juego oceánica */
+.game-table-bg {
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(10,36,72,0.9) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 50% 50%, rgba(10,36,72,0.3) 0%, transparent 80%);
+}
+/* Ola decorativa abajo */
+.ocean-bar {
+  position:fixed; bottom:0; left:0; right:0; height:6px; z-index:0;
+  background: linear-gradient(90deg, #0a2448, #1456cc, #20c8d0, #1456cc, #0a2448);
+  animation: ocean-wave 4s ease-in-out infinite;
+  opacity:0.6;
+}
+
+/* ── ESCALERA HIGHLIGHT ─────────────────────────────────── */
+@keyframes escalera-glow {
+  0%,100% { box-shadow: 0 0 0 2px #e8b020, 0 0 12px rgba(232,176,32,0.6); transform: translateY(0); }
+  50%      { box-shadow: 0 0 0 3px #f5c840, 0 0 28px rgba(245,200,64,0.9); transform: translateY(-4px); }
+}
+@keyframes collected-fly {
+  0%   { opacity:1; transform: scale(1); }
+  60%  { opacity:0.7; transform: scale(1.15) translateY(-8px); }
+  100% { opacity:0; transform: scale(0.8) translateY(-20px); }
+}
+.card.escalera-flash {
+  animation: escalera-glow 0.45s ease-in-out 3;
+}
+.card.mesa-card { transition: box-shadow 0.2s, transform 0.15s; }
+.card.mesa-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.6); }
 </style>
 </head>
 <body>
@@ -395,6 +488,8 @@ input[type="text"]:focus { border-color: var(--gold); background: rgba(255,255,2
 </div>
 
 
+<div class="game-table-bg"></div>
+<div class="ocean-bar"></div>
 <div id="app">
 <!-- LOBBY -->
 <div id="lobby">
@@ -595,13 +690,24 @@ function handleMsg(msg) {
   if (msg.type === 'log') addLog(msg.msg);
   if (msg.type === 'chat') addChat(msg.from, msg.msg);
 
-  if (msg.type === 'caida') {
+  if (msg.type === 'caida') { SFX.caida();
+        // Show visual caída banner
+        const banner = document.getElementById('caida-banner');
+        const sub = document.getElementById('caida-banner-sub');
+        if (banner && sub) {
+          sub.textContent = msg.by + ' cae sobre ' + msg.on + ' · +' + msg.pts + ' pt';
+          banner.classList.add('active');
+          banner.style.animation = 'none';
+          banner.offsetHeight; // reflow
+          banner.style.animation = '';
+          setTimeout(() => { banner.classList.remove('active'); }, 2400);
+        }
     showNotice(`💥 ¡CAÍDA! ${esc(msg.by)} cae sobre ${esc(msg.on)} — +${msg.pts} pt`, 1800);
     document.body.classList.add('caida-flash');
     setTimeout(() => document.body.classList.remove('caida-flash'), 1200);
   }
 
-  if (msg.type === 'round_end') {
+  if (msg.type === 'round_end') { if(msg.summary && msg.summary.gameOver) SFX.win();
     renderRoundEnd(msg.summary);
   }
 
@@ -617,7 +723,7 @@ function handleMsg(msg) {
     }
   }
 
-  if (msg.type === 'mesa_vacia') {
+  if (msg.type === 'mesa_vacia') { SFX.win();
     const extra = msg.plusCaida ? ' (+ Caída 💥)' : '';
     showNotice(`🌟 ¡Mesa vacía! ${esc(msg.by)} — +${msg.pts} pts${extra}`, 2000);
   }
@@ -686,6 +792,9 @@ function renderGame(state) {
   // Mesa cards
   const mesaEl = document.getElementById('mesa-cards');
   if (state.tableCards && state.tableCards.length > 0) {
+    // Flash last collected if just changed
+    const prevMesaLen = parseInt(mesaEl.dataset.prevLen || '99');
+    mesaEl.dataset.prevLen = String(state.tableCards.length);
     mesaEl.innerHTML = state.tableCards.map(c =>
       `<div class="card card-face mesa-card suit-${c.suit}">${buildCardHTML(c)}</div>`
     ).join('');
@@ -848,7 +957,7 @@ function renderActions(state, myIdx, isMyTurn) {
 }
 
 // ── GAME ACTIONS ─────────────────────────────────────────────────────────────
-function playCard(cardIndex) { send({ type:'playCard', cardIndex }); }
+function playCard(cardIndex) { SFX.card(); send({ type:'playCard', cardIndex }); }
 function choosePuesto(dir) { send({ type:'puestoChoice', direction: dir }); }
 
 function sendNextRound() {
@@ -863,6 +972,49 @@ function sendNextRound() {
     }
   }
 }
+
+
+// ══════════════════════════════════════════════════════════
+// SOUNDS — Web Audio API (no external files needed)
+// ══════════════════════════════════════════════════════════
+const SFX = (() => {
+  let ctx = null;
+  function getCtx() {
+    if (!ctx) {
+      try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+    }
+    return ctx;
+  }
+  function play(type, opts = {}) {
+    const c = getCtx(); if (!c) return;
+    try {
+      const g = c.createGain();
+      g.gain.setValueAtTime(opts.vol || 0.18, c.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + (opts.dur || 0.25));
+      g.connect(c.destination);
+      const o = c.createOscillator();
+      o.type = opts.wave || 'sine';
+      o.frequency.setValueAtTime(opts.freq || 440, c.currentTime);
+      if (opts.freq2) o.frequency.exponentialRampToValueAtTime(opts.freq2, c.currentTime + (opts.dur || 0.25));
+      o.connect(g); o.start(); o.stop(c.currentTime + (opts.dur || 0.25) + 0.05);
+    } catch(e) {}
+  }
+  function chord(notes, dur = 0.35, vol = 0.12) {
+    notes.forEach((f, i) => setTimeout(() => play('tone', { freq: f, dur, vol, wave: 'sine' }), i * 60));
+  }
+  return {
+    card:    () => play('card',    { freq: 800, freq2: 600, dur: 0.08, vol: 0.12, wave: 'triangle' }),
+    chip:    () => play('chip',    { freq: 1200, freq2: 900, dur: 0.1, vol: 0.14, wave: 'triangle' }),
+    deal:    () => play('deal',    { freq: 600, freq2: 400, dur: 0.12, vol: 0.10, wave: 'triangle' }),
+    win:     () => chord([523, 659, 784, 1047], 0.4, 0.14),
+    caida:   () => play('caida',  { freq: 200, freq2: 80, dur: 0.35, vol: 0.22, wave: 'sawtooth' }),
+    ordago:  () => chord([220, 277, 330, 440, 554], 0.5, 0.18),
+    allin:   () => chord([196, 247, 294, 392], 0.45, 0.20),
+    error:   () => play('error',  { freq: 180, freq2: 120, dur: 0.2, vol: 0.15, wave: 'square' }),
+    click:   () => play('click',  { freq: 1000, freq2: 800, dur: 0.05, vol: 0.08, wave: 'triangle' }),
+    notify:  () => play('notify', { freq: 660, freq2: 880, dur: 0.18, vol: 0.12, wave: 'sine' }),
+  };
+})();
 
 function sendChat() {
   const inp = document.getElementById('chat-input');
@@ -985,5 +1137,11 @@ function showNotice(msg, duration) {
   noticeTimer = setTimeout(() => overlay.classList.remove('visible'), duration || 2500);
 }
 </script>
+<div id="caida-banner">
+  <div style="text-align:center">
+    <span class="caida-text">¡Caída!</span>
+    <span class="caida-sub" id="caida-banner-sub"></span>
+  </div>
+</div>
 </body>
 </html>

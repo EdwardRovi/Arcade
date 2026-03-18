@@ -7,8 +7,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0d0718;--purple:#7c3aed;--purple2:#a855f7;--purple3:#c084fc;
+  --bg:#0a0515;--purple:#7c3aed;--purple2:#a855f7;--purple3:#c084fc;--purple4:#ddb0ff;
   --text:#f0e8ff;--muted:rgba(240,232,255,0.38);--card-w:72px;--card-h:100px;--radius:7px;
+  --spider-gold:#d4a830;--midnight:#06021a;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Cinzel',serif;overflow:hidden;user-select:none;touch-action:manipulation;}
@@ -17,11 +18,43 @@ body{cursor:none;}
 *{cursor:none!important;}
 
 /* ── BG ── */
-body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 30%,rgba(124,58,237,0.18) 0%,transparent 70%);pointer-events:none;z-index:0;}
+body::before{
+  content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 90% 60% at 50% 0%,   rgba(109,40,217,0.30) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 50% at 15% 60%,  rgba(76,20,180,0.20)  0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 85% 70%,  rgba(130,50,230,0.18) 0%, transparent 50%),
+    radial-gradient(ellipse 100% 40% at 50% 110%, rgba(40,10,100,0.8)  0%, transparent 60%);
+  pointer-events:none;z-index:0;
+}
 
 /* ── CUSTOM CURSOR ── */
-#cursor{position:fixed;width:24px;height:24px;pointer-events:none;z-index:2147483647;transform:translate(-50%,-50%);font-size:18px;transition:transform 0.08s;isolation:isolate;}
-#cursor.selecting{transform:translate(-50%,-50%) scale(1.3);}
+/* En móvil se oculta y se usa cursor normal. En desktop: cursor araña visible */
+#cursor{
+  position:fixed;
+  pointer-events:none;
+  /* z-index máximo sin crear stacking context problemático */
+  z-index:2147483647;
+  transform:translate(-50%,-50%);
+  /* SVG cursor propio: más visible que emoji */
+  width:28px;
+  height:28px;
+  transition:transform 0.08s, filter 0.1s;
+  /* Sin isolation para no crear nuevo stacking context */
+  will-change:transform;
+}
+#cursor svg{
+  width:28px;
+  height:28px;
+  filter:drop-shadow(0 0 4px rgba(168,85,247,0.9)) drop-shadow(0 0 8px rgba(109,40,217,0.6));
+  overflow:visible;
+}
+#cursor.selecting{
+  transform:translate(-50%,-50%) scale(1.35);
+}
+#cursor.selecting svg{
+  filter:drop-shadow(0 0 6px rgba(192,132,252,1)) drop-shadow(0 0 14px rgba(168,85,247,0.8));
+}
 
 /* ── BACK BUTTON ── */
 .back-btn{position:fixed;top:12px;left:14px;z-index:2147483646;font-family:'Cinzel',serif;font-size:0.56rem;letter-spacing:0.12em;color:rgba(192,132,252,0.6);text-decoration:none;padding:5px 9px;border:1px solid rgba(192,132,252,0.22);border-radius:4px;background:rgba(13,7,24,0.6);}
@@ -65,21 +98,28 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   cursor:none;
 }
 .card.face-down{
-  background:repeating-linear-gradient(135deg,rgba(88,28,180,0.88) 0px,rgba(88,28,180,0.88) 4px,rgba(55,8,120,0.88) 4px,rgba(55,8,120,0.88) 8px);
-  border:1.5px solid rgba(168,85,247,0.45);
-  box-shadow:0 2px 6px rgba(0,0,0,0.5);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(109,40,217,0.5) 0%, transparent 60%),
+    repeating-linear-gradient(135deg,rgba(68,18,160,0.92) 0px,rgba(68,18,160,0.92) 4px,rgba(42,6,100,0.92) 4px,rgba(42,6,100,0.92) 8px);
+  border:1.5px solid rgba(168,85,247,0.5);
+  box-shadow:0 2px 10px rgba(0,0,0,0.6), inset 0 0 12px rgba(109,40,217,0.2);
 }
-.card.face-down::after{content:'';position:absolute;inset:5px;border:1px solid rgba(168,85,247,0.25);border-radius:4px;}
+.card.face-down::before{
+  content:'✦';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;color:rgba(192,132,252,0.15);pointer-events:none;
+  display:flex;align-items:center;justify-content:center;
+}
+.card.face-down::after{content:'';position:absolute;inset:4px;border:1px solid rgba(168,85,247,0.2);border-radius:4px;}
 .card.face-up{
-  background:#fdf8f0;
-  border:1px solid rgba(0,0,0,0.14);
-  box-shadow:0 2px 8px rgba(0,0,0,0.45);
+  background: linear-gradient(145deg, #fdf8f0 0%, #f5eedd 100%);
+  border:1px solid rgba(0,0,0,0.16);
+  box-shadow:0 2px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.8);
 }
 .card.face-up.red{color:#c0392b;}
 .card.face-up.black{color:#1a1a2e;}
 /* Selection glow — no transform to avoid creating stacking context above cursor */
 .card.selected{
-  outline:2.5px solid #a855f7;
+  outline:none;
   box-shadow:0 0 0 2.5px #a855f7,0 0 22px rgba(168,85,247,0.7),0 4px 12px rgba(0,0,0,0.5);
   z-index:500!important;
   margin-top:-4px;
@@ -105,7 +145,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 /* ── WIN OVERLAY ── */
 #win-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:1000;display:none;align-items:center;justify-content:center;flex-direction:column;gap:1rem;}
 #win-overlay.vis{display:flex;}
-#win-overlay h1{font-family:'Cinzel Decorative',cursive;font-size:2rem;color:var(--purple3);text-shadow:0 0 40px rgba(168,85,247,0.6);}
+#win-overlay h1{font-family:'Cinzel Decorative',cursive;font-size:2rem;color:var(--purple4);text-shadow:0 0 30px rgba(168,85,247,0.8),0 0 80px rgba(168,85,247,0.4),0 0 120px rgba(168,85,247,0.2);}
 #win-overlay p{color:var(--muted);font-size:0.75rem;}
 #win-overlay button{background:rgba(124,58,237,0.3);border:1px solid rgba(192,132,252,0.5);color:var(--purple3);font-family:'Cinzel Decorative',cursive;font-size:0.62rem;padding:0.55rem 1.4rem;border-radius:5px;cursor:none;letter-spacing:0.12em;}
 
@@ -234,8 +274,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   .stat-card-val{font-size:1.1rem;}
 }
   :root{--card-w:44px;--card-h:62px;--radius:5px;}
-  body{cursor:auto;}
-  #cursor{display:none;}
+  body,*{cursor:auto!important;}
+  #cursor{display:none!important;}
   .c-rank{font-size:0.6rem;}
   .c-suit{font-size:0.46rem;}
   .c-center{font-size:1rem;}
@@ -246,6 +286,80 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   .ctrl-btn{font-size:0.44rem;padding:0.22rem 0.45rem;cursor:auto;}
   .stat-val{font-size:0.65rem;}
 }
+
+/* ── SOLITARIO GOTHIC EXTRAS ──────────────────────────────────── */
+@keyframes star-twinkle {
+  0%,100% { opacity:0.4; transform:scale(1); }
+  50%     { opacity:1; transform:scale(1.3); }
+}
+@keyframes web-spin {
+  from { transform:rotate(0deg); }
+  to   { transform:rotate(360deg); }
+}
+@keyframes card-glow-selected {
+  0%,100% { box-shadow:0 0 0 2.5px #a855f7,0 0 22px rgba(168,85,247,0.7),0 4px 12px rgba(0,0,0,0.5); }
+  50%     { box-shadow:0 0 0 2.5px #c084fc,0 0 35px rgba(192,132,252,0.9),0 4px 12px rgba(0,0,0,0.5); }
+}
+/* Stars */
+.star {
+  position:fixed;pointer-events:none;z-index:0;
+  color:rgba(192,132,252,0.5);font-size:0.5rem;
+  animation:star-twinkle var(--dur,3s) ease-in-out infinite;
+  animation-delay:var(--delay,0s);
+}
+/* Spider corner decoration */
+.spider-corner {
+  position:fixed;font-size:3rem;pointer-events:none;z-index:0;
+  color:rgba(124,58,237,0.06);
+  animation:web-spin 60s linear infinite;
+}
+.spider-corner.tl { top:-10px; left:-10px; transform-origin:top left; }
+.spider-corner.br { bottom:-10px; right:-10px; transform-origin:bottom right; animation-direction:reverse; }
+/* Better selected card glow */
+.card.selected {
+  animation: card-glow-selected 1.5s ease-in-out infinite !important;
+}
+/* Slot hover glow */
+.slot:hover, .tableau-col:hover {
+  background: rgba(124,58,237,0.1);
+  border-color: rgba(192,132,252,0.35);
+  transition: all 0.2s;
+}
+/* Title upgrade */
+#title {
+  font-size:1rem !important;
+  color: rgba(192,132,252,0.5) !important;
+}
+
+/* ── SPIDER MODE ─────────────────────────────────────────── */
+#spider-table { display:none; position:fixed; inset:0; padding:48px 6px 10px; flex-direction:column; gap:6px; z-index:1; }
+#spider-table.active { display:flex; }
+#spider-top-row { display:flex; align-items:flex-start; gap:6px; justify-content:center; flex-shrink:0; }
+#spider-cols { display:flex; gap:5px; flex:1; align-items:flex-start; justify-content:center; max-width:calc(var(--card-w)*10 + 5px*9 + 30px); margin:0 auto; width:100%; overflow-y:auto; }
+.spider-col { min-height:var(--card-h); border:1.5px dashed rgba(192,132,252,0.15); border-radius:var(--radius); background:rgba(124,58,237,0.04); position:relative; flex:1; max-width:var(--card-w); }
+#spider-deck-btn { width:var(--card-w); height:var(--card-h); border-radius:var(--radius); background:repeating-linear-gradient(135deg,rgba(68,18,160,0.92) 0px,rgba(68,18,160,0.92) 4px,rgba(42,6,100,0.92) 4px,rgba(42,6,100,0.92) 8px); border:1.5px solid rgba(168,85,247,0.5); cursor:none; display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:rgba(192,132,252,0.7); font-family:'Cinzel Decorative',cursive; flex-shrink:0; position:relative; }
+#spider-deck-btn .deck-count { position:absolute; bottom:4px; right:6px; font-size:0.55rem; color:rgba(192,132,252,0.8); font-family:'Cinzel',serif; }
+.spider-completed-row { display:flex; gap:4px; align-items:center; flex:1; justify-content:flex-end; padding-right:4px; }
+.spider-completed-suit { width:36px; height:50px; border-radius:4px; border:1px solid rgba(192,132,252,0.3); background:rgba(124,58,237,0.1); display:flex; align-items:center; justify-content:center; font-size:1.3rem; opacity:0.3; transition:opacity 0.4s, transform 0.3s; }
+.spider-completed-suit.done { opacity:1; transform:scale(1.05); border-color:rgba(192,132,252,0.7); background:rgba(124,58,237,0.2); }
+@keyframes suit-complete { 0%{transform:scale(1.5) rotate(-10deg);opacity:0.5} 100%{transform:scale(1.05) rotate(0deg);opacity:1} }
+.spider-completed-suit.just-done { animation: suit-complete 0.5s cubic-bezier(0.22,1,0.36,1) forwards; }
+/* Mode selector in menu */
+.mode-selector { display:flex; gap:6px; margin-bottom:0.7rem; }
+.mode-btn { flex:1; padding:0.4rem 0.3rem; border:1px solid rgba(192,132,252,0.25); border-radius:5px; background:rgba(124,58,237,0.08); color:var(--muted); font-family:'Cinzel',serif; font-size:0.48rem; letter-spacing:0.06em; cursor:none; transition:all 0.15s; text-align:center; line-height:1.4; }
+.mode-btn.active { background:rgba(124,58,237,0.3); border-color:rgba(192,132,252,0.6); color:var(--purple3); }
+.mode-btn .mode-icon { display:block; font-size:1.1rem; margin-bottom:2px; }
+@keyframes cascade-complete {
+  0%   { transform: translateY(0) scale(1); opacity:1; }
+  40%  { transform: translateY(-20px) scale(1.05); opacity:1; }
+  100% { transform: translateY(60px) scale(0.8); opacity:0; }
+}
+.cascade-removing { animation: cascade-complete 0.6s ease-in forwards; }
+@media(max-width:540px){
+  #spider-cols { gap:3px; }
+  .spider-col { border-radius:3px; }
+}
+
 </style>
 </head>
 <body>
@@ -253,13 +367,24 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 <!-- ── MENU OVERLAY ── -->
 <div id="menu-overlay">
-  <span class="menu-spider">🕷️</span>
+  <span class="menu-spider" id="menu-icon">🕷️</span>
   <div class="menu-title">SOLITARIO</div>
-  <div class="menu-sub">KLONDIKE</div>
+  <div class="menu-sub" id="menu-sub-lbl">KLONDIKE</div>
 
   <div class="menu-panel">
     <div id="welcome-msg" class="welcome-back" style="display:none"></div>
     <div>
+      <div class="mode-selector">
+        <button class="mode-btn active" id="mb-klondike" onclick="setGameMode('klondike')">
+          <span class="mode-icon">🃏</span>KLONDIKE
+        </button>
+        <button class="mode-btn" id="mb-spider1" onclick="setGameMode('spider1')">
+          <span class="mode-icon">🕷️</span>SPIDER<br><span style="font-size:0.4rem;opacity:0.7">1 palo</span>
+        </button>
+        <button class="mode-btn" id="mb-spider4" onclick="setGameMode('spider4')">
+          <span class="mode-icon">🕸️</span>SPIDER<br><span style="font-size:0.4rem;opacity:0.7">4 palos</span>
+        </button>
+      </div>
       <span class="menu-label">TU NOMBRE</span>
       <input class="menu-input" id="menu-name" type="text" placeholder="Jugador..." maxlength="18" autocomplete="off" spellcheck="false">
     </div>
@@ -310,6 +435,18 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 <div id="title"><span>🕷️</span>SOLITARIO</div>
 
+<!-- SPIDER TABLE -->
+<div id="spider-table">
+  <div id="spider-top-row">
+    <div id="spider-deck-btn" onclick="spiderDeal()">
+      <span>🃏</span>
+      <span class="deck-count" id="spider-deck-count"></span>
+    </div>
+    <div class="spider-completed-row" id="spider-completed-row"></div>
+  </div>
+  <div id="spider-cols"></div>
+</div>
+
 <div id="win-overlay">
   <h1>🕷️ ¡GANASTE!</h1>
   <p id="win-msg"></p>
@@ -337,6 +474,11 @@ let tableau = [[],[],[],[],[],[],[]];
 let score = 0, moves = 0;
 let history = [];
 let selection = null;  // { cards:[], origin:{} } or null
+let gameMode = 'klondike'; // 'klondike' | 'spider1' | 'spider4'
+// Spider state
+let spiderTableau = []; // 10 columns
+let spiderStock = []; // remaining deal packs
+let spiderCompleted = 0; // completed suits removed
 
 // ══════════════════════════════════════════════════════════
 // DECK
@@ -364,6 +506,7 @@ function saveHistory(){ }
 function checkWin(){ }
 function deepCopy(x){return JSON.parse(JSON.stringify(x));}
 function undoMove(){
+  if (gameMode === 'spider1' || gameMode === 'spider4') { undoSpider(); return; }
   if(!history.length){setHint('Sin movimientos para deshacer',true);return;}
   const s=history.pop();
   stock=s.stock;waste=s.waste;foundations=s.foundations;tableau=s.tableau;
@@ -732,16 +875,401 @@ function spawnConfetti(){
 }
 
 // ══════════════════════════════════════════════════════════
-// CURSOR
+
 // ══════════════════════════════════════════════════════════
+// SOUNDS — Web Audio API (no external files needed)
+// ══════════════════════════════════════════════════════════
+const SFX = (() => {
+  let ctx = null;
+  function getCtx() {
+    if (!ctx) {
+      try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+    }
+    return ctx;
+  }
+  function play(type, opts = {}) {
+    const c = getCtx(); if (!c) return;
+    try {
+      const g = c.createGain();
+      g.gain.setValueAtTime(opts.vol || 0.18, c.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + (opts.dur || 0.25));
+      g.connect(c.destination);
+      const o = c.createOscillator();
+      o.type = opts.wave || 'sine';
+      o.frequency.setValueAtTime(opts.freq || 440, c.currentTime);
+      if (opts.freq2) o.frequency.exponentialRampToValueAtTime(opts.freq2, c.currentTime + (opts.dur || 0.25));
+      o.connect(g); o.start(); o.stop(c.currentTime + (opts.dur || 0.25) + 0.05);
+    } catch(e) {}
+  }
+  function chord(notes, dur = 0.35, vol = 0.12) {
+    notes.forEach((f, i) => setTimeout(() => play('tone', { freq: f, dur, vol, wave: 'sine' }), i * 60));
+  }
+  return {
+    card:    () => play('card',    { freq: 800, freq2: 600, dur: 0.08, vol: 0.12, wave: 'triangle' }),
+    chip:    () => play('chip',    { freq: 1200, freq2: 900, dur: 0.1, vol: 0.14, wave: 'triangle' }),
+    deal:    () => play('deal',    { freq: 600, freq2: 400, dur: 0.12, vol: 0.10, wave: 'triangle' }),
+    win:     () => chord([523, 659, 784, 1047], 0.4, 0.14),
+    caida:   () => play('caida',  { freq: 200, freq2: 80, dur: 0.35, vol: 0.22, wave: 'sawtooth' }),
+    ordago:  () => chord([220, 277, 330, 440, 554], 0.5, 0.18),
+    allin:   () => chord([196, 247, 294, 392], 0.45, 0.20),
+    error:   () => play('error',  { freq: 180, freq2: 120, dur: 0.2, vol: 0.15, wave: 'square' }),
+    click:   () => play('click',  { freq: 1000, freq2: 800, dur: 0.05, vol: 0.08, wave: 'triangle' }),
+    notify:  () => play('notify', { freq: 660, freq2: 880, dur: 0.18, vol: 0.12, wave: 'sine' }),
+  };
+})();
+
+
+// ══════════════════════════════════════════════════════════
+// SPIDER SOLITAIRE ENGINE
+// ══════════════════════════════════════════════════════════
+
+// ── Mode switching ─────────────────────────────────────────
+function setGameMode(mode) {
+  gameMode = mode;
+  ['klondike','spider1','spider4'].forEach(m => {
+    const btn = document.getElementById('mb-' + m);
+    if (btn) btn.classList.toggle('active', m === mode);
+  });
+  const sub = document.getElementById('menu-sub-lbl');
+  const icon = document.getElementById('menu-icon');
+  if (sub) sub.textContent = mode === 'klondike' ? 'KLONDIKE' : mode === 'spider1' ? 'SPIDER · 1 PALO' : 'SPIDER · 4 PALOS';
+  if (icon) icon.textContent = mode === 'klondike' ? '🃏' : '🕷️';
+}
+
+// ── Spider deck builder ────────────────────────────────────
+function makeSpiderDeck(suits) {
+  // Spider uses 2 full decks (104 cards)
+  const d = [];
+  const useSuits = suits === 1 ? ['♠','♠','♠','♠'] : ['♠','♥','♦','♣'];
+  for (let rep = 0; rep < 2; rep++)
+    for (const suit of useSuits)
+      for (const rank of RANKS)
+        d.push({ suit, rank, faceUp: false, id: suit + rank + rep + rank });
+  return d;
+}
+
+// ── Spider new game ────────────────────────────────────────
+function newSpiderGame() {
+  const suits = gameMode === 'spider1' ? 1 : 4;
+  const deck = shuffle(makeSpiderDeck(suits));
+  spiderTableau = Array.from({length: 10}, () => []);
+  spiderCompleted = 0;
+  score = 0; moves = 0; history = []; selection = null;
+  gameStarted = false;
+
+  // Deal: first 4 cols get 6 cards, last 6 cols get 5 cards
+  let idx = 0;
+  for (let col = 0; col < 10; col++) {
+    const count = col < 4 ? 6 : 5;
+    for (let i = 0; i < count; i++) {
+      const c = deck[idx++];
+      c.faceUp = (i === count - 1);
+      spiderTableau[col].push(c);
+    }
+  }
+
+  // Remaining 50 cards become 5 deal stacks of 10
+  spiderStock = [];
+  while (idx < deck.length) {
+    spiderStock.push(deck.slice(idx, idx + 10));
+    idx += 10;
+  }
+
+  // Show spider table, hide klondike table
+  document.getElementById('table').style.visibility = 'hidden';
+  document.getElementById('spider-table').classList.add('active');
+  document.getElementById('controls').style.visibility = '';
+  document.getElementById('hint').style.visibility = '';
+  document.getElementById('title').style.visibility = '';
+  document.getElementById('win-overlay').classList.remove('vis');
+  document.getElementById('menu-overlay').classList.add('hidden');
+  document.getElementById('title').innerHTML = '<span>🕷️</span>' + (gameMode === 'spider1' ? 'SPIDER 1 PALO' : 'SPIDER 4 PALOS');
+
+  renderSpider();
+  setHint('SELECCIONA UNA SECUENCIA DEL MISMO PALO · CLICK DESTINO PARA MOVER');
+  updateStats();
+}
+
+// ── Save spider history ────────────────────────────────────
+function saveSpiderHistory() {
+  recordGamePlayed();
+  if (history.length > 40) history.shift();
+  history.push({
+    t: JSON.parse(JSON.stringify(spiderTableau)),
+    s: JSON.parse(JSON.stringify(spiderStock)),
+    c: spiderCompleted, score, moves
+  });
+}
+
+function undoSpider() {
+  if (!history.length) { setHint('Sin movimientos para deshacer', true); return; }
+  const h = history.pop();
+  spiderTableau = h.t; spiderStock = h.s; spiderCompleted = h.c;
+  score = h.score; moves = h.moves;
+  selection = null;
+  renderSpider();
+  setHint('Movimiento deshecho');
+}
+
+// ── Spider render ──────────────────────────────────────────
+function renderSpider() {
+  document.getElementById('score-display').textContent = score;
+  document.getElementById('moves-display').textContent = moves;
+  document.getElementById('spider-deck-count').textContent = spiderStock.length + ' tandas';
+
+  // Completed suits
+  const compRow = document.getElementById('spider-completed-row');
+  const suits = gameMode === 'spider1'
+    ? ['♠','♠','♠','♠','♠','♠','♠','♠']
+    : ['♠','♥','♦','♣','♠','♥','♦','♣'];
+  compRow.innerHTML = suits.map((s, i) =>
+    `<div class="spider-completed-suit${i < spiderCompleted ? ' done' : ''}" title="Suite completa">${i < spiderCompleted ? s : s}</div>`
+  ).join('');
+
+  // Render columns
+  const colsEl = document.getElementById('spider-cols');
+  colsEl.innerHTML = '';
+  spiderTableau.forEach((col, ci) => {
+    const div = document.createElement('div');
+    div.className = 'spider-col';
+    div.id = 'sc' + ci;
+    div.style.minHeight = 'var(--card-h)';
+    let top = 0;
+    col.forEach((card, ri) => {
+      const gap = card.faceUp
+        ? (ri > 0 && col[ri-1].faceUp ? 22 : 18)
+        : 14;
+      const el = cardEl(card);
+      el.style.position = 'absolute';
+      el.style.top = top + 'px';
+      el.style.left = '0';
+      el.style.right = '0';
+      // Selection highlight
+      if (selection && selection.origin.zone === 'spider' && selection.origin.col === ci) {
+        const selIdx = col.length - selection.cards.length;
+        if (ri >= selIdx) el.classList.add('selected');
+      }
+      el.addEventListener('click', (e) => { e.stopPropagation(); spiderCardClick(ci, ri); });
+      el.addEventListener('dblclick', (e) => { e.stopPropagation(); spiderAutoMove(ci, ri); });
+      div.appendChild(el);
+      top += gap;
+    });
+    div.style.height = (top + 100) + 'px';
+    div.addEventListener('click', (e) => {
+      if (!e.target.closest('.card')) spiderColClick(ci);
+    });
+    colsEl.appendChild(div);
+  });
+}
+
+// ── Spider click logic ─────────────────────────────────────
+function spiderCardClick(col, row) {
+  SFX.card();
+  const card = spiderTableau[col][row];
+  if (!card || !card.faceUp) { setHint('Carta boca abajo — no se puede seleccionar', true); return; }
+
+  // If we have a selection, try to drop
+  if (selection && selection.origin.zone === 'spider') {
+    if (selection.origin.col === col) {
+      // Clicked within same column — deselect
+      selection = null; renderSpider(); return;
+    }
+    // Try move onto this card's column
+    spiderTryDrop(col);
+    return;
+  }
+
+  // New selection: gather all face-up cards from this row down
+  const pile = spiderTableau[col];
+  const seq = pile.slice(row);
+
+  // Must be a valid sequence (consecutive descending values, any suit is ok for moving)
+  if (!isSpiderMovable(seq)) {
+    setHint('Solo puedes mover secuencias descendentes de valor', true);
+    return;
+  }
+
+  selection = { cards: seq, origin: { zone: 'spider', col, row } };
+  renderSpider();
+  setHint(`${seq.length} carta(s) seleccionadas — CLICK en columna destino`);
+}
+
+function spiderColClick(col) {
+  if (selection && selection.origin.zone === 'spider') {
+    spiderTryDrop(col);
+  }
+}
+
+function isSpiderMovable(seq) {
+  if (seq.length === 0) return false;
+  for (let i = 1; i < seq.length; i++) {
+    if (RV[seq[i].rank] !== RV[seq[i-1].rank] - 1) return false;
+  }
+  return true;
+}
+
+function isSpiderCompleteSuit(seq) {
+  if (seq.length !== 13) return false;
+  const suit = seq[0].suit;
+  for (let i = 0; i < seq.length; i++) {
+    if (seq[i].suit !== suit) return false;
+    if (RV[seq[i].rank] !== 13 - i) return false;  // K to A
+  }
+  return true;
+}
+
+function spiderTryDrop(targetCol) {
+  if (!selection) return;
+  const dest = spiderTableau[targetCol];
+  const cards = selection.cards;
+
+  // Can drop on empty column or on a card one rank higher
+  const canDrop = dest.length === 0 ||
+    (dest[dest.length-1].faceUp && RV[dest[dest.length-1].rank] === RV[cards[0].rank] + 1);
+
+  if (!canDrop) {
+    // Different suit warning (legal in Spider but warn)
+    const topDest = dest[dest.length-1];
+    if (topDest && topDest.faceUp && RV[topDest.rank] === RV[cards[0].rank] + 1) {
+      // Actually valid - same rank diff
+    } else {
+      setHint('Movimiento no válido — necesitas una carta un valor mayor', true);
+      selection = null; renderSpider(); return;
+    }
+  }
+
+  saveSpiderHistory();
+  const srcCol = selection.origin.col;
+  const srcRow = selection.origin.row;
+
+  // Remove from source
+  spiderTableau[srcCol].splice(srcRow);
+  // Flip top of source if needed
+  const src = spiderTableau[srcCol];
+  if (src.length && !src[src.length-1].faceUp) {
+    src[src.length-1].faceUp = true;
+    addScore(5);
+  }
+
+  // Add to destination
+  spiderTableau[targetCol].push(...cards);
+
+  addScore(1);
+  moves++;
+  selection = null;
+
+  // Check for complete suit in dest column
+  const destCol = spiderTableau[targetCol];
+  const top13 = destCol.slice(-13);
+  if (isSpiderCompleteSuit(top13)) {
+    spiderCompleted++;
+    addScore(100);
+    SFX.win();
+    // Animate removal
+    setTimeout(() => {
+      spiderTableau[targetCol].splice(-13);
+      // Flip new top if needed
+      const col = spiderTableau[targetCol];
+      if (col.length && !col[col.length-1].faceUp) col[col.length-1].faceUp = true;
+      renderSpider();
+      checkSpiderWin();
+    }, 600);
+  }
+
+  renderSpider();
+}
+
+function spiderAutoMove(col, row) {
+  // Try to find a valid destination for this card/sequence
+  const pile = spiderTableau[col];
+  const seq = pile.slice(row);
+  if (!isSpiderMovable(seq)) return;
+
+  // Look for best destination
+  for (let c = 0; c < 10; c++) {
+    if (c === col) continue;
+    const dest = spiderTableau[c];
+    if (dest.length === 0) continue;
+    const top = dest[dest.length-1];
+    if (top.faceUp && RV[top.rank] === RV[seq[0].rank] + 1 && top.suit === seq[0].suit) {
+      selection = { cards: seq, origin: { zone: 'spider', col, row } };
+      spiderTryDrop(c);
+      return;
+    }
+  }
+  // Any color match
+  for (let c = 0; c < 10; c++) {
+    if (c === col) continue;
+    const dest = spiderTableau[c];
+    if (dest.length === 0) continue;
+    const top = dest[dest.length-1];
+    if (top.faceUp && RV[top.rank] === RV[seq[0].rank] + 1) {
+      selection = { cards: seq, origin: { zone: 'spider', col, row } };
+      spiderTryDrop(c);
+      return;
+    }
+  }
+  setHint('Sin movimiento automático disponible', true);
+}
+
+function spiderDeal() {
+  if (spiderStock.length === 0) { setHint('No quedan más cartas', true); return; }
+  // Can only deal if no empty columns
+  const emptyCol = spiderTableau.some(c => c.length === 0);
+  if (emptyCol) { setHint('Rellena las columnas vacías antes de repartir', true); return; }
+
+  saveSpiderHistory();
+  SFX.deal();
+  const batch = spiderStock.pop();
+  batch.forEach((card, i) => {
+    card.faceUp = true;
+    spiderTableau[i].push(card);
+  });
+  moves++;
+  renderSpider();
+}
+
+function checkSpiderWin() {
+  if (spiderCompleted >= 8) {
+    addScore(500);
+    recordWin(score, moves);
+    document.getElementById('win-msg').textContent = `¡${score} puntos en ${moves} movimientos!`;
+    document.getElementById('win-overlay').classList.add('vis');
+    SFX.win();
+    spawnConfetti();
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// END SPIDER ENGINE
+// ══════════════════════════════════════════════════════════
+
+// CURSOR
+// ════════════════════════════════════════════════════════==
 const _cur = document.getElementById('cursor');
+// Check if touch device — hide custom cursor on touch, show system cursor
+const _isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+if(_isTouchDevice){
+  _cur.style.display = 'none';
+  document.body.style.cursor = 'auto';
+  // Remove cursor:none from all elements on touch
+  const styleOverride = document.createElement('style');
+  styleOverride.textContent = 'body,*{cursor:auto!important;}';
+  document.head.appendChild(styleOverride);
+}
+
 document.addEventListener('mousemove',e=>{
-  _cur.style.left=e.clientX+'px';
-  _cur.style.top=e.clientY+'px';
-  _cur.classList.toggle('selecting',!!selection);
-  // Always keep cursor as last child of body = painted last = always on top
+  if(_isTouchDevice) return;
+  _cur.style.left = e.clientX + 'px';
+  _cur.style.top  = e.clientY + 'px';
+  _cur.classList.toggle('selecting', !!selection);
+  // Always keep cursor as last child of body so it paints on top of everything
   if(document.body.lastElementChild !== _cur) document.body.appendChild(_cur);
 });
+
+// Hide cursor when mouse leaves window
+document.addEventListener('mouseleave', () => { if(!_isTouchDevice) _cur.style.opacity = '0'; });
+document.addEventListener('mouseenter', () => { if(!_isTouchDevice) _cur.style.opacity = '1'; });
 
 // ══════════════════════════════════════════════════════════
 // CLICK EVENTS
@@ -869,7 +1397,8 @@ function switchTab(tab) {
 // ── Render leaderboard table ──
 function renderLeaderboard() {
   const el    = document.getElementById('lb-table');
-  const rows  = lbTab === 'score' ? lbData.topScore : lbData.topMoves;
+  // Filter by current game mode if Spider tab active
+  let rows = lbTab === 'score' ? lbData.topScore : lbData.topMoves;
   const medals = ['gold','silver','bronze'];
 
   if (!rows || rows.length === 0) {
@@ -913,6 +1442,7 @@ function showMenu() {
     wm.textContent   = `✦ Bienvenido de vuelta, ${saved}`;
   }
   document.getElementById('menu-overlay').classList.remove('hidden');
+  setGameMode(gameMode); // refresh button states
   inp.onkeydown = e => { if (e.key === 'Enter') startFromMenu(); };
   setTimeout(() => inp.focus(), 80);
   lbConnect();
@@ -925,7 +1455,6 @@ function startFromMenu() {
   playerName = name;
   try { localStorage.setItem(NAME_KEY, name); } catch {}
   document.getElementById('ingame-name').textContent = name.toUpperCase();
-  document.getElementById('menu-overlay').classList.add('hidden');
   gameStarted = false;
   newGame();
 }
@@ -939,8 +1468,8 @@ function recordGamePlayed() {
 // ── Submit win to leaderboard ──
 function recordWin(finalScore, finalMoves) {
   lbConnect();
-  // Small delay to ensure connection
-  const send = () => lbSend({ type: 'sol_submitScore', name: playerName, score: finalScore, moves: finalMoves });
+  const modeTag = gameMode === 'klondike' ? '' : gameMode === 'spider1' ? ' [Spider1]' : ' [Spider4]';
+  const send = () => lbSend({ type: 'sol_submitScore', name: playerName + modeTag, score: finalScore, moves: finalMoves });
   if (lbWs && lbWs.readyState === 1) send();
   else setTimeout(send, 800);
 }
@@ -954,6 +1483,16 @@ document.getElementById('hint').style.visibility     = 'hidden';
 document.getElementById('title').style.visibility    = 'hidden';
 
 function newGame() {
+  if (gameMode === 'spider1' || gameMode === 'spider4') {
+    // Hide klondike table, show spider table
+    document.getElementById('table').style.visibility = 'hidden';
+    newSpiderGame();
+    return;
+  }
+  // Show klondike table, hide spider
+  document.getElementById('spider-table').classList.remove('active');
+  document.getElementById('table').style.visibility = '';
+  document.getElementById('title').innerHTML = '<span>🕷️</span>SOLITARIO';
   const deck = shuffle(makeDeck());
   stock=[]; waste=[]; foundations=[[],[],[],[]];
   tableau=[[],[],[],[],[],[],[]];
@@ -1010,6 +1549,36 @@ showMenu();
 
 <!-- Cursor and back button rendered LAST so they're on top of everything -->
 <a class="back-btn" href="/">← ARCADE</a>
-<div id="cursor">🕷️</div>
+<div id="cursor">
+  <svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" fill="none">
+    <!-- Spider body -->
+    <ellipse cx="14" cy="16" rx="4" ry="5" fill="#c084fc" opacity="0.95"/>
+    <ellipse cx="14" cy="11" rx="3" ry="2.5" fill="#a855f7" opacity="0.95"/>
+    <!-- Eyes -->
+    <circle cx="12.8" cy="10.5" r="0.8" fill="#f0e8ff"/>
+    <circle cx="15.2" cy="10.5" r="0.8" fill="#f0e8ff"/>
+    <!-- Legs left -->
+    <line x1="10" y1="13" x2="4"  y2="10" stroke="#c084fc" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="10" y1="15" x2="3"  y2="15" stroke="#c084fc" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="10" y1="17" x2="4"  y2="20" stroke="#c084fc" stroke-width="1.2" stroke-linecap="round"/>
+    <!-- Legs right -->
+    <line x1="18" y1="13" x2="24" y2="10" stroke="#c084fc" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="18" y1="15" x2="25" y2="15" stroke="#c084fc" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="18" y1="17" x2="24" y2="20" stroke="#c084fc" stroke-width="1.2" stroke-linecap="round"/>
+    <!-- Thread -->
+    <line x1="14" y1="21" x2="14" y2="27" stroke="#a855f7" stroke-width="0.8" stroke-linecap="round" opacity="0.7"/>
+  </svg>
+</div>
+<script>
+// Add twinkling stars
+const starPositions = [[8,15],[92,8],[45,4],[78,20],[22,28],[65,12],[55,95],[30,88],[80,92],[15,80]];
+starPositions.forEach(([l,t],i) => {
+  const s = document.createElement('div');
+  s.className='star';
+  s.textContent='✦';
+  s.style.cssText=`left:${l}%;top:${t}%;--dur:${2+Math.random()*3}s;--delay:${Math.random()*3}s`;
+  document.body.appendChild(s);
+});
+</script>
 </body>
 </html>
