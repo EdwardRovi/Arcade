@@ -117,7 +117,7 @@ body::after {
   font-family: 'Cinzel Decorative', cursive;
   font-size: clamp(3rem, 10vw, 6rem);
   font-weight: 900;
-  color: #000000;
+  color: #ffffff;
   text-shadow:
     0 0 22px rgba(80,220,40,0.6),
     0 0 55px rgba(40,160,20,0.35);
@@ -2605,7 +2605,7 @@ const SFX = (() => {
 // ══════════════════════════════════════════════════════════
 (function() {
   var SYMS   = ['\u2663','\u2660','\u2665','\u2666','7','3','1','K','A','M','U','S'];
-  var COLS   = ['100,255,80','160,255,120','220,255,180','255,230,80','80,255,100','255,255,200'];
+  var COLS   = ['255,30,30','255,200,0','0,200,255','255,0,200','0,255,80','255,100,0','180,0,255'];
   var canvas, ctx, W, H, fontStr, particles = [], raf, spawnTimer, dpr = 1;
 
   function setup() {
@@ -2639,7 +2639,7 @@ const SFX = (() => {
     ctx.font = fontStr;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#000000'; // must be solid for source-atop to work
+    ctx.fillStyle = 'rgba(255,255,255,0.15)'; // light alpha = pixels for clipping, white text shows beneath
     ctx.fillText('MUS', W / 2, H / 2);
 
     // Particles only appear inside existing (letter) pixels
@@ -2679,8 +2679,8 @@ const SFX = (() => {
       col:     COLS[Math.floor(Math.random() * COLS.length)],
       x:       W * 0.08 + Math.random() * W * 0.84,
       y:       H * 0.12 + Math.random() * H * 0.76,
-      size:    11 + Math.random() * 20,
-      peak:    0.75 + Math.random() * 0.25,
+      size:    14 + Math.random() * 22,
+      peak:    0.90 + Math.random() * 0.10,
       fadeIn:  fadeIn,
       fadeOut: fadeOut,
       born:    Date.now()
