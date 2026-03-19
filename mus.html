@@ -48,9 +48,18 @@ body::before {
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse 70% 60% at 50% 40%, #1e4a1e 0%, #0e2a0e 50%, #060f06 100%),
-    radial-gradient(ellipse 100% 40% at 50% 100%, rgba(60,30,10,0.6) 0%, transparent 60%);
+    radial-gradient(ellipse 65% 55% at 50% 35%, #183a18 0%, #0c220c 45%, #050d05 100%),
+    radial-gradient(ellipse 50% 40% at 15% 60%, rgba(30,70,20,0.35) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 85% 60%, rgba(30,70,20,0.35) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 30% at 20% 20%, rgba(80,120,20,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 30% at 80% 20%, rgba(80,120,20,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 100% 45% at 50% 100%, rgba(60,30,5,0.65) 0%, transparent 60%);
   z-index: 0;
+  animation: bgBreath 10s ease-in-out infinite;
+}
+@keyframes bgBreath {
+  0%,100% { opacity:1; }
+  50%      { opacity:0.82; }
 }
 
 body::after {
@@ -93,18 +102,36 @@ body::after {
   margin-bottom: 3rem;
 }
 
-.title-block h1 {
+.mus-logo-wrap {
+  margin: 0 auto;
+  display: inline-block;
+  position: relative;
+}
+#mus-canvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.mus-logo-text {
+  display: block;
   font-family: 'Cinzel Decorative', cursive;
   font-size: clamp(3rem, 10vw, 6rem);
   font-weight: 900;
-  color: var(--gold);
+  color: #000000;
   text-shadow:
-    0 0 30px rgba(201,168,76,0.5),
-    2px 2px 0 #3a2000,
-    4px 4px 0 #1a0f00;
+    0 0 22px rgba(80,220,40,0.6),
+    0 0 55px rgba(40,160,20,0.35);
   letter-spacing: 0.1em;
   line-height: 1;
+  margin: 0;
+  animation: musLogoBreath 4s ease-in-out infinite;
+  /* Canvas sits on top showing particles clipped inside the black letters */
 }
+@keyframes musLogoBreath {
+  0%,100% { text-shadow: 0 0 18px rgba(80,200,40,0.5),  0 0 40px rgba(40,140,20,0.25); }
+  50%     { text-shadow: 0 0 38px rgba(100,255,50,0.85), 0 0 80px rgba(60,200,30,0.50); }
+}
+
 
 .title-block .subtitle {
   font-family: 'Cinzel', serif;
@@ -123,23 +150,65 @@ body::after {
   font-size: 2rem;
 }
 
+@property --mus-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes musRotate { from { --mus-angle:0deg; } to { --mus-angle:360deg; } }
+@keyframes musBg {
+  0%,100% { background:rgba(6,12,4,0.97); }
+  30%     { background:rgba(10,22,6,0.95); }
+  60%     { background:rgba(18,36,10,0.93); }
+}
+
 .lobby-panel {
-  background: rgba(10,6,3,0.85);
-  border: 1px solid rgba(201,168,76,0.3);
-  border-radius: 4px;
+  background: rgba(6,12,4,0.97);
+  border: 2px solid transparent;
+  border-radius: 8px;
   padding: 2.5rem;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(201,168,76,0.1);
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.85), 0 0 80px rgba(30,100,30,0.08);
+  animation: musRotate 6s linear infinite;
 }
+.lobby-panel::before {
+  content:'';
+  position:absolute;
+  inset:-2px;
+  border-radius:10px;
+  z-index:-1;
+  background: conic-gradient(
+    from var(--mus-angle),
+    rgba(39,120,60,0.06)   0%,
+    rgba(39,120,60,0.06)  30%,
+    rgba(100,200,80,0.90) 45%,
+    rgba(160,255,120,1.0) 50%,
+    rgba(100,200,80,0.90) 55%,
+    rgba(39,120,60,0.06)  70%,
+    rgba(39,120,60,0.06) 100%
+  );
+  animation: musRotate 6s linear infinite;
+}
+.lobby-panel::after {
+  content:'';
+  position:absolute;
+  inset:2px;
+  border-radius:6px;
+  z-index:-1;
+  animation: musBg 8s ease-in-out infinite;
+}
+.lobby-panel > * { position:relative; z-index:1; }
 
 .lobby-panel h2 {
   font-family: 'Cinzel Decorative', cursive;
-  color: var(--gold);
+  color: #e8d878;
   font-size: 1.2rem;
   margin-bottom: 1.5rem;
   text-align: center;
   letter-spacing: 0.1em;
+  text-shadow: 0 0 16px rgba(80,180,40,0.5), 0 1px 3px rgba(0,0,0,0.95);
 }
 
 .input-group {
@@ -188,14 +257,18 @@ input[type="text"]:focus {
 
 .btn-gold {
   background: linear-gradient(135deg, #a07830, #c9a84c, #a07830);
-  color: #1a0f00;
+  color: #1a0f00; font-weight:700;
   box-shadow: 0 4px 15px rgba(201,168,76,0.3);
+  animation: musBtn 4s ease-in-out infinite;
 }
-
+@keyframes musBtn {
+  0%,100% { background:linear-gradient(135deg,#7a5a10,#c9a84c,#7a5a10); box-shadow:0 4px 12px rgba(160,130,40,0.35); }
+  35%     { background:linear-gradient(135deg,#a07830,#e8c97a,#a07830); box-shadow:0 4px 22px rgba(201,168,76,0.6),0 0 30px rgba(60,160,30,0.25); }
+  70%     { background:linear-gradient(135deg,#c0a040,#f0d878,#c0a040); box-shadow:0 4px 28px rgba(220,190,80,0.7),0 0 40px rgba(60,160,30,0.35); }
+}
 .btn-gold:hover {
-  background: linear-gradient(135deg, #b08840, #e8c97a, #b08840);
+  filter:brightness(1.15);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(201,168,76,0.4);
 }
 
 .btn-outline {
@@ -1350,6 +1423,103 @@ input[type="text"]:focus {
   font-size: 2.5rem;
   text-shadow: 0 0 20px currentColor;
 }
+
+/* ── MUS LOBBY AMBIENT ── */
+@keyframes musGhostFade {
+  0%   { opacity:0; transform:scale(0.8) rotate(var(--mg0)); }
+  20%  { opacity:var(--mgpeak); transform:scale(1) rotate(var(--mg0)); }
+  80%  { opacity:var(--mgpeak); transform:scale(1.04) rotate(var(--mg1)); }
+  100% { opacity:0; transform:scale(0.9) rotate(var(--mg1)); }
+}
+.mus-ghost {
+  position:fixed; pointer-events:none; z-index:0; color:rgba(60,160,40,0.85);
+  animation:musGhostFade ease-in-out forwards;
+  font-family:'Cinzel',serif; font-weight:700;
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   MUS HOVER ATMOSPHERE EFFECTS
+   Smooth, subtle — like candlelight shifting
+   ══════════════════════════════════════════════════════════ */
+
+/* body base transition for all hover effects */
+body { transition: background-color 0.9s ease; }
+
+/* ── LOBBY PANEL hover: border brightens, inner warms gently ── */
+.lobby-panel {
+  transition: box-shadow 0.6s ease;
+}
+.lobby-panel:hover {
+  box-shadow: 0 20px 70px rgba(0,0,0,0.85), 0 0 60px rgba(60,180,30,0.18), 0 0 120px rgba(30,120,20,0.10);
+}
+
+/* ── LOBBY PANEL hover: rotating border speeds up ── */
+.lobby-panel:hover::before {
+  animation-duration: 2.5s !important;
+  /* brighter at the spotlight */
+  background: conic-gradient(
+    from var(--mus-angle),
+    rgba(39,120,60,0.08)   0%,
+    rgba(39,120,60,0.08)  25%,
+    rgba(120,240,80,0.95) 43%,
+    rgba(180,255,120,1.0) 50%,
+    rgba(120,240,80,0.95) 57%,
+    rgba(39,120,60,0.08)  75%,
+    rgba(39,120,60,0.08) 100%
+  ) !important;
+}
+
+/* ── LOBBY BG hover: deeper green vignette from center ── */
+.lobby-panel:hover ~ * .title-block h1,
+#lobby:has(.lobby-panel:hover) .mus-logo-text {
+  text-shadow:
+    0 0 40px rgba(140,255,80,1.0),
+    0 0 90px rgba(80,220,40,0.65),
+    2px 3px 0 rgba(0,0,0,0.85) !important;
+  transition: text-shadow 0.7s ease;
+}
+
+/* ── WAITING ROOM: subtle green pulse on the room code ── */
+#room-code-display {
+  transition: color 0.5s ease, text-shadow 0.5s ease;
+}
+#lobby-waiting:hover #room-code-display {
+  color: #a0ff80;
+  text-shadow: 0 0 14px rgba(100,255,60,0.7);
+}
+
+/* ── GAME TABLE: when hovering the action panel, felt glows ── */
+.action-panel {
+  transition: box-shadow 0.5s ease;
+}
+.action-panel:hover {
+  box-shadow: 0 0 40px rgba(60,160,30,0.20), inset 0 0 20px rgba(30,100,15,0.08);
+}
+
+/* ── CARDS: lift + glow on hover in hand area ── */
+.hand-area .card:hover {
+  transform: translateY(-10px) scale(1.04);
+  filter: drop-shadow(0 0 10px rgba(80,200,50,0.5));
+  transition: transform 0.15s ease, filter 0.2s ease;
+  z-index: 10;
+}
+
+/* ── BODY background shifts warmer green when hovering lobby panel ── */
+@keyframes musHoverVignette {
+  0%   { opacity:0.6; }
+  50%  { opacity:1.0; }
+  100% { opacity:0.6; }
+}
+#lobby:has(.lobby-panel:hover)::before {
+  background:
+    radial-gradient(ellipse 65% 55% at 50% 35%, #1e4e1e 0%, #0e2e0e 45%, #050d05 100%),
+    radial-gradient(ellipse 50% 40% at 15% 60%, rgba(40,90,20,0.45) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 85% 60%, rgba(40,90,20,0.45) 0%, transparent 55%),
+    radial-gradient(ellipse 100% 45% at 50% 100%, rgba(60,30,5,0.65) 0%, transparent 60%);
+  transition: background 0.9s ease;
+}
+
 </style>
 <script>
 // ── PWA MANIFEST (inline, works as static HTML on GitHub Pages) ──
@@ -1466,8 +1636,13 @@ self.addEventListener('fetch', e => {
 <!-- ─── LOBBY ──────────────────────────────────────────────────────────── -->
 <div id="lobby">
   <div class="title-block">
-    <h1>MUS</h1>
-    <div class="card-deco">🂡 🂱 🃁 🃑</div>
+    <div class="mus-logo-wrap" style="position:relative;display:inline-block;line-height:1;">
+      <!-- Gradient text underneath -->
+      <h1 class="mus-logo-text">MUS</h1>
+      <!-- Canvas on top: clips symbols inside letter shapes, transparent elsewhere -->
+      <canvas id="mus-canvas" style="position:absolute;inset:0;pointer-events:none;"></canvas>
+    </div>
+    <div class="card-deco" style="opacity:0.7;letter-spacing:0.3em">♣ ♠ ♥ ♦</div>
     <div class="subtitle">Juego tradicional vasco · 4 jugadores · 25 tantos</div>
     <div style="margin-top:0.5rem;font-family:'Cinzel',serif;font-size:0.8rem;color:rgba(201,168,76,0.45);letter-spacing:0.06em">🌐 mus-online-cydx.onrender.com</div>
   </div>
@@ -1748,6 +1923,8 @@ function confirmExit() {
 
 function startGameUI() {
   document.getElementById('lobby').style.display = 'none';
+  stopMusGhosts();
+  if(window._stopMusCanvas) window._stopMusCanvas();
   document.getElementById('game').style.display = 'block';
   document.getElementById('exit-btn').style.display = 'block';
 }
@@ -2420,8 +2597,163 @@ const SFX = (() => {
   };
 })();
 
-// Auto-load stats on page ready
-document.addEventListener('DOMContentLoaded', () => { renderStatsInLobby(); });
+
+
+// ══════════════════════════════════════════════════════════
+// MUS LOGO CANVAS — symbols float inside MUS letters
+// Fast spawn, slow despawn. Clean rewrite.
+// ══════════════════════════════════════════════════════════
+(function() {
+  var SYMS   = ['\u2663','\u2660','\u2665','\u2666','7','3','1','K','A','M','U','S'];
+  var COLS   = ['100,255,80','160,255,120','220,255,180','255,230,80','80,255,100','255,255,200'];
+  var canvas, ctx, W, H, fontStr, particles = [], raf, spawnTimer, dpr = 1;
+
+  function setup() {
+    canvas = document.getElementById('mus-canvas');
+    if (!canvas) return false;
+    ctx = canvas.getContext('2d');
+    var el = document.querySelector('.mus-logo-text');
+    if (!el) return false;
+    var r = el.getBoundingClientRect();
+    W = Math.round(r.width)  || 300;
+    H = Math.round(r.height) || 80;
+    dpr = window.devicePixelRatio || 1;
+    canvas.width  = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var fs = parseFloat(getComputedStyle(el).fontSize) || 60;
+    fontStr = '900 ' + fs + 'px \'Cinzel Decorative\', cursive';
+    return true;
+  }
+
+  function tick() {
+    raf = requestAnimationFrame(tick);
+    if (!ctx || !W || !H) return;
+    ctx.clearRect(0, 0, W, H);
+    if (!particles.length) return;
+
+    // Draw text as solid mask so source-atop clips inside letters
+    ctx.save();
+    ctx.font = fontStr;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#000000'; // must be solid for source-atop to work
+    ctx.fillText('MUS', W / 2, H / 2);
+
+    // Particles only appear inside existing (letter) pixels
+    ctx.globalCompositeOperation = 'source-atop';
+
+    var now = Date.now();
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      var age = now - p.born;
+      var alpha;
+      if (age < p.fadeIn) {
+        alpha = age / p.fadeIn;              // fast fade in
+      } else {
+        alpha = 1 - (age - p.fadeIn) / p.fadeOut; // slow fade out
+      }
+      alpha = Math.max(0, Math.min(1, alpha)) * p.peak;
+      ctx.font = 'bold ' + p.size + 'px \'Cinzel\', serif';
+      ctx.fillStyle = 'rgba(' + p.col + ',' + alpha.toFixed(3) + ')';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(p.sym, p.x, p.y);
+    }
+    ctx.restore();
+
+    // Remove dead particles
+    particles = particles.filter(function(p) {
+      return (Date.now() - p.born) < (p.fadeIn + p.fadeOut);
+    });
+  }
+
+  function spawn() {
+    if (!W || !H) return;
+    var fadeIn  = 200  + Math.random() * 300;   // 200-500ms — fast appear
+    var fadeOut = 1500 + Math.random() * 1500;  // 1.5-3s   — slow disappear
+    particles.push({
+      sym:     SYMS[Math.floor(Math.random() * SYMS.length)],
+      col:     COLS[Math.floor(Math.random() * COLS.length)],
+      x:       W * 0.08 + Math.random() * W * 0.84,
+      y:       H * 0.12 + Math.random() * H * 0.76,
+      size:    11 + Math.random() * 20,
+      peak:    0.75 + Math.random() * 0.25,
+      fadeIn:  fadeIn,
+      fadeOut: fadeOut,
+      born:    Date.now()
+    });
+  }
+
+  function start() {
+    if (!setup()) return;
+    for (var i = 0; i < 14; i++) {
+      (function(d) { setTimeout(spawn, d); })(i * 70);
+    }
+    spawnTimer = setInterval(spawn, 120);
+    tick();
+  }
+
+  function stop() {
+    clearInterval(spawnTimer);
+    cancelAnimationFrame(raf);
+    particles = [];
+    if (ctx) ctx.clearRect(0, 0, W * dpr, H * dpr);
+  }
+
+  window._stopMusCanvas = stop;
+
+  var resizeT;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(function() { setup(); }, 250);
+  });
+
+  document.addEventListener('DOMContentLoaded', function() {
+    document.fonts.ready.then(function() {
+      setTimeout(start, 100);
+    });
+  });
+})();
+
+// ── MUS LOBBY GHOST SYMBOLS ──────────────────────────────────────────────────
+const MUS_GHOSTS = ['♣','♠','7','3','1','♥','♦','K','A','🃏'];
+let _musGhostInterval = null;
+
+function spawnMusGhost() {
+  const el = document.createElement('div');
+  el.className = 'mus-ghost';
+  el.textContent = MUS_GHOSTS[Math.floor(Math.random() * MUS_GHOSTS.length)];
+  const left  = 4 + Math.random() * 90;
+  const top   = 4 + Math.random() * 88;
+  const dur   = 12 + Math.random() * 10;
+  const size  = 1.2 + Math.random() * 3.8;
+  const peak  = 0.06 + Math.random() * 0.12;
+  const mg0   = -15 + Math.random() * 30;
+  const mg1   = mg0 + (-18 + Math.random() * 36);
+  el.style.cssText = `left:${left}vw;top:${top}vh;font-size:${size}rem;animation-duration:${dur}s;--mg0:${mg0}deg;--mg1:${mg1}deg;--mgpeak:${peak.toFixed(3)};`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), (dur + 0.3) * 1000);
+}
+
+function startMusGhosts() {
+  if (_musGhostInterval) return;
+  for (let i = 0; i < 12; i++) setTimeout(spawnMusGhost, i * 350);
+  _musGhostInterval = setInterval(spawnMusGhost, 1600);
+}
+function stopMusGhosts() {
+  clearInterval(_musGhostInterval); _musGhostInterval = null;
+  document.querySelectorAll('.mus-ghost').forEach(e => e.remove());
+}
+
+// Start on load, stop when game starts
+document.addEventListener('DOMContentLoaded', () => {
+  startMusGhosts();
+  renderStatsInLobby();
+});
+
 
 function showVictory(msg) { SFX.win();
   const overlay = document.getElementById('victory-overlay');

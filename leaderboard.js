@@ -13,6 +13,7 @@ const DEFAULT = () => ({
   mus:       { partidas: [] },
   caida:     { top: [] },
   poker:     { top: [] },
+  uno:       { top: [] },
 });
 
 let db = DEFAULT();
@@ -47,6 +48,17 @@ function scheduleSave() {
 }
 
 function load() { return db; }
+
+function unoRecordWin(lbDB, name, points) {
+  if (!lbDB.uno) lbDB.uno = { top: [] };
+  const lb = lbDB.uno;
+  let p = lb.top.find(e => e.name === name);
+  if (!p) { p = { name, wins: 1, bestPoints: points }; lb.top.push(p); }
+  else { p.wins++; if (points > p.bestPoints) p.bestPoints = points; }
+  lb.top.sort((a,b) => b.wins - a.wins || b.bestPoints - a.bestPoints);
+  lb.top = lb.top.slice(0, 20);
+  scheduleSave();
+}
 
 function solSubmit(lbDB, name, score, moves) {
   const lb = lbDB.solitario;
@@ -97,4 +109,4 @@ function pokerRecordWin(lbDB, winnerName, chips) {
   scheduleSave();
 }
 
-module.exports = { load, solSubmit, musRecordWin, caidaRecordWin, pokerRecordWin };
+module.exports = { load, solSubmit, musRecordWin, caidaRecordWin, pokerRecordWin, unoRecordWin };

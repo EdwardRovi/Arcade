@@ -8,46 +8,154 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:#0a0800; --amber:#c9a84c; --amber2:#e8c97a; --amber3:#f5d98a;
+  --bg:#08060100; --amber:#c9a84c; --amber2:#e8c97a; --amber3:#f5d98a;
   --red:#c03030; --text:#f5ead8; --muted:rgba(245,234,216,0.45); --border:rgba(201,168,76,0.28);
   --gold:#c9a84c; --gold2:#e8c97a;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Cinzel',serif;overflow:hidden;touch-action:manipulation;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Cinzel',serif;overflow:hidden;touch-action:manipulation;transition:background 0.65s ease;}
 
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   background:
-    radial-gradient(ellipse 70% 55% at 50% 40%, rgba(120,85,5,0.45)  0%, transparent 65%),
-    radial-gradient(ellipse 50% 35% at 15% 60%, rgba(90,60,0,0.25)   0%, transparent 55%),
-    radial-gradient(ellipse 50% 35% at 85% 60%, rgba(90,60,0,0.25)   0%, transparent 55%),
-    radial-gradient(ellipse 100% 40% at 50% 100%, rgba(60,40,0,0.6)  0%, transparent 60%);}
+    radial-gradient(ellipse 90% 70% at 50% 50%,  rgba(160,110,8,0.38)  0%, transparent 70%),
+    radial-gradient(ellipse 60% 50% at 15% 35%,  rgba(180,80,15,0.22)  0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 35%,  rgba(180,80,15,0.22)  0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 50% 5%,   rgba(200,130,20,0.18) 0%, transparent 55%),
+    radial-gradient(ellipse 100% 45% at 50% 100%,rgba(100,55,5,0.55)   0%, transparent 60%),
+    radial-gradient(ellipse 30% 25% at 20% 80%,  rgba(160,60,10,0.18)  0%, transparent 50%),
+    radial-gradient(ellipse 30% 25% at 80% 80%,  rgba(160,60,10,0.18)  0%, transparent 50%);}
 
 /* ── LOBBY ── */
-#lobby{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;z-index:10;padding:1rem 0.8rem 2rem;overflow-y:auto;gap:0.7rem;}
-.ch-logo{font-family:'Cinzel Decorative',cursive;font-size:clamp(2rem,10vw,4.5rem);font-weight:900;color:var(--gold);text-shadow:0 0 40px rgba(201,168,76,0.5),2px 2px 0 #3a2000;letter-spacing:0.08em;line-height:1;}
-.ch-sub{font-size:0.58rem;color:var(--muted);letter-spacing:0.3em;}
-.panel{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:1.3rem 1.5rem;width:100%;max-width:400px;display:flex;flex-direction:column;gap:0.65rem;}
-.panel h2{font-family:'Cinzel Decorative',cursive;font-size:0.72rem;color:var(--gold);letter-spacing:0.14em;text-align:center;}
-.fg label{display:block;font-size:0.5rem;color:var(--muted);letter-spacing:0.12em;margin-bottom:0.2rem;}
-.fg input,.fg select{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:var(--text);font-family:'Cinzel',serif;font-size:0.82rem;padding:0.42rem 0.65rem;border-radius:4px;outline:none;}
-.fg input:focus,.fg select:focus{border-color:var(--gold);}
-.fg select option{background:#0a1a0a;}
-.var-row{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;}
-.var-btn{border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:0.5rem 0.4rem;text-align:center;cursor:pointer;background:rgba(255,255,255,0.03);transition:all 0.15s;}
-.var-btn:hover,.var-btn.active{border-color:var(--gold);background:rgba(201,168,76,0.12);}
-.var-btn .vi{font-size:1.3rem;display:block;}
-.var-btn .vn{font-size:0.52rem;color:var(--gold2);display:block;margin-top:2px;font-family:'Cinzel Decorative',cursive;letter-spacing:0.08em;}
-.var-btn .vd{font-size:0.38rem;color:var(--muted);display:block;margin-top:1px;}
-.btn{font-family:'Cinzel Decorative',cursive;font-size:0.62rem;letter-spacing:0.1em;padding:0.52rem 1rem;border-radius:5px;cursor:pointer;transition:all 0.2s;border:none;width:100%;}
-.btn-gold{background:linear-gradient(135deg,#b8922a,#d4a843);color:#1a0f00;}
-.btn-gold:hover{background:linear-gradient(135deg,#c9a84c,#e8c97a);}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--gold2);}
-.btn-outline:hover{background:rgba(201,168,76,0.08);}
-.divider{text-align:center;font-size:0.55rem;color:var(--muted);}
-.room-code{font-family:'Cinzel Decorative',cursive;font-size:2rem;color:var(--gold2);letter-spacing:0.3em;text-align:center;text-shadow:0 0 20px rgba(201,168,76,0.35);}
-.w-player{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:4px;padding:0.3rem 0.7rem;font-size:0.75rem;display:flex;justify-content:space-between;align-items:center;}
-.pts-badge{font-size:0.44rem;padding:2px 7px;border:1px solid rgba(201,168,76,0.3);border-radius:3px;background:rgba(201,168,76,0.08);color:var(--gold);}
-.err-msg{color:#f87171;font-size:0.58rem;text-align:center;min-height:1em;}
+#lobby{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;z-index:10;padding:1.2rem 0.8rem 2.5rem;overflow-y:auto;gap:0.65rem;-webkit-overflow-scrolling:touch;}
+
+/* ── ANIMATED LOBBY BG: ghost cards ── */
+@keyframes ghostFade {
+  0%   { opacity:0; transform:scale(0.85) rotate(var(--gr0)); }
+  20%  { opacity:var(--gpeak); transform:scale(1) rotate(var(--gr0)); }
+  80%  { opacity:var(--gpeak); transform:scale(1.02) rotate(var(--gr1)); }
+  100% { opacity:0; transform:scale(0.95) rotate(var(--gr1)); }
+}
+.lobby-coin {
+  position:fixed; pointer-events:none; z-index:0;
+  animation:ghostFade ease-in-out forwards;
+  filter:blur(0.4px);
+}
+
+/* ── LOGO ── */
+.ch-logo-wrap { position:relative; text-align:center; z-index:1; }
+.ch-logo {
+  font-family:'Cinzel Decorative',cursive;
+  font-size:clamp(2.2rem,11vw,5rem); font-weight:900;
+  background: linear-gradient(180deg, #f5d98a 0%, #c9a84c 40%, #8a6010 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  filter: drop-shadow(0 0 28px rgba(201,168,76,0.55)) drop-shadow(2px 3px 0 rgba(40,20,0,0.7));
+  letter-spacing:0.06em; line-height:1; position:relative; z-index:1;
+}
+/* Decorative suit row under logo */
+.ch-suits-row { display:flex; gap:0.5rem; justify-content:center; margin-top:0.1rem; font-size:0.9rem; opacity:0.5; }
+.ch-suits-row span:nth-child(1),.ch-suits-row span:nth-child(4) { color:#f5ead8; }
+.ch-suits-row span:nth-child(2),.ch-suits-row span:nth-child(3) { color:#c03030; }
+.ch-sub { font-size:0.55rem; color:var(--muted); letter-spacing:0.28em; margin-top:0.2rem; }
+
+/* ── PANEL: tavern card table feel ── */
+.panel {
+  background: rgba(10,7,2,0.96);
+  border: 2px solid transparent;
+  border-radius:10px;
+  padding:1.3rem 1.6rem;
+  width:100%; max-width:400px;
+  display:flex; flex-direction:column; gap:0.65rem;
+  position:relative; z-index:1;
+  /* Rotating conic border: a bright spot sweeps around the edge */
+  background-clip: padding-box;
+  box-shadow: 0 8px 50px rgba(0,0,0,0.85), 0 0 60px rgba(201,168,76,0.08);
+  animation: rotateBorder 5s linear infinite;
+}
+/* The glowing border is a pseudo-element behind the panel */
+.panel::before {
+  content:'';
+  position:absolute;
+  inset:-2px;
+  border-radius:12px;
+  z-index:-1;
+  background: conic-gradient(
+    from var(--border-angle),
+    rgba(201,168,76,0.08)  0%,
+    rgba(201,168,76,0.08) 30%,
+    rgba(245,217,138,0.95) 45%,
+    rgba(255,240,160,1.00) 50%,
+    rgba(245,217,138,0.95) 55%,
+    rgba(201,168,76,0.08) 70%,
+    rgba(201,168,76,0.08) 100%
+  );
+  animation: rotateBorder 5s linear infinite;
+}
+/* Inner fill — animates background so panel color visibly shifts */
+.panel::after {
+  content:'';
+  position:absolute;
+  inset:2px;
+  border-radius:8px;
+  z-index:-1;
+  animation: panelBgCycle 8s ease-in-out infinite;
+}
+@keyframes panelBgCycle {
+  0%   { background: rgb(6,4,1); }
+  20%  { background: rgb(30,22,6); }
+  40%  { background: rgb(54,38,10); }
+  60%  { background: rgb(30,22,6); }
+  80%  { background: rgb(12,8,2); }
+  100% { background: rgb(6,4,1); }
+}
+.panel h2 {
+  font-family:'Cinzel Decorative',cursive; font-size:0.72rem;
+  color:#f5e090;
+  text-shadow:0 0 16px rgba(201,168,76,0.8), 0 1px 4px rgba(0,0,0,1), 0 2px 8px rgba(0,0,0,0.9);
+  letter-spacing:0.16em; text-align:center;
+}
+.fg label { display:block; font-size:0.5rem; color:#f5d98a; letter-spacing:0.14em; margin-bottom:0.22rem; text-shadow:0 1px 3px rgba(0,0,0,1); font-weight:600; }
+.fg input,.fg select {
+  width:100%; background:rgba(0,0,0,0.60); border:1px solid rgba(201,168,76,0.30);
+  color:#f5ead8; font-family:'Cinzel',serif; font-size:0.82rem; padding:0.42rem 0.65rem;
+  border-radius:4px; outline:none; transition:border-color 0.2s;
+  text-shadow:0 1px 2px rgba(0,0,0,0.9);
+}
+.fg input:focus,.fg select:focus { border-color:rgba(201,168,76,0.6); box-shadow:0 0 0 2px rgba(201,168,76,0.1); }
+.fg select option { background:#100c04; }
+
+/* ── VARIANT BUTTONS ── */
+  border:1px solid rgba(201,168,76,0.18); border-radius:6px; padding:0.55rem 0.4rem;
+  text-align:center; cursor:pointer; background:rgba(201,168,76,0.04);
+  transition:all 0.18s; position:relative; overflow:hidden;
+}
+
+/* ── BUTTONS ── */
+.btn { font-family:'Cinzel Decorative',cursive; font-size:0.62rem; letter-spacing:0.1em; padding:0.52rem 1rem; border-radius:5px; cursor:pointer; transition:all 0.2s; border:none; width:100%; }
+.btn-gold {
+  background:#7a5a10;
+  border:none;
+  color:#1a0f00; font-weight:700;
+  animation: btnGoldRGB 4.5s ease-in-out infinite;
+}
+.btn-gold:hover { filter:brightness(1.15); }
+.btn-outline {
+  background:#7a5a10;
+  border:none;
+  color:#1a0f00; font-weight:700;
+  animation: btnGoldRGB 4.5s ease-in-out infinite;
+  animation-delay: 0.8s;
+}
+.btn-outline:hover { filter:brightness(1.15); }
+
+/* ── DIVIDER ── */
+.divider { display:flex; align-items:center; gap:0.6rem; color:rgba(201,168,76,0.3); font-size:0.55rem; }
+.divider::before,.divider::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,transparent,rgba(201,168,76,0.25),transparent); }
+
+/* ── WAITING ROOM ── */
+.room-code { font-family:'Cinzel Decorative',cursive; font-size:2rem; color:var(--gold2); letter-spacing:0.3em; text-align:center; text-shadow:0 0 20px rgba(201,168,76,0.5); }
+.w-player { background:rgba(201,168,76,0.04); border:1px solid rgba(201,168,76,0.14); border-radius:4px; padding:0.32rem 0.7rem; font-size:0.75rem; display:flex; justify-content:space-between; align-items:center; }
+.pts-badge { font-size:0.44rem; padding:2px 7px; border:1px solid rgba(201,168,76,0.3); border-radius:3px; background:rgba(201,168,76,0.08); color:var(--gold); }
+.err-msg { color:#f87171; font-size:0.58rem; text-align:center; min-height:1em; }
 
 /* ── GAME ── */
 #game{display:none;position:fixed;inset:0;flex-direction:column;z-index:1;}
@@ -250,14 +358,111 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   .ch-card .ch-corner { font-size:0.38rem; }
   .act-btn { font-size:0.44rem; padding:0.32rem 0.55rem; }
 }
+
+/* ── DISCARD PHASE ── */
+#discard-phase-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:35; display:none; align-items:flex-start; justify-content:center; padding:0.8rem; overflow-y:auto; }
+#discard-phase-overlay.vis { display:flex; }
+.dp-box { background:rgba(10,8,0,0.98); border:1px solid var(--border); border-radius:10px; padding:1.1rem 1.4rem; max-width:640px; width:100%; display:flex; flex-direction:column; gap:0.7rem; }
+.dp-title { font-family:'Cinzel Decorative',cursive; font-size:0.85rem; color:var(--gold2); text-align:center; letter-spacing:0.12em; }
+.dp-instr { font-size:0.5rem; color:var(--muted); text-align:center; line-height:1.5; }
+.dp-open-combos { display:flex; flex-wrap:wrap; gap:0.8rem; justify-content:center; }
+.dp-combo { border:1px solid rgba(201,168,76,0.3); border-radius:6px; padding:0.5rem 0.6rem; display:flex; flex-wrap:wrap; gap:3px; align-items:center; background:rgba(201,168,76,0.04); position:relative; }
+.dp-combo-label { position:absolute; top:-9px; left:8px; background:rgba(10,8,0,0.98); padding:0 4px; font-size:0.38rem; color:var(--muted); letter-spacing:0.1em; }
+.dp-combo.can-attach { border-color:rgba(100,200,100,0.5); cursor:pointer; }
+.dp-combo.can-attach:hover { border-color:rgba(100,220,100,0.8); background:rgba(100,200,100,0.06); }
+.dp-my-hand { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; padding:0.4rem 0; }
+.dp-my-hand .ch-card { cursor:pointer; }
+.dp-my-hand .ch-card.selected { outline:2.5px solid var(--gold); }
+
+/* ── ROUND HISTORY ── */
+#history-btn { position:fixed; top:34px; right:8px; z-index:25; background:rgba(0,0,0,0.6); border:1px solid rgba(201,168,76,0.3); border-radius:4px; color:var(--gold2); font-family:'Cinzel',serif; font-size:0.4rem; padding:0.2rem 0.5rem; cursor:pointer; letter-spacing:0.08em; }
+#history-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:36; display:none; align-items:center; justify-content:center; flex-direction:column; gap:0.5rem; padding:1rem; }
+#history-overlay.vis { display:flex; }
+.hist-box { background:rgba(10,8,0,0.98); border:1px solid var(--border); border-radius:10px; padding:1.2rem 1.5rem; max-width:500px; width:100%; max-height:80vh; overflow-y:auto; }
+.hist-title { font-family:'Cinzel Decorative',cursive; font-size:0.85rem; color:var(--gold); text-align:center; margin-bottom:0.8rem; letter-spacing:0.12em; }
+.hist-round { margin-bottom:0.8rem; }
+.hist-round-title { font-family:'Cinzel Decorative',cursive; font-size:0.55rem; color:var(--gold2); letter-spacing:0.1em; margin-bottom:0.3rem; }
+.hist-row { display:grid; grid-template-columns:1fr 60px 70px; gap:0.2rem; font-size:0.62rem; padding:0.18rem 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+.hist-row .hr-name { color:var(--text); }
+.hist-row .hr-pts { text-align:right; }
+.hist-row .hr-total { text-align:right; color:var(--gold); font-family:'Cinzel Decorative',cursive; font-size:0.58rem; }
+@media(max-width:700px) {
+  #history-btn { font-size:0.36rem; padding:0.15rem 0.4rem; top:30px; }
+}
+
+
+
+
+
+
+  background: radial-gradient(ellipse 100% 100% at 50% 100%, rgba(10,20,120,0.40) 0%, transparent 60%);
+}
+
+
+  40% {
+    border-color: rgba(220,190,100,0.45);
+    color: rgba(245,220,140,1);
+    background: rgba(201,168,76,0.05);
+  }
+  75% {
+    border-color: rgba(180,140,50,0.18);
+    color: rgba(210,175,90,1);
+    background: transparent;
+  }
+}
+
+
+
+/* ── PANEL RGB BLACK↔WHITE ── */
+/* ── ROTATING BORDER GLOW ── */
+@keyframes rotateBorder {
+  from { --border-angle: 0deg; }
+  to   { --border-angle: 360deg; }
+}
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* ── BUTTON GOLD RGB ── */
+@keyframes btnGoldRGB {
+  0%   { background:#7a5a10; box-shadow:0 3px 18px rgba(120,90,10,0.5); }
+  20%  { background:#c9a84c; box-shadow:0 3px 22px rgba(201,168,76,0.65); }
+  40%  { background:#f0d878; box-shadow:0 3px 26px rgba(240,216,120,0.75); }
+  60%  { background:#e8c060; box-shadow:0 3px 22px rgba(232,192,96,0.65); }
+  80%  { background:#b88c30; box-shadow:0 3px 20px rgba(184,140,48,0.55); }
+  100% { background:#7a5a10; box-shadow:0 3px 18px rgba(120,90,10,0.5); }
+}
+
+
+/* Safari fallback: pulsing gold outer glow when @property not supported */
+@supports not (background: conic-gradient(from 1deg, red, blue)) {
+  .panel::before {
+    background: none;
+    animation: safariGlow 5s ease-in-out infinite;
+  }
+  @keyframes safariGlow {
+    0%,100% { box-shadow: 0 0 0 2px rgba(201,168,76,0.15), 0 0 20px rgba(201,168,76,0.1); }
+    25%     { box-shadow: 0 0 0 2px rgba(245,217,138,0.7), 0 0 35px rgba(201,168,76,0.4), 4px 0 30px rgba(245,217,138,0.3); }
+    50%     { box-shadow: 0 0 0 2px rgba(201,168,76,0.15), 0 0 20px rgba(201,168,76,0.1); }
+    75%     { box-shadow: 0 0 0 2px rgba(245,217,138,0.7), 0 0 35px rgba(201,168,76,0.4), -4px 0 30px rgba(245,217,138,0.3); }
+  }
+}
+
+.panel > * { position:relative; z-index:1; }
+
 </style>
 </head>
 <body>
 
 <!-- ── LOBBY ── -->
 <div id="lobby">
-  <div class="ch-logo">CHINCHÓN</div>
-  <div class="ch-sub">RUMMY ESPAÑOL · 2–10 JUGADORES</div>
+  <div class="ch-logo-wrap" style="z-index:1">
+    <div class="ch-logo">CHINCHÓN</div>
+    <div class="ch-suits-row"><span>♠</span><span>♥</span><span>♦</span><span>♣</span></div>
+    <div class="ch-sub">RUMMY ESPAÑOL · 2–10 JUGADORES</div>
+  </div>
 
   <div class="panel" id="lform">
     <h2>Nueva sala</h2>
@@ -273,20 +478,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
         <option value="10">10 jugadores</option>
       </select>
     </div>
-    <div class="fg"><label>VARIANTE</label>
-      <div class="var-row">
-        <div class="var-btn active" id="vb-es" onclick="selVar('es')">
-          <span class="vi">🇪🇸</span>
-          <span class="vn">ESPAÑOLA</span>
-          <span class="vd">40 cartas · Oros, Copas, Espadas, Bastos</span>
-        </div>
-        <div class="var-btn" id="vb-fr" onclick="selVar('fr')">
-          <span class="vi">🃏</span>
-          <span class="vn">FRANCESA</span>
-          <span class="vd">52 cartas · ♠ ♥ ♦ ♣</span>
-        </div>
-      </div>
-    </div>
+
     <button class="btn btn-gold" onclick="doCreate()">✦ CREAR SALA</button>
     <div class="divider">· o ·</div>
     <div class="fg"><label>CÓDIGO DE SALA</label><input id="rcode" type="text" placeholder="Ej: HABC" maxlength="5" style="text-transform:uppercase" autocomplete="off"></div>
@@ -382,6 +574,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     <div class="overlay-title" id="round-title">FIN DE RONDA</div>
     <div id="round-scores"></div>
     <button class="btn btn-gold" id="next-round-btn" onclick="sendNextRound()" style="margin-top:0.8rem">▶ Siguiente ronda</button>
+    <button id="round-history-link" class="btn btn-outline" onclick="toggleHistory()" style="display:none;margin-top:0.3rem;font-size:0.52rem;padding:0.35rem 0.8rem">📊 Ver historial completo</button>
   </div>
 </div>
 
@@ -391,7 +584,33 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     <div class="overlay-title">🏆 ¡FIN DE PARTIDA!</div>
     <div id="go-scores"></div>
     <button class="btn btn-gold" onclick="exitGame()" style="margin-top:0.8rem">← Volver al lobby</button>
+    <button class="btn btn-outline" onclick="toggleHistory()" style="margin-top:0.3rem;font-size:0.52rem;padding:0.35rem 0.8rem">📊 Historial de rondas</button>
   </div>
+</div>
+
+<!-- ── DISCARD PHASE OVERLAY ── -->
+<div id="discard-phase-overlay">
+  <div class="dp-box">
+    <div class="dp-title">🃏 FASE DE DESCARTE</div>
+    <div class="dp-instr" id="dp-instr">Selecciona una carta de tu mano y toca una combinación para pegarla. Pulsa PASAR cuando termines.</div>
+    <div class="dp-open-combos" id="dp-open-combos"></div>
+    <div style="text-align:center;font-size:0.46rem;color:var(--muted);margin-top:0.2rem">Tu mano:</div>
+    <div class="dp-my-hand" id="dp-my-hand"></div>
+    <div style="display:flex;gap:0.5rem;justify-content:center;margin-top:0.3rem">
+      <button class="btn btn-gold" onclick="passDiscardTurn()" style="width:auto;font-size:0.56rem;padding:0.42rem 1rem">✓ Pasar turno</button>
+    </div>
+    <div class="err-msg" id="dp-err"></div>
+  </div>
+</div>
+
+<!-- ── ROUND HISTORY ── -->
+<button id="history-btn" onclick="toggleHistory()" style="display:none">📊 HISTORIAL</button>
+<div id="history-overlay">
+  <div class="hist-box">
+    <div class="hist-title">📊 HISTORIAL DE PARTIDA</div>
+    <div id="hist-content"></div>
+  </div>
+  <button class="btn btn-outline" onclick="toggleHistory()" style="max-width:200px;font-size:0.55rem;padding:0.4rem 0.8rem">✕ Cerrar</button>
 </div>
 
 <!-- ── CHINCHON BANNER ── -->
@@ -404,7 +623,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 // ══════════════════════════════════════════════════════════
 const SRV = `wss://${location.host}`;
 let ws=null, myId=null, myRoom=null, myName='Jugador', gs=null, reconnTimer=null;
-let lobbyVariant = 'es';
 let ntimer = null;
 
 const SUIT_ES_RED  = new Set(['copas','oros']);
@@ -423,16 +641,17 @@ function suitIcon(suit, variant) {
 
 function valLabel(val, variant) {
   if (variant === 'es') {
-    if (val===10) return 'S';
-    if (val===11) return 'C';
-    if (val===12) return 'R';
+    if (val===10) return 'S';   // Sota
+    if (val===11) return 'C';   // Caballo
+    if (val===12) return 'R';   // Rey
+    return String(val);          // 1-9
   } else {
     if (val===1)  return 'A';
     if (val===11) return 'J';
     if (val===12) return 'Q';
     if (val===13) return 'K';
+    return String(val);
   }
-  return String(val);
 }
 
 function connect(cb) {
@@ -451,13 +670,11 @@ function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'
 // ══════════════════════════════════════════════════════════
 // LOBBY
 // ══════════════════════════════════════════════════════════
-function selVar(v) {
-  lobbyVariant = v;
-  ['es','fr'].forEach(x => document.getElementById('vb-'+x).classList.toggle('active', x===v));
-}
+// Spanish deck only
+document.body.classList.add('var-es');
 function doCreate() {
   myName = document.getElementById('pname').value.trim() || 'Jugador';
-  connect(() => send({ type:'createRoom', name:myName, maxPlayers:+document.getElementById('pmaxp').value, variant:lobbyVariant }));
+  connect(() => send({ type:'createRoom', name:myName, maxPlayers:+document.getElementById('pmaxp').value, variant:'es' }));
 }
 function doJoin() {
   myName = document.getElementById('pname').value.trim() || 'Jugador';
@@ -476,7 +693,9 @@ function exitGame() {
   document.getElementById('lwait').style.display='none';
   document.getElementById('round-overlay').classList.remove('vis');
   document.getElementById('go-overlay').classList.remove('vis');
+  document.getElementById('history-btn').style.display='none';
   closeBajar();
+  startLobbyCoins();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -518,7 +737,8 @@ function renderGame(state) {
   if (!me) return;
 
   // Topbar
-  document.getElementById('tinfo').textContent = `Ronda ${state.round||1} · ${variant==='es'?'Española':'Francesa'} · Turno: ${state.players[state.currentTurn]?.name||''}`;
+  document.getElementById('tinfo').textContent = `Ronda ${state.round||1} · Turno: ${state.players[state.currentTurn]?.name||''}`;
+;
 
   // Deck count
   document.getElementById('deck-count').textContent = `${state.deckCount||0} cartas`;
@@ -764,35 +984,85 @@ function removeFromComboByIdx(cardIdx) {
 function clearCombo(ci) { bajarCombos[ci] = []; renderBajarOverlay(); }
 function addComboSlot() { bajarCombos.push([]); renderBajarOverlay(); }
 
+function chOrderVal(val, variant) {
+  if (variant==='es') { const o=[1,2,3,4,5,6,7,8,9,10,11,12]; return o.indexOf(val); }
+  return val-1;
+}
 function isValidCombo(cards, variant) {
   if (cards.length < 3) return false;
-  // Group: same value
-  if (cards.every(c=>c.val===cards[0].val) && cards.length >= 3 && cards.length <= 4) return true;
-  // Run: same suit, consecutive
+  if (cards.every(c=>c.val===cards[0].val) && cards.length<=4) return true;
   if (!cards.every(c=>c.suit===cards[0].suit)) return false;
-  const order = variant==='es'
-    ? [1,2,3,4,5,6,7,10,11,12]
-    : [1,2,3,4,5,6,7,8,9,10,11,12,13];
-  const sorted = [...cards].sort((a,b)=>order.indexOf(a.val)-order.indexOf(b.val));
+  const sorted=[...cards].sort((a,b)=>chOrderVal(a.val,variant)-chOrderVal(b.val,variant));
   for (let i=1;i<sorted.length;i++) {
-    if (order.indexOf(sorted[i].val) !== order.indexOf(sorted[i-1].val)+1) return false;
+    if (chOrderVal(sorted[i].val,variant) !== chOrderVal(sorted[i-1].val,variant)+1) return false;
   }
   return true;
+}
+function canAttachToCombo(card, comboCards, variant) {
+  if (comboCards.every(c=>c.val===comboCards[0].val)) {
+    return comboCards.length < 4 && card.val === comboCards[0].val;
+  }
+  const suit = comboCards[0].suit;
+  if (card.suit !== suit) return false;
+  const sorted=[...comboCards].sort((a,b)=>chOrderVal(a.val,variant)-chOrderVal(b.val,variant));
+  const minO = chOrderVal(sorted[0].val,variant);
+  const maxO = chOrderVal(sorted[sorted.length-1].val,variant);
+  const cardO = chOrderVal(card.val,variant);
+  if (cardO===maxO+1) return true;
+  if (cardO===minO-1 && minO>0) return true;
+  return false;
+}
+function freePoints(freeCards, variant) {
+  return freeCards.reduce((s,c)=>{
+    const v=c.val;
+    if (variant==='es') {
+      if (v<=9)  return s+v;          // 1-9 face value
+      return s+10;                     // Sota=10, Caballo=10, Rey=10
+    } else {
+      if (v===1) return s+1;
+      return s + Math.min(v, 10);     // J=Q=K=10
+    }
+  }, 0);
 }
 
 function confirmBajar() {
   const errEl = document.getElementById('bajar-err');
-  if (bajarDiscard < 0) { errEl.textContent='Selecciona la carta a descartar'; return; }
-  const nonEmpty = bajarCombos.filter(c=>c.length>0);
-  if (nonEmpty.length === 0) { errEl.textContent='Añade al menos una combinación'; return; }
+  if (bajarDiscard < 0) { errEl.textContent='Selecciona la carta a descartar (toca una carta sin combo)'; return; }
   const variant = gs?.variant||'es';
   const hand = gs?.players[gs.myIdx]?.hand||[];
+  const nonEmpty = bajarCombos.filter(c=>c.length>0);
+
+  // Validate each combo
   for (const combo of nonEmpty) {
     const cards = combo.map(i=>hand[i]);
-    if (!isValidCombo(cards, variant)) { errEl.textContent=`Combinación inválida: ${cards.map(c=>valLabel(c.val,variant)+c.suit).join(' ')}`; return; }
+    if (!isValidCombo(cards, variant)) {
+      errEl.textContent=`Combinación inválida: ${cards.map(c=>valLabel(c.val,variant)+c.suit).join('-')}`;
+      return;
+    }
   }
-  const allUsed = new Set([...nonEmpty.flat(), bajarDiscard]);
-  if (allUsed.size !== hand.length) { errEl.textContent=`Debes usar todas las cartas (usadas: ${allUsed.size}/${hand.length})`; return; }
+
+  // Check close condition
+  const usedSet = new Set(nonEmpty.flat());
+  const freeIdxs = hand.map((_,i)=>i).filter(i=>i!==bajarDiscard&&!usedSet.has(i));
+  const freePts = freePoints(freeIdxs.map(i=>hand[i]), variant);
+  const combined = nonEmpty.flat().length;
+
+  // Must discard the 8th card (after drawing we have 8)
+  if (hand.length !== 8) { errEl.textContent='Debes robar una carta antes de cerrar'; return; }
+
+  if (combined === 7 && freeIdxs.length === 0) {
+    // Full close (4+3): ok
+  } else if (combined === 6 && freeIdxs.length === 1 && freePts < 5) {
+    // 6+1 libre: ok
+  } else if (freePts < 5 && freeIdxs.length > 0) {
+    // Corte libre: ok
+  } else if (nonEmpty.length === 0 || freePts >= 5) {
+    errEl.textContent = freePts >= 5
+      ? `Las cartas libres valen ${freePts} pts — necesitas < 5 para cerrar`
+      : 'Necesitas al menos una combinación o que las cartas libres sumen < 5';
+    return;
+  }
+
   send({ type:'bajar', combos: nonEmpty, discardIdx: bajarDiscard });
   closeBajar();
 }
@@ -852,6 +1122,10 @@ function handleMsg(msg) {
   }
   if (msg.type==='state') {
     gs=msg.state;
+    // Apply variant body class (for background switching)
+    if (gs.variant) {
+      document.body.classList.toggle('var-es', gs.variant==='es');
+    }
     if (gs.gameState==='waiting') {
       renderWaiting(gs);
       return;
@@ -859,10 +1133,18 @@ function handleMsg(msg) {
     // Game is active — ensure lobby hidden, game visible
     document.getElementById('lobby').style.display='none';
     document.getElementById('game').classList.add('active');
+    stopLobbyCoins();
     document.getElementById('round-overlay').classList.remove('vis');
     renderGame(gs);
+    // Update history button whenever we have history
+    if (gs.roundHistory && gs.roundHistory.length) renderHistory(gs.roundHistory);
+    if (gs.discardPhase) {
+      openDiscardPhase(gs);
+    } else {
+      closeDiscardPhase();
+    }
     if (gs.gameState==='round_end') {
-      // Always show round end overlay when server says round ended
+      closeDiscardPhase();
       if (gs.lastBajar) showRoundEnd(gs.lastBajar);
     }
   }
@@ -870,7 +1152,17 @@ function handleMsg(msg) {
   if (msg.type==='chat') addChat(msg.from, msg.msg);
   if (msg.type==='notice') notice(msg.msg, 2800);
   if (msg.type==='bajar') {
-    notice(`⬇ ${esc(msg.playerName)} baja su mano`, 2500);
+    const modeStr = msg.closeMode==='full' ? '¡Cierre perfecto! −10 pts'
+      : msg.closeMode==='six' ? '6+1 libre'
+      : 'Corte libre';
+    notice(`⬇ ${esc(msg.playerName)} cierra — ${modeStr}`, 3000);
+  }
+  if (msg.type==='attached') {
+    // Refresh discard phase if open
+    if (gs && gs.discardPhase) {
+      gs.openCombos = msg.openCombos;
+      openDiscardPhase(gs);
+    }
   }
   if (msg.type==='chinchon') {
     showChinchonBanner();
@@ -899,9 +1191,7 @@ function renderWaiting(state) {
   document.getElementById('lwait').style.display = 'block';
   document.getElementById('game').classList.remove('active');
 
-  const varLabel = state.variant === 'fr' ? '🃏 Baraja francesa' : '🇪🇸 Baraja española';
   document.getElementById('wlist').innerHTML =
-    `<div style="font-size:0.46rem;color:var(--muted);margin-bottom:0.3rem;text-align:center">${varLabel}</div>` +
     (state.players||[]).map(p=>
       `<div class="w-player"><span>${esc(p.name)}${p.isYou?' <em style="opacity:0.5">(Tú)</em>':''}</span>
        <span style="color:var(--muted);font-size:0.58rem">${p.isHost?'👑 Host':''}</span></div>`
@@ -939,6 +1229,11 @@ function showRoundEnd(data) {
 
   document.getElementById('next-round-btn').disabled = false;
   document.getElementById('next-round-btn').textContent = '▶ Siguiente ronda';
+  // Update history panel
+  if (data.roundHistory) renderHistory(data.roundHistory);
+  // Show history link in overlay
+  const histLink = document.getElementById('round-history-link');
+  if (histLink) histLink.style.display = 'block';
   overlay.classList.add('vis');
 }
 
@@ -976,6 +1271,154 @@ function addChat(from,m){
   el.innerHTML+=`<div class="chat-msg"><span class="chat-from">${esc(from)}:</span> ${esc(m)}</div>`;
   el.scrollTop=el.scrollHeight;
 }
+
+// ══════════════════════════════════════════════════════════
+// DISCARD PHASE
+// ══════════════════════════════════════════════════════════
+let dpSelectedCard = -1;
+
+function openDiscardPhase(state) {
+  const variant = state.variant || 'es';
+  const me = state.players[state.myIdx];
+  const isMyTiscardTurn = state.discardPhaseOrder && state.discardPhaseOrder[0] === state.myIdx
+    || state.currentTurn === state.myIdx;
+
+  const instr = document.getElementById('dp-instr');
+  if (isMyTiscardTurn) {
+    instr.textContent = 'Es tu turno. Selecciona una carta de tu mano y toca una combinación para pegarla. Pulsa PASAR cuando termines.';
+  } else {
+    const cur = state.players[state.currentTurn];
+    instr.textContent = `Esperando a ${cur?.name || '...'}...`;
+  }
+
+  // Render open combos
+  const combosEl = document.getElementById('dp-open-combos');
+  combosEl.innerHTML = '';
+  (state.openCombos || []).forEach(combo => {
+    const div = document.createElement('div');
+    div.className = 'dp-combo';
+    const lbl = combo.type === 'run' ? '📏 Escalera' : '♻️ Trío';
+    div.innerHTML = `<span class="dp-combo-label">${lbl}</span>`;
+    combo.cards.forEach(card => {
+      div.innerHTML += buildCard(card, { variant, small: true });
+    });
+
+    // Check if selected card can attach
+    if (dpSelectedCard >= 0 && me?.hand?.[dpSelectedCard] && isMyTiscardTurn) {
+      if (canAttachToCombo(me.hand[dpSelectedCard], combo.cards, variant)) {
+        div.classList.add('can-attach');
+        div.addEventListener('click', () => doAttach(combo.id));
+      }
+    }
+    combosEl.appendChild(div);
+  });
+
+  // Render my hand
+  const handEl = document.getElementById('dp-my-hand');
+  handEl.innerHTML = '';
+  if (me?.hand && isMyTiscardTurn) {
+    me.hand.forEach((card, i) => {
+      const div = document.createElement('div');
+      div.innerHTML = buildCard(card, { variant, playable: true, selected: i === dpSelectedCard });
+      const el = div.firstChild;
+      el.addEventListener('click', () => {
+        dpSelectedCard = dpSelectedCard === i ? -1 : i;
+        openDiscardPhase(state);
+      });
+      handEl.appendChild(el);
+    });
+  }
+
+  document.getElementById('discard-phase-overlay').classList.add('vis');
+}
+
+function closeDiscardPhase() {
+  document.getElementById('discard-phase-overlay').classList.remove('vis');
+  dpSelectedCard = -1;
+}
+
+function doAttach(comboId) {
+  if (dpSelectedCard < 0) return;
+  send({ type: 'attachCard', cardIdx: dpSelectedCard, comboId });
+  dpSelectedCard = -1;
+}
+
+function passDiscardTurn() {
+  send({ type: 'passDischardTurn' });
+  closeDiscardPhase();
+}
+
+// ══════════════════════════════════════════════════════════
+// ROUND HISTORY
+// ══════════════════════════════════════════════════════════
+function renderHistory(roundHistory) {
+  if (!roundHistory || !roundHistory.length) return;
+  document.getElementById('history-btn').style.display = 'block';
+  const el = document.getElementById('hist-content');
+  el.innerHTML = roundHistory.map(rh => {
+    const rows = (rh.scores||[]).map(s =>
+      `<div class="hist-row">
+        <span class="hr-name">${esc(s.name)}${s.eliminated?' 💀':''}</span>
+        <span class="hr-pts" style="color:${s.pts<=0?'#7bc47b':'#f87171'}">${s.pts>=0?'+':''}${s.pts}</span>
+        <span class="hr-total">${s.total}</span>
+      </div>`
+    ).join('');
+    return `<div class="hist-round">
+      <div class="hist-round-title">RONDA ${rh.round}</div>
+      <div class="hist-row" style="font-size:0.44rem;opacity:0.5;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:2px">
+        <span>Jugador</span><span style="text-align:right">Esta ronda</span><span style="text-align:right">Total</span>
+      </div>
+      ${rows}
+    </div>`;
+  }).join('');
+}
+
+function toggleHistory() {
+  const el = document.getElementById('history-overlay');
+  el.classList.toggle('vis');
+}
+
+
+// ── LOBBY AMBIENT COINS ──────────────────────────────────────────────────────
+const COIN_SYMBOLS = ['🪙','♠','♥','♦','♣','🃏','7','👑'];
+let _coinInterval = null;
+
+// Ghost symbols for Spanish deck
+const GHOST_SYMBOLS = ['🪙','⚔️','7','👑','🃏','♣','🏆','8','9','R'];
+
+function spawnLobbyCoin() {
+  const el = document.createElement('div');
+  el.className = 'lobby-coin';
+  el.textContent = GHOST_SYMBOLS[Math.floor(Math.random() * GHOST_SYMBOLS.length)];
+  // Random position anywhere on screen
+  const left  = 5  + Math.random() * 88;
+  const top   = 5  + Math.random() * 85;
+  const dur   = 14 + Math.random() * 12;    // 14-26s total fade (long visible time)
+  const size  = 1.5 + Math.random() * 4.0;  // 1.5-5.5rem
+  const peak  = 0.09 + Math.random() * 0.13; // 9-22% opacity (more noticeable)
+  const gr0   = -15 + Math.random() * 30;
+  const gr1   = gr0 + (-20 + Math.random() * 40);
+  el.style.cssText = `left:${left}vw;top:${top}vh;font-size:${size}rem;animation-duration:${dur}s;--gr0:${gr0}deg;--gr1:${gr1}deg;--gpeak:${peak.toFixed(3)};color:rgba(201,168,76,0.9);`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), (dur + 0.3) * 1000);
+}
+
+function startLobbyCoins() {
+  if (_coinInterval) return;
+  // Spawn initial batch spread over time for a gentle appearance
+  for (let i = 0; i < 16; i++) {
+    setTimeout(spawnLobbyCoin, i * 300);
+  }
+  _coinInterval = setInterval(spawnLobbyCoin, 1400);
+}
+function stopLobbyCoins() {
+  clearInterval(_coinInterval); _coinInterval = null;
+  document.querySelectorAll('.lobby-coin').forEach(e => e.remove());
+}
+
+// Start coins when lobby visible
+document.addEventListener('DOMContentLoaded', startLobbyCoins);
+
 function sendChat(){
   const inp=document.getElementById('chat-inp');
   const t=inp.value.trim(); if(!t) return;
