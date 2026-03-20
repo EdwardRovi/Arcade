@@ -18,29 +18,77 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Cinzel
 body::before{
   content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   background:
-    radial-gradient(ellipse 80% 50% at 50% 110%, rgba(140,10,10,0.55) 0%, transparent 65%),
-    radial-gradient(ellipse 40% 30% at 5%  50%,  rgba(100,8,8,0.25)   0%, transparent 55%),
-    radial-gradient(ellipse 40% 30% at 95% 50%,  rgba(100,8,8,0.25)   0%, transparent 55%);
+    radial-gradient(ellipse 80% 55% at 50% 55%,  rgba(120,8,8,0.55)   0%, transparent 65%),
+    radial-gradient(ellipse 50% 40% at 10% 60%,  rgba(90,6,6,0.35)    0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 90% 60%,  rgba(90,6,6,0.35)    0%, transparent 55%),
+    radial-gradient(ellipse 40% 30% at 50% 5%,   rgba(160,20,20,0.18) 0%, transparent 50%),
+    radial-gradient(ellipse 100% 45% at 50% 100%,rgba(80,4,4,0.75)    0%, transparent 60%);
+  animation: pokerBgBreath 10s ease-in-out infinite;
 }
+@keyframes pokerBgBreath{0%,100%{opacity:1}50%{opacity:0.78}}
 
 /* ── BUTTONS ── */
 .btn{font-family:'Cinzel Decorative',cursive;font-size:0.62rem;letter-spacing:0.1em;padding:0.55rem 1.2rem;border-radius:5px;cursor:pointer;transition:all 0.2s;border:none;width:100%;}
-.btn-gold{background:linear-gradient(135deg,#b8922a,#d4a843);color:#1a0f00;}
-.btn-gold:hover,.btn-gold:active{background:linear-gradient(135deg,#c9a84c,#e8c97a);}
+.btn-gold{
+  background:#6a0000;color:#ffcccc;font-weight:700;
+  animation:pokerBtnRGB 4s ease-in-out infinite;
+}
+@keyframes pokerBtnRGB{
+  0%,100%{background:#6a0000;box-shadow:0 4px 14px rgba(100,0,0,.5);}
+  35%    {background:#c01010;box-shadow:0 4px 22px rgba(180,20,20,.65),0 0 28px rgba(200,0,0,.25);}
+  70%    {background:#e83030;box-shadow:0 4px 28px rgba(220,48,48,.75),0 0 38px rgba(220,30,30,.35);}
+}
+.btn-gold:hover,.btn-gold:active{filter:brightness(1.18);transform:translateY(-1px);}
 .btn-red{background:rgba(120,20,20,0.8);border:1px solid rgba(200,60,60,0.4);color:rgba(255,180,180,0.9);}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--gold2);}
-.btn-outline:hover,.btn-outline:active{background:rgba(201,168,76,0.1);}
+.btn-outline{
+  background:#6a0000;border:none;color:#ffcccc;font-weight:700;
+  animation:pokerBtnRGB 4s ease-in-out infinite;animation-delay:0.8s;
+}
+.btn-outline:hover,.btn-outline:active{filter:brightness(1.18);transform:translateY(-1px);}
 
 /* ── LOBBY ── */
-#lobby{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;background:radial-gradient(ellipse 90% 80% at 50% 110%,#2a0808 0%,#1a0404 40%,#0a0305 100%);padding:1rem;overflow-y:auto;}
-.title-suits{font-size:1.3rem;letter-spacing:0.5rem;color:var(--gold);margin-bottom:0.4rem;}
-.title-main{font-family:'Cinzel Decorative',cursive;font-size:2.8rem;color:#e87070;text-shadow:0 0 30px rgba(180,30,30,0.8),0 0 60px rgba(180,30,30,0.4),0 0 100px rgba(180,30,30,0.2);letter-spacing:0.15em;}
-.title-sub{font-size:0.6rem;color:var(--muted);letter-spacing:0.3em;margin-bottom:1.5rem;}
-.panel{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:1.5rem 1.8rem;width:100%;max-width:380px;display:flex;flex-direction:column;gap:0.7rem;}
-.panel h2{font-family:'Cinzel Decorative',cursive;font-size:0.75rem;color:var(--gold);letter-spacing:0.15em;text-align:center;}
-.fg label{display:block;font-size:0.58rem;color:var(--muted);letter-spacing:0.12em;margin-bottom:0.25rem;}
-.fg input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:var(--text);font-family:'Cinzel',serif;font-size:0.82rem;padding:0.48rem 0.7rem;border-radius:4px;outline:none;}
-.fg input:focus{border-color:var(--gold);}
+#lobby{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;background:transparent;padding:1rem;overflow-y:auto;}
+.title-suits{font-size:1.1rem;letter-spacing:0.4rem;margin-bottom:0.3rem;}
+.title-suits span:nth-child(1),.title-suits span:nth-child(4){color:#ddd;animation:suitSeqP 3.2s ease-in-out infinite 0s;}
+.title-suits span:nth-child(2),.title-suits span:nth-child(3){color:#c03030;animation:suitSeqP 3.2s ease-in-out infinite 0.8s;}
+@keyframes suitSeqP{0%,35%,100%{opacity:.35;transform:scale(1)}17%{opacity:1;transform:scale(1.3)}}
+.title-main{
+  font-family:'Cinzel Decorative',cursive;
+  font-size:clamp(2.5rem,10vw,4.8rem);
+  background:linear-gradient(180deg,#ff8080 0%,#d42020 40%,#7a0808 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 28px rgba(200,20,20,0.65)) drop-shadow(2px 3px 0 rgba(40,0,0,0.9));
+  letter-spacing:0.12em;line-height:1;position:relative;display:inline-block;
+  animation:pokerLogoBreath 4s ease-in-out infinite;
+}
+@keyframes pokerLogoBreath{
+  0%,100%{filter:drop-shadow(0 0 20px rgba(180,20,20,0.55)) drop-shadow(2px 3px 0 rgba(40,0,0,0.9));}
+  50%    {filter:drop-shadow(0 0 45px rgba(220,40,40,0.85)) drop-shadow(2px 3px 0 rgba(40,0,0,0.9));}
+}
+.title-sub{font-size:0.58rem;color:rgba(255,160,160,0.45);letter-spacing:0.28em;margin-bottom:1.4rem;}
+@keyframes pokerPanelRot{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes pokerPanelBg{0%,100%{background:rgba(8,2,2,0.97)}40%{background:rgba(18,5,5,0.95)}70%{background:rgba(28,8,8,0.93)}}
+@keyframes pokerBorderRGB{
+  0%  {box-shadow:0 0 0 2.5px #cc0000,0 0 0 3px #cc0000,0 0 18px 2px rgba(180,0,0,.6),0 20px 60px rgba(0,0,0,.9);}
+  20% {box-shadow:0 0 0 2.5px #ff2020,0 0 0 3px #ff2020,0 0 18px 2px rgba(255,32,32,.6),0 20px 60px rgba(0,0,0,.9);}
+  40% {box-shadow:0 0 0 2.5px #ff6020,0 0 0 3px #ff6020,0 0 18px 2px rgba(255,96,32,.5),0 20px 60px rgba(0,0,0,.9);}
+  60% {box-shadow:0 0 0 2.5px #cc2060,0 0 0 3px #cc2060,0 0 18px 2px rgba(180,32,80,.6),0 20px 60px rgba(0,0,0,.9);}
+  80% {box-shadow:0 0 0 2.5px #800000,0 0 0 3px #800000,0 0 18px 2px rgba(120,0,0,.5),0 20px 60px rgba(0,0,0,.9);}
+  100%{box-shadow:0 0 0 2.5px #cc0000,0 0 0 3px #cc0000,0 0 18px 2px rgba(180,0,0,.6),0 20px 60px rgba(0,0,0,.9);}
+}
+.panel{
+  background:rgba(8,2,2,0.97);border:none;border-radius:10px;
+  padding:1.5rem 1.8rem;width:100%;max-width:380px;
+  display:flex;flex-direction:column;gap:0.7rem;position:relative;
+  animation:pokerPanelBg 9s ease-in-out infinite, pokerBorderRGB 3s linear infinite;
+}
+.panel>*{position:relative;z-index:1;}
+.panel h2{font-family:'Cinzel Decorative',cursive;font-size:0.75rem;
+  color:#f08080;text-shadow:0 0 12px rgba(200,40,40,0.6),0 1px 3px rgba(0,0,0,.95);
+  letter-spacing:0.15em;text-align:center;}
+.fg label{display:block;font-size:0.58rem;color:rgba(255,160,160,0.72);letter-spacing:0.12em;margin-bottom:0.25rem;text-shadow:0 1px 2px rgba(0,0,0,.9);}
+.fg input{width:100%;background:rgba(0,0,0,0.55);border:1px solid rgba(180,30,30,0.32);color:var(--text);font-family:'Cinzel',serif;font-size:0.82rem;padding:0.48rem 0.7rem;border-radius:4px;outline:none;transition:border-color .2s,box-shadow .2s;}
+.fg input:focus{border-color:rgba(220,60,60,0.7);box-shadow:0 0 0 2px rgba(180,20,20,0.15);}
 .divider{text-align:center;font-size:0.6rem;color:var(--muted);}
 .room-code{font-family:'Cinzel Decorative',cursive;font-size:2.2rem;color:var(--gold2);letter-spacing:0.3em;text-align:center;text-shadow:0 0 20px rgba(201,168,76,0.35);}
 .w-list{display:flex;flex-direction:column;gap:0.3rem;}
@@ -401,7 +449,10 @@ body::before{
 <!-- LOBBY -->
 <div id="lobby">
   <div class="title-suits"><span>♠</span><span style="color:#c0392b">♥</span><span style="color:#c0392b">♦</span><span>♣</span></div>
-  <div class="title-main">PÓKER</div>
+  <div style="position:relative;display:inline-block">
+    <canvas id="poker-title-canvas" style="position:absolute;inset:0;pointer-events:none"></canvas>
+    <div class="title-main">PÓKER</div>
+  </div>
   <div class="title-sub">Texas Hold'em · Fichas virtuales</div>
   <div id="lform" class="panel">
     <h2>Unirse o Crear</h2>
@@ -1041,6 +1092,155 @@ function handleMsg(msg){
   if(msg.type==='error') notice('⚠️ '+msg.msg,2500);
 }
 let lastRound=0;
+
+// ═══════════════════════════════════════════════
+// POKER LOBBY: explode from title + title canvas
+// ═══════════════════════════════════════════════
+(function(){
+  // ── EXPLODE FROM TITLE ──
+  var CHIPS=['♠','♣','♥','♦','A','K','Q','J'];
+  var REDS =['rgba(220,50,50,V)','rgba(255,90,90,V)','rgba(180,20,20,V)'];
+  var DARKS=['rgba(200,170,140,V)','rgba(240,210,180,V)','rgba(170,140,120,V)'];
+  var particles=[]; var running=true;
+  function rand(a,b){return a+Math.random()*(b-a);}
+
+  function getOrigin(){
+    var el=document.querySelector('.title-main');
+    if(!el) return {x:window.innerWidth/2, y:window.innerHeight*0.28};
+    var r=el.getBoundingClientRect();
+    // Random point inside the title bounding box
+    return {
+      x: r.left + rand(r.width*.1, r.width*.9),
+      y: r.top  + rand(r.height*.1, r.height*.9)
+    };
+  }
+
+  function spawnChip(){
+    if(!running)return;
+    var s=CHIPS[Math.floor(Math.random()*CHIPS.length)];
+    var isRed=s==='♥'||s==='♦';
+    var pool=isRed?REDS:DARKS;
+    var col=pool[Math.floor(Math.random()*pool.length)].replace('V','1');
+
+    var sz=rand(0.7,2.2);
+    var ms=rand(2500,5500); // travel duration
+    var origin=getOrigin();
+
+    // Random direction angle (full 360°)
+    var angle=rand(0, Math.PI*2);
+    var dist=rand(180,Math.min(window.innerWidth,window.innerHeight)*0.65);
+    var destX=origin.x + Math.cos(angle)*dist;
+    var destY=origin.y + Math.sin(angle)*dist;
+
+    var el=document.createElement('span');
+    el.textContent=s;
+    el.style.cssText=[
+      'position:fixed','pointer-events:none','z-index:0',
+      'font-family:serif','user-select:none','opacity:0',
+      'color:'+col,
+      'font-size:'+sz+'rem',
+      'left:'+origin.x+'px',
+      'top:'+origin.y+'px',
+      'line-height:1',
+      'will-change:transform,opacity'
+    ].join(';');
+    document.body.appendChild(el);
+
+    var born=Date.now();
+    var p={el:el,born:born,ms:ms,ox:origin.x,oy:origin.y,dx:destX-origin.x,dy:destY-origin.y,dead:false};
+    particles.push(p);
+    setTimeout(function(){if(el.parentNode)el.remove();p.dead=true;},ms+100);
+  }
+
+  function tickStars(){
+    if(!running)return;
+    requestAnimationFrame(tickStars);
+    var now=Date.now();
+    for(var i=0;i<particles.length;i++){
+      var p=particles[i]; if(p.dead)continue;
+      var t=(now-p.born)/p.ms; // 0→1
+      if(t>=1){p.el.style.opacity='0';continue;}
+      // Ease out: fast start, slows down
+      var ease=1-Math.pow(1-t,2.5);
+      var x=p.dx*ease;
+      var y=p.dy*ease;
+      // Opacity: quick fade in (0-15%), hold, fade out (80-100%)
+      var op = t<0.15 ? t/0.15 : t>0.80 ? (1-t)/0.20 : 1;
+      op = op*0.72;
+      p.el.style.transform='translate('+x+'px,'+y+'px)';
+      p.el.style.opacity=op.toFixed(3);
+    }
+    particles=particles.filter(function(p){return!p.dead;});
+  }
+
+  // Burst on load, then continuous
+  document.fonts.ready.then(function(){
+    setTimeout(function(){
+      for(var i=0;i<30;i++) setTimeout(spawnChip, i*80);
+      setInterval(spawnChip, 220);
+    }, 200);
+  });
+  tickStars();
+
+  // ── TITLE CANVAS ──
+  var tc=document.getElementById('poker-title-canvas');
+  if(!tc)return;
+  var ctx=tc.getContext('2d');
+  var TW,TH,tFont,tP=[],dpr=window.devicePixelRatio||1;
+  var TSYMS=['♣','♠','♥','♦','A','K','Q','J','7'];
+  var TCOLS=[[255,60,60],[255,120,80],[200,20,20],[255,40,100],[180,0,0],[255,80,40],[220,60,60]];
+  function setupTC(){
+    var el=document.querySelector('.title-main');
+    if(!el)return;
+    var r=el.getBoundingClientRect();
+    TW=Math.round(r.width)||300;TH=Math.round(r.height)||80;
+    tc.width=TW*dpr;tc.height=TH*dpr;
+    tc.style.width=TW+'px';tc.style.height=TH+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    tFont='900 '+parseFloat(getComputedStyle(el).fontSize)+'px "Cinzel Decorative",cursive';
+  }
+  function spawnTP(){
+    if(!TW)return;
+    var c=TCOLS[Math.floor(Math.random()*TCOLS.length)];
+    var fi=160+Math.random()*240,fo=1500+Math.random()*1800;
+    tP.push({sym:TSYMS[Math.floor(Math.random()*TSYMS.length)],r:c[0],g:c[1],b:c[2],
+      x:TW*.07+Math.random()*TW*.86,y:TH*.1+Math.random()*TH*.8,
+      sz:12+Math.random()*18,peak:.9+Math.random()*.1,fi:fi,fo:fo,born:Date.now()});
+  }
+  function tcTick(){
+    requestAnimationFrame(tcTick);
+    if(!TW||!TH)return;
+    ctx.clearRect(0,0,TW,TH);
+    if(!tP.length)return;
+    ctx.save();
+    ctx.font=tFont;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='rgba(220,80,80,0.08)'; // near-invisible mask, just enough for source-atop
+    ctx.fillText('PÓKER',TW/2,TH/2);
+    ctx.globalCompositeOperation='source-atop';
+    var now=Date.now();
+    tP.forEach(function(p){
+      var age=now-p.born;
+      var al=age<p.fi?age/p.fi:Math.max(0,1-(age-p.fi)/p.fo);
+      al=Math.min(1,al)*p.peak;
+      ctx.font='bold '+p.sz+'px serif';
+      ctx.fillStyle='rgba('+p.r+','+p.g+','+p.b+','+al.toFixed(3)+')';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(p.sym,p.x,p.y);
+    });
+    ctx.restore();
+    tP=tP.filter(function(p){return(Date.now()-p.born)<(p.fi+p.fo);});
+  }
+  document.fonts.ready.then(function(){
+    setTimeout(function(){
+      setupTC();
+      for(var i=0;i<16;i++)setTimeout(spawnTP,i*60);
+      setInterval(spawnTP,105);
+    },120);
+  });
+  window.addEventListener('resize',function(){clearTimeout(window._prt);window._prt=setTimeout(setupTC,220);});
+  tcTick();
+})();
+
 </script>
 </body>
 </html>
