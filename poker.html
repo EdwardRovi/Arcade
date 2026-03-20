@@ -792,6 +792,7 @@ let lastHandData = null;
 function renderHandEnd(data){
   lastHandData = data;
   revealedFolded = new Set();
+  window._revealedHands = {}; // clear cached revealed hands for new hand
   _buildHandEnd(data);
 }
 
@@ -876,11 +877,23 @@ function _buildHandEnd(data){
             </div>`;
           }
         } else {
-          // Other folded players — always hidden, no button for others
+          // Other folded players — show if they chose to reveal
+          const othRevealed = revealedFolded.has(p.name);
+          // Use cached revealed hand if available (handles timing issues)
+          const cachedRev = window._revealedHands && window._revealedHands[p.name];
+          const revHand = (othRevealed && p.hand && p.hand.length) ? p.hand
+                         : (othRevealed && cachedRev) ? cachedRev.hand : null;
+          const revHn   = revHand ? bestHandName(revHand, comm) : null;
           html += `<div class="showdown-player folded-player">
-            <div class="showdown-name" style="opacity:0.45">${esc(p.name)}</div>
-            <div style="display:flex;gap:3px;">${Array(p.hand&&p.hand.length||2).fill('<div class="card back sz-summary"></div>').join('')}</div>
-            <span style="font-size:0.46rem;color:var(--muted);margin-left:auto;font-style:italic">Retirado</span>
+            <div class="showdown-name" style="opacity:${othRevealed?'0.85':'0.45'}">${esc(p.name)}</div>
+            ${revHand
+              ? `<div class="showdown-cards">${revHand.map(c=>mkCard(c,'sz-summary')).join('')}</div>`
+              : `<div style="display:flex;gap:3px;">${Array(2).fill('<div class="card back sz-summary"></div>').join('')}</div>`
+            }
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin-left:auto">
+              ${revHn ? `<div class="showdown-handname" style="opacity:0.7">${esc(revHn)}</div>` : ''}
+              <span style="font-size:0.46rem;color:var(--muted);font-style:italic">${othRevealed ? 'Muestra mano' : 'Retirado'}</span>
+            </div>
           </div>`;
         }
       });
@@ -992,14 +1005,21 @@ function handleMsg(msg){
     notice((msg.winners||[]).map(w=>`🏆 ${w.name} — ${w.handName}`).join(' | ')||'Fin de mano',4000);
   }
   if(msg.type==='revealFolded'){
-    // Another player (or ourselves) revealed their folded hand — update for everyone
     revealedFolded.add(msg.name);
-    // Merge the revealed hand into lastHandData so it shows the actual cards
+    // Store revealed hand so it's available even if lastHandData didn't include it
+    if(msg.hand && msg.hand.length){
+      if(!window._revealedHands) window._revealedHands = {};
+      window._revealedHands[msg.name] = { hand: msg.hand, handName: msg.handName };
+    }
+    // Merge into lastHandData
     if(lastHandData && lastHandData.playerHands){
-      const p = lastHandData.playerHands.find(p => p.name === msg.name);
-      if(p){
-        if(msg.hand && msg.hand.length) p.hand = msg.hand;
-        if(msg.handName) p.handName = msg.handName;
+      const ph = lastHandData.playerHands.find(p =>
+        p.name === msg.name || p.name.trim() === msg.name.trim()
+      );
+      if(ph){
+        if(msg.hand && msg.hand.length) ph.hand = msg.hand;
+        if(msg.handName) ph.handName = msg.handName;
+        ph.folded = true; // ensure it renders in folded section
       }
     }
     if(lastHandData) _buildHandEnd(lastHandData);

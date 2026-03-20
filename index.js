@@ -1999,36 +1999,60 @@ function pokerEndHand(room) {
     }
   });
 
-  // ── SIDE POTS ──
-  const sidePots = calcSidePots(room);
+  // ── POT DISTRIBUTION ──
   const winnersAll = [];
 
-  if (sidePots && sidePots.length > 0) {
-    pokerAddLog(room, `💰 Calculando botes separados (${sidePots.length})...`);
-    sidePots.forEach((pot, i) => {
-      const eligible = active.filter(p => pot.eligible.includes(p.id));
-      if (eligible.length === 0) return;
-      let bestScore = null;
-      eligible.forEach(p => { if (!bestScore || compareScore(p.bestScore, bestScore) > 0) bestScore = p.bestScore; });
-      const winners = eligible.filter(p => compareScore(p.bestScore, bestScore) === 0);
-      const share = Math.floor(pot.amount / winners.length);
-      winners.forEach(p => {
-        p.chips += share;
-        pokerAddLog(room, `🏆 ${p.name} gana bote${sidePots.length>1?' '+(i+1):''}: ${share} fichas con ${p.handName}`);
-        if (!winnersAll.find(w => w.name === p.name)) winnersAll.push({ name: p.name, handName: p.handName, chips: p.chips });
-      });
-    });
+  // If only 1 active player (everyone else folded) — give them the whole pot
+  if (active.length === 1) {
+    const winner = active[0];
+    winner.chips += room.pot;
+    pokerAddLog(room, `🏆 ${winner.name} gana ${room.pot} fichas (todos se retiraron)`);
+    winnersAll.push({ name: winner.name, handName: winner.handName || 'Todos se retiraron', chips: winner.chips });
   } else {
-    // Simple single pot
-    let bestScore = null;
-    active.forEach(p => { if (!bestScore || compareScore(p.bestScore, bestScore) > 0) bestScore = p.bestScore; });
-    const winners = active.filter(p => compareScore(p.bestScore, bestScore) === 0);
-    const share = Math.floor(room.pot / winners.length);
-    winners.forEach(p => {
-      p.chips += share;
-      pokerAddLog(room, `🏆 ${p.name} gana ${share} fichas con ${p.handName}!`);
-      winnersAll.push({ name: p.name, handName: p.handName, chips: p.chips });
-    });
+    // Multiple players at showdown — use side pots if needed
+    const sidePots = calcSidePots(room);
+    if (sidePots && sidePots.length > 0) {
+      pokerAddLog(room, `💰 Botes separados (${sidePots.length})...`);
+      let totalAwarded = 0;
+      sidePots.forEach((pot, i) => {
+        const eligible = active.filter(p => pot.eligible.includes(p.id));
+        if (eligible.length === 0) {
+          // No eligible players — give to any active player (shouldn't happen but safety)
+          active[0].chips += pot.amount;
+          totalAwarded += pot.amount;
+          return;
+        }
+        let bestScore = null;
+        eligible.forEach(p => { if (!bestScore || compareScore(p.bestScore, bestScore) > 0) bestScore = p.bestScore; });
+        const winners = eligible.filter(p => compareScore(p.bestScore, bestScore) === 0);
+        const share = Math.floor(pot.amount / winners.length);
+        const remainder = pot.amount - share * winners.length;
+        winners.forEach((p, wi) => {
+          p.chips += share + (wi === 0 ? remainder : 0); // give rounding remainder to first winner
+          pokerAddLog(room, `🏆 ${p.name} gana bote${sidePots.length>1?' '+(i+1):''}: ${share} fichas con ${p.handName}`);
+          if (!winnersAll.find(w => w.name === p.name)) winnersAll.push({ name: p.name, handName: p.handName, chips: p.chips });
+          totalAwarded += share + (wi === 0 ? remainder : 0);
+        });
+      });
+      // Safety: if pot doesn't match side pots sum (can happen due to direct bets), give remainder to first active
+      const potDiff = room.pot - totalAwarded;
+      if (potDiff > 0) {
+        active[0].chips += potDiff;
+        pokerAddLog(room, `💰 Resto del bote (${potDiff}) → ${active[0].name}`);
+      }
+    } else {
+      // Simple single pot
+      let bestScore = null;
+      active.forEach(p => { if (!bestScore || compareScore(p.bestScore, bestScore) > 0) bestScore = p.bestScore; });
+      const winners = active.filter(p => compareScore(p.bestScore, bestScore) === 0);
+      const share = Math.floor(room.pot / winners.length);
+      const remainder = room.pot - share * winners.length;
+      winners.forEach((p, wi) => {
+        p.chips += share + (wi === 0 ? remainder : 0);
+        pokerAddLog(room, `🏆 ${p.name} gana ${share + (wi === 0 ? remainder : 0)} fichas con ${p.handName}!`);
+        winnersAll.push({ name: p.name, handName: p.handName, chips: p.chips });
+      });
+    }
   }
 
   room.winners = winnersAll;
