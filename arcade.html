@@ -3,1187 +3,592 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Arcade — Juegos de Cartas</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<title>Arcade · Juegos de Cartas · Multijugador</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #060809;
-  --gold: #c9a84c;
-  --gold2: #e8c97a;
-  --text: #f5ead8;
-  --muted: rgba(245,234,216,0.45);
-  --border: rgba(201,168,76,0.2);
-}
-* { box-sizing:border-box; margin:0; padding:0; }
-html,body { height:100%; background:var(--bg); color:var(--text); font-family:'Cinzel',serif; overflow:hidden; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:#06080f;font-family:'Cinzel',serif;color:#f5ead8;overflow:hidden;}
 
-/* ── CUSTOM CURSOR ─────────────────────────────────────────────────────────── */
-body { cursor: none; }
-#cursor {
-  position: fixed; pointer-events: none; z-index: 9999;
-  font-size: 1.1rem; line-height: 1;
-  transform: translate(-50%, -50%);
-  transition: transform 0.12s ease, opacity 0.2s;
-  filter: drop-shadow(0 0 6px rgba(201,168,76,0.7));
-  user-select: none;
-}
-#cursor.on-card { transform: translate(-50%,-50%) scale(1.35); }
+#bg{position:fixed;inset:0;z-index:0;}
+#fx{position:fixed;inset:0;z-index:1;pointer-events:none;}
 
-/* ── BACKGROUND LAYERS ─────────────────────────────────────────────────────── */
-.bg-layer { position:fixed; inset:0; pointer-events:none; transition:opacity 0.9s ease; }
+/* ── UI ── */
+#ui{position:relative;z-index:2;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.8rem;}
 
-/* The 4-color animated canvas sits behind everything */
-#bg-canvas { position:fixed; inset:0; pointer-events:none; z-index:0; }
-
-#bg-default {
-  opacity:1;
-  background:
-    radial-gradient(ellipse 60% 70% at 10% 40%,  rgba(20,80,35,0.55)  0%, transparent 65%),
-    radial-gradient(ellipse 60% 70% at 90% 40%,  rgba(15,50,120,0.55) 0%, transparent 65%),
-    radial-gradient(ellipse 70% 60% at 50% 100%, rgba(120,15,15,0.6)  0%, transparent 60%);
-}
-
-/* Each game layer: when active → opacity 1, when ambient → opacity 0.18 with drift */
-#bg-mus {
-  opacity:0;
-  background:
-    radial-gradient(ellipse 90% 90% at 20% 45%,  rgba(18,110,42,0.82)  0%, transparent 60%),
-    radial-gradient(ellipse 55% 55% at 85% 35%,  rgba(15,45,100,0.18)  0%, transparent 55%),
-    radial-gradient(ellipse 60% 50% at 50% 105%, rgba(100,12,12,0.18)  0%, transparent 55%),
-    radial-gradient(ellipse 40% 60% at 50% 50%,  rgba(6,20,10,0.45)    0%, transparent 100%);
-}
-#bg-caida {
-  opacity:0;
-  background:
-    radial-gradient(ellipse 90% 90% at 80% 45%,  rgba(15,55,160,0.84)  0%, transparent 60%),
-    radial-gradient(ellipse 55% 55% at 15% 40%,  rgba(18,80,30,0.18)   0%, transparent 55%),
-    radial-gradient(ellipse 60% 50% at 50% 105%, rgba(100,12,12,0.18)  0%, transparent 55%),
-    radial-gradient(ellipse 40% 60% at 50% 50%,  rgba(4,8,24,0.45)     0%, transparent 100%);
-}
-#bg-poker {
-  opacity:0;
-  background:
-    radial-gradient(ellipse 85% 85% at 50% 92%,  rgba(155,12,12,0.88)  0%, transparent 58%),
-    radial-gradient(ellipse 55% 55% at 10% 40%,  rgba(18,75,28,0.18)   0%, transparent 55%),
-    radial-gradient(ellipse 55% 55% at 90% 40%,  rgba(15,45,100,0.18)  0%, transparent 55%),
-    radial-gradient(ellipse 40% 40% at 50% 50%,  rgba(18,4,4,0.45)     0%, transparent 100%);
-}
-#bg-solitario {
-  opacity:0;
-  background:
-    radial-gradient(ellipse 85% 85% at 50% 20%,  rgba(109,40,217,0.88) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 60% at 10% 60%,  rgba(76,20,180,0.30)  0%, transparent 55%),
-    radial-gradient(ellipse 60% 60% at 90% 60%,  rgba(88,28,200,0.30)  0%, transparent 55%),
-    radial-gradient(ellipse 40% 40% at 50% 50%,  rgba(15,5,40,0.5)     0%, transparent 100%);
-}
-
-/* Ambient ghost layers — always slightly visible, slowly drifting */
-#bg-mus-ghost, #bg-caida-ghost, #bg-poker-ghost, #bg-solitario-ghost {
-  position:fixed; inset:0; pointer-events:none;
-  opacity:0; transition:opacity 0.9s ease;
-  animation: none;
-}
-#bg-mus-ghost {
-  background: radial-gradient(ellipse 70% 80% at 15% 50%, rgba(18,110,42,0.22) 0%, transparent 60%);
-  animation: driftGreen 18s ease-in-out infinite;
-}
-#bg-caida-ghost {
-  background: radial-gradient(ellipse 70% 80% at 85% 45%, rgba(15,55,160,0.22) 0%, transparent 60%);
-  animation: driftBlue 22s ease-in-out infinite;
-}
-#bg-poker-ghost {
-  background: radial-gradient(ellipse 65% 65% at 50% 95%, rgba(155,12,12,0.22) 0%, transparent 58%);
-  animation: driftRed 20s ease-in-out infinite;
-}
-#bg-solitario-ghost {
-  background: radial-gradient(ellipse 65% 70% at 50% 15%, rgba(109,40,217,0.22) 0%, transparent 60%);
-  animation: driftPurple 24s ease-in-out infinite;
-}
-@keyframes driftPurple {
-  0%,100%{ transform:translate(0,0) scale(1); }
-  33%    { transform:translate(-5%, 7%) scale(1.07); }
-  66%    { transform:translate(7%, -5%) scale(0.94); }
-}
-
-@keyframes driftGreen {
-  0%,100% { transform: translate(0,    0)    scale(1);    }
-  33%     { transform: translate(6%,  -8%)   scale(1.08); }
-  66%     { transform: translate(-5%,  5%)   scale(0.94); }
-}
-@keyframes driftBlue {
-  0%,100% { transform: translate(0,    0)    scale(1);    }
-  33%     { transform: translate(-7%,  6%)   scale(1.06); }
-  66%     { transform: translate(5%,  -7%)   scale(0.96); }
-}
-@keyframes driftRed {
-  0%,100% { transform: translate(0,    0)    scale(1);    }
-  33%     { transform: translate(4%,   8%)   scale(0.93); }
-  66%     { transform: translate(-6%,  -4%)  scale(1.07); }
-}
-
-/* When a game is hovered → its ghost fades out, the other 2 stay visible */
-body.hover-mus   #bg-mus-ghost   { opacity:0 !important; }
-body.hover-caida #bg-caida-ghost { opacity:0 !important; }
-body.hover-poker #bg-poker-ghost { opacity:0 !important; }
-body.hover-solitario #bg-solitario-ghost { opacity:0 !important; }
-
-/* Default state: all ghosts hidden */
-body:not(.hover-mus):not(.hover-caida):not(.hover-poker):not(.hover-solitario):not(.hover-chinchon) #bg-mus-ghost,
-body:not(.hover-mus):not(.hover-caida):not(.hover-poker):not(.hover-solitario):not(.hover-chinchon) #bg-caida-ghost,
-body:not(.hover-mus):not(.hover-caida):not(.hover-poker):not(.hover-solitario):not(.hover-chinchon) #bg-poker-ghost,
-body:not(.hover-mus):not(.hover-caida):not(.hover-poker):not(.hover-solitario):not(.hover-chinchon) #bg-solitario-ghost,
-body:not(.hover-mus):not(.hover-caida):not(.hover-poker):not(.hover-solitario):not(.hover-chinchon) #bg-chinchon-ghost { opacity:0; }
-
-/* During hover: non-active ghosts show */
-body.hover-mus   #bg-caida-ghost, body.hover-mus   #bg-poker-ghost, body.hover-mus   #bg-solitario-ghost,
-body.hover-caida #bg-mus-ghost,   body.hover-caida #bg-poker-ghost, body.hover-caida #bg-solitario-ghost,
-body.hover-poker #bg-mus-ghost,   body.hover-poker #bg-caida-ghost, body.hover-poker #bg-solitario-ghost,
-body.hover-solitario #bg-mus-ghost, body.hover-solitario #bg-caida-ghost, body.hover-solitario #bg-poker-ghost { opacity:1; }
-
-/* ── VIGNETTE ──────────────────────────────────────────────────────────────── */
-body::after {
-  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
-  background: radial-gradient(ellipse 85% 85% at 50% 50%, transparent 40%, rgba(0,0,0,0.55) 100%);
-}
-/* ── SCANLINES ─────────────────────────────────────────────────────────────── */
-body::before {
-  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px);
-}
-
-/* ── PAGE ──────────────────────────────────────────────────────────────────── */
-.page {
-  height:100vh; display:flex; flex-direction:column;
-  align-items:center; justify-content:center; gap:2.5rem;
-  position:relative; z-index:1;
-}
-
-/* ── HEADER ────────────────────────────────────────────────────────────────── */
-.header { text-align:center; }
-
-/* Entrance animations */
-.suits-row   { animation: fadeSlideDown 0.7s ease both; animation-delay: 0.1s; }
-.title       { animation: fadeSlideDown 0.7s ease both; animation-delay: 0.3s; }
-.subtitle    { animation: fadeSlideDown 0.6s ease both; animation-delay: 0.5s; }
-.divider     { animation: fadeIn 0.8s ease both;        animation-delay: 0.7s; }
-.card-mus    { animation: fadeSlideUp 0.65s ease both;  animation-delay: 0.75s; }
-.card-caida  { animation: fadeSlideUp 0.65s ease both;  animation-delay: 0.9s;  }
-.card-poker  { animation: fadeSlideUp 0.65s ease both;  animation-delay: 1.05s; }
-.footer      { animation: fadeIn 0.8s ease both;        animation-delay: 1.2s;  }
-
-@keyframes fadeSlideDown {
-  from { opacity:0; transform:translateY(-22px); }
-  to   { opacity:1; transform:translateY(0); }
-}
-@keyframes fadeSlideUp {
-  from { opacity:0; transform:translateY(28px) scale(0.96); }
-  to   { opacity:1; transform:translateY(0)   scale(1); }
-}
-@keyframes fadeIn {
-  from { opacity:0; }
-  to   { opacity:1; }
-}
-
-.suits-row { font-size:1.4rem; letter-spacing:0.6rem; margin-bottom:0.6rem; opacity:0.7; transition:letter-spacing 0.5s, opacity 0.5s; }
-.suits-row span:nth-child(2), .suits-row span:nth-child(3) { color:#c0392b; }
-body.hover-mus .suits-row, body.hover-caida .suits-row, body.hover-poker .suits-row { letter-spacing:0.9rem; opacity:0.9; }
-
-.title {
+/* ── TITLE ── */
+#title{
   font-family:'Cinzel Decorative',cursive;
-  font-size:clamp(2rem, 5vw, 3.8rem); font-weight:900;
-  color:var(--gold2); letter-spacing:0.1em;
-  animation: fadeSlideDown 0.7s ease both, titlePulse 4s ease-in-out 1.2s infinite;
-  transition: color 0.25s ease, text-shadow 0.4s ease, opacity 0.2s ease, transform 0.2s ease;
-}
-@keyframes titlePulse {
-  0%,100% { text-shadow:0 0 40px rgba(201,168,76,0.25), 0 2px 4px rgba(0,0,0,0.8); }
-  50%     { text-shadow:0 0 90px rgba(201,168,76,0.55), 0 0 20px rgba(201,168,76,0.2), 0 2px 4px rgba(0,0,0,0.8); }
-}
-body.hover-mus   .title { text-shadow:0 0 80px rgba(39,180,80,0.45),  0 0 20px rgba(201,168,76,0.3), 0 2px 4px rgba(0,0,0,0.8); }
-body.hover-caida .title { text-shadow:0 0 80px rgba(60,140,230,0.45), 0 0 20px rgba(201,168,76,0.3), 0 2px 4px rgba(0,0,0,0.8); }
-body.hover-poker .title { text-shadow:0 0 80px rgba(230,60,60,0.45),  0 0 20px rgba(201,168,76,0.3), 0 2px 4px rgba(0,0,0,0.8); }
-
-/* Title color transitions per game */
-body.hover-mus   .title { color: #7bc47b; text-shadow: 0 0 60px rgba(39,200,80,0.7), 0 0 120px rgba(39,200,80,0.3), 0 2px 4px rgba(0,0,0,0.8); animation: titlePulseGreen 2.5s ease-in-out infinite; }
-body.hover-caida .title { color: #6ab0e8; text-shadow: 0 0 60px rgba(60,140,230,0.7), 0 0 120px rgba(60,140,230,0.3), 0 2px 4px rgba(0,0,0,0.8); animation: titlePulseBlue  2.5s ease-in-out infinite; }
-body.hover-poker .title { color: #e87a7a; text-shadow: 0 0 60px rgba(230,60,60,0.7),  0 0 120px rgba(230,60,60,0.3),  0 2px 4px rgba(0,0,0,0.8); animation: titlePulseRed   2.5s ease-in-out infinite; }
-body.hover-solitario .title { color: #c084fc; text-shadow: 0 0 60px rgba(168,85,247,0.7), 0 0 120px rgba(124,58,237,0.3), 0 2px 4px rgba(0,0,0,0.8); animation: titlePulsePurple 2.5s ease-in-out infinite; }
-body.hover-chinchon  .title { color: #e8c97a; text-shadow: 0 0 60px rgba(201,168,76,0.85), 0 0 120px rgba(180,130,10,0.45), 0 2px 4px rgba(0,0,0,0.8); animation: titlePulseGold 2.5s ease-in-out infinite; }
-
-@keyframes titlePulseGold {
-  0%,100% { text-shadow: 0 0 40px rgba(201,168,76,0.4),  0 2px 4px rgba(0,0,0,0.8); }
-  50%     { text-shadow: 0 0 100px rgba(201,168,76,0.9), 0 0 30px rgba(180,130,10,0.5), 0 2px 4px rgba(0,0,0,0.8); }
-}
-@keyframes titlePulsePurple {
-  0%,100% { text-shadow: 0 0 40px rgba(168,85,247,0.4),  0 2px 4px rgba(0,0,0,0.8); }
-  50%     { text-shadow: 0 0 100px rgba(168,85,247,0.85), 0 0 30px rgba(124,58,237,0.4), 0 2px 4px rgba(0,0,0,0.8); }
+  font-size:clamp(2rem,6vw,3.8rem);font-weight:900;
+  letter-spacing:.1em;text-align:center;
+  background:linear-gradient(180deg,#f5d98a,#c9a84c);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 28px rgba(201,168,76,.4));
+  transition:filter .5s ease;
 }
 
-@keyframes titlePulseGreen {
-  0%,100% { text-shadow: 0 0 40px rgba(39,200,80,0.4),  0 2px 4px rgba(0,0,0,0.8); }
-  50%     { text-shadow: 0 0 100px rgba(39,200,80,0.85), 0 0 30px rgba(39,200,80,0.4), 0 2px 4px rgba(0,0,0,0.8); }
+/* ── CARDS ── */
+#cards{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;}
+
+.card{
+  width:130px;min-height:100px;border-radius:10px;
+  background:rgba(255,255,255,0.04);
+  border:2px solid transparent;
+  padding:.9rem .7rem;text-align:center;
+  cursor:default;position:relative;overflow:hidden;
+  transition:transform .28s ease,box-shadow .32s ease,opacity .4s ease;
 }
-@keyframes titlePulseBlue {
-  0%,100% { text-shadow: 0 0 40px rgba(60,140,230,0.4),  0 2px 4px rgba(0,0,0,0.8); }
-  50%     { text-shadow: 0 0 100px rgba(60,140,230,0.85), 0 0 30px rgba(60,140,230,0.4), 0 2px 4px rgba(0,0,0,0.8); }
+.card::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%,rgba(var(--c),.22),transparent 65%);
+  opacity:.45;transition:opacity .3s;}
+.card-icon{font-size:1.85rem;display:block;margin-bottom:.28rem;position:relative;z-index:1;transition:transform .3s;}
+.card-name{font-family:'Cinzel Decorative',cursive;font-size:.5rem;letter-spacing:.12em;
+  color:rgba(var(--c),1);filter:brightness(1.5);position:relative;z-index:1;}
+
+/* Dimmed state for non-hovered */
+.card.dimmed{opacity:.35;filter:saturate(.3);}
+
+/* Active card: RGB border */
+.card.active{
+  transform:translateY(-8px) scale(1.04);
+  animation:rgbBorder 2.5s linear infinite;
 }
-@keyframes titlePulseRed {
-  0%,100% { text-shadow: 0 0 40px rgba(230,60,60,0.4),  0 2px 4px rgba(0,0,0,0.8); }
-  50%     { text-shadow: 0 0 100px rgba(230,60,60,0.85), 0 0 30px rgba(230,60,60,0.4), 0 2px 4px rgba(0,0,0,0.8); }
+.card.active::before{opacity:.9;}
+@keyframes rgbBorder{
+  0%  {box-shadow:0 0 0 2px rgba(var(--c),1),0 14px 48px rgba(var(--c),.35),0 0 20px rgba(var(--c),.4);}
+  33% {box-shadow:0 0 0 2px rgba(var(--c),1),0 14px 55px rgba(var(--c),.5),0 0 35px rgba(var(--c),.6);}
+  66% {box-shadow:0 0 0 2px rgba(var(--c),.6),0 14px 48px rgba(var(--c),.35),0 0 20px rgba(var(--c),.3);}
+  100%{box-shadow:0 0 0 2px rgba(var(--c),1),0 14px 48px rgba(var(--c),.35),0 0 20px rgba(var(--c),.4);}
+}
+/* UNO special: 4-color border */
+.card.uno.active{
+  animation:unoRgb 2s linear infinite !important;
+}
+@keyframes unoRgb{
+  0%  {box-shadow:0 0 0 2.5px #e03030,0 14px 55px rgba(224,48,48,.4),0 0 28px rgba(224,48,48,.5);}
+  25% {box-shadow:0 0 0 2.5px #e0b020,0 14px 55px rgba(224,176,32,.4),0 0 28px rgba(224,176,32,.5);}
+  50% {box-shadow:0 0 0 2.5px #20a040,0 14px 55px rgba(32,160,64,.4),0 0 28px rgba(32,160,64,.5);}
+  75% {box-shadow:0 0 0 2.5px #2060e0,0 14px 55px rgba(32,96,224,.4),0 0 28px rgba(32,96,224,.5);}
+  100%{box-shadow:0 0 0 2.5px #e03030,0 14px 55px rgba(224,48,48,.4),0 0 28px rgba(224,48,48,.5);}
 }
 
-.subtitle { font-size:0.72rem; color:var(--muted); letter-spacing:0.35em; margin-top:0.4rem; }
+.mus      {--c:39,180,80;}
+.caida    {--c:60,140,230;}
+.poker    {--c:220,60,60;}
+.sol      {--c:168,85,247;}
+.uno      {--c:224,48,48;}
+.chinchon {--c:201,168,76;}
 
-.divider {
-  width:280px; height:1px;
-  background:linear-gradient(90deg, transparent, var(--gold), transparent);
-  opacity:0.4; transition:opacity 0.6s, width 0.6s;
-}
-body.hover-mus .divider, body.hover-caida .divider, body.hover-poker .divider { opacity:0.7; width:360px; }
+#footer{font-size:.52rem;color:rgba(201,168,76,.3);letter-spacing:.2em;text-align:center;transition:color .5s;}
 
-/* ── GAME CARDS ────────────────────────────────────────────────────────────── */
-.games { display:flex; gap:1.5rem; align-items:stretch; }
-
-.game-card {
-  width:200px; background:rgba(0,0,0,0.5); border:1px solid var(--border);
-  border-radius:10px; padding:1.6rem 1.2rem 1.4rem;
-  display:flex; flex-direction:column; align-items:center; gap:0.8rem;
-  cursor:none; text-decoration:none; color:inherit;
-  transition:transform 0.3s, border-color 0.3s, box-shadow 0.3s, opacity 0.45s, filter 0.45s, background 0.3s;
-  position:relative; overflow:hidden;
+/* ── RGB DIVIDER ── */
+#divider-wrap{width:min(600px,88vw);}
+#divider-bar{
+  height:3px;border-radius:2px;position:relative;overflow:hidden;
+  background:rgba(255,255,255,0.06);
 }
-/* Shine sweep */
-.game-card::before {
-  content:''; position:absolute;
-  top:-60%; left:-75%; width:50%; height:220%;
-  background:linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.06) 50%, transparent 60%);
-  transform:skewX(-15deg); transition:left 0.55s ease;
+#divider-inner{
+  position:absolute;inset:0;border-radius:2px;
+  background:linear-gradient(90deg,
+    rgba(39,180,80,1),rgba(60,140,230,1),rgba(220,60,60,1),
+    rgba(168,85,247,1),rgba(224,80,30,1),rgba(201,168,76,1),
+    rgba(39,180,80,1));
+  background-size:200% 100%;
+  animation:barFlow 3s linear infinite;
+  transition:background 0.6s ease;
 }
-.game-card:hover::before { left:130%; }
-/* Bottom accent line */
-.game-card::after {
-  content:''; position:absolute; bottom:0; left:0; right:0;
-  height:2px; opacity:0; transition:opacity 0.35s; border-radius:0 0 10px 10px;
-}
-.card-mus::after      { background:linear-gradient(90deg,transparent,rgba(39,200,80,0.8),transparent); }
-.card-caida::after    { background:linear-gradient(90deg,transparent,rgba(60,140,230,0.8),transparent); }
-.card-poker::after    { background:linear-gradient(90deg,transparent,rgba(230,60,60,0.8),transparent); }
-.card-solitario::after{ background:linear-gradient(90deg,transparent,rgba(168,85,247,0.8),transparent); }
-.game-card:hover::after { opacity:1; }
-
-/* Dim non-hovered */
-body.hover-mus       .card-caida, body.hover-mus       .card-poker, body.hover-mus       .card-solitario,
-body.hover-caida     .card-mus,   body.hover-caida     .card-poker, body.hover-caida     .card-solitario,
-body.hover-poker     .card-mus,   body.hover-poker     .card-caida, body.hover-poker     .card-solitario,
-body.hover-solitario .card-mus,   body.hover-solitario .card-caida, body.hover-solitario .card-poker {
-  opacity:0.38; filter:blur(0.5px); transform:scale(0.96);
-}
-/* Boost hovered */
-body.hover-mus       .card-mus       { transform:translateY(-8px) scale(1.04); }
-body.hover-caida     .card-caida     { transform:translateY(-8px) scale(1.04); }
-body.hover-poker     .card-poker     { transform:translateY(-8px) scale(1.04); }
-body.hover-solitario .card-solitario { transform:translateY(-8px) scale(1.04); }
-
-.card-mus   { border-color:rgba(39,120,60,0.3); }
-.card-caida { border-color:rgba(30,80,160,0.3); }
-.card-poker { border-color:rgba(160,30,30,0.3); }
-.card-solitario { border-color:rgba(109,40,217,0.3); animation: fadeSlideUp 0.65s ease both; animation-delay: 1.2s; }
-.card-chinchon { border-color:rgba(30,120,30,0.3); animation: fadeSlideUp 0.65s ease both; animation-delay: 1.35s; }
-.card-mus:hover      { border-color:rgba(39,200,80,0.7);   box-shadow:0 14px 55px rgba(18,110,42,0.45),  0 0 0 1px rgba(39,200,80,0.25); }
-.card-caida:hover    { border-color:rgba(60,140,230,0.7);  box-shadow:0 14px 55px rgba(15,55,160,0.45),  0 0 0 1px rgba(60,140,230,0.25); }
-.card-poker:hover    { border-color:rgba(230,60,60,0.7);   box-shadow:0 14px 55px rgba(155,12,12,0.45),  0 0 0 1px rgba(230,60,60,0.25); }
-.card-solitario:hover{ border-color:rgba(168,85,247,0.7);  box-shadow:0 14px 55px rgba(109,40,217,0.5),  0 0 0 1px rgba(168,85,247,0.25); }
-
-.game-icon { font-size:2.8rem; line-height:1; filter:drop-shadow(0 2px 8px rgba(0,0,0,0.5)); transition:transform 0.3s; }
-.game-card:hover .game-icon { transform:scale(1.12); }
-
-.game-name { font-family:'Cinzel Decorative',cursive; font-size:0.9rem; font-weight:700; letter-spacing:0.1em; }
-.card-mus       .game-name { color:#7bc47b; }
-.card-caida     .game-name { color:#6ab0e8; }
-.card-poker     .game-name { color:#e87a7a; }
-.card-solitario .game-name { color:#c084fc; }
-.card-chinchon  .game-name { color:#e8c97a; }
-
-.game-desc { font-size:0.6rem; color:var(--muted); text-align:center; line-height:1.5; letter-spacing:0.05em; }
-
-/* Player count badge */
-.game-players {
-  font-size:0.55rem; letter-spacing:0.12em; margin-top:auto;
-  padding:0.2rem 0.6rem; border-radius:20px;
-  transition: opacity 0.3s;
-}
-.card-mus       .game-players { background:rgba(39,120,60,0.2);   color:#7bc47b; border:1px solid rgba(39,120,60,0.3); }
-.card-caida     .game-players { background:rgba(30,80,160,0.2);   color:#6ab0e8; border:1px solid rgba(30,80,160,0.3); }
-.card-poker     .game-players { background:rgba(160,30,30,0.2);   color:#e87a7a; border:1px solid rgba(160,30,30,0.3); }
-.card-solitario .game-players { background:rgba(109,40,217,0.2);  color:#c084fc; border:1px solid rgba(109,40,217,0.3); }
-.card-chinchon  .game-players { background:rgba(180,130,10,0.18); color:#e8c97a; border:1px solid rgba(180,130,10,0.35); }
-
-/* Online counter */
-.online-count {
-  font-size:0.5rem; letter-spacing:0.1em; color:var(--muted);
-  display:flex; align-items:center; gap:0.3rem;
-  opacity:0; transform:translateY(4px);
-  transition:opacity 0.4s, transform 0.4s;
-}
-.online-dot {
-  width:5px; height:5px; border-radius:50%;
-  animation:dotPulse 2s ease-in-out infinite;
-}
-.card-mus       .online-dot { background:#7bc47b; box-shadow:0 0 5px rgba(123,196,123,0.7); }
-.card-caida     .online-dot { background:#6ab0e8; box-shadow:0 0 5px rgba(106,176,232,0.7); }
-.card-poker     .online-dot { background:#e87a7a; box-shadow:0 0 5px rgba(232,122,122,0.7); }
-.card-solitario .online-dot { background:#c084fc; box-shadow:0 0 5px rgba(192,132,252,0.7); }
-.card-chinchon  .online-dot { background:#e8c97a; box-shadow:0 0 5px rgba(232,201,122,0.8); }
-@keyframes dotPulse {
-  0%,100% { opacity:1; transform:scale(1); }
-  50%     { opacity:0.4; transform:scale(0.75); }
-}
-.game-card:hover .online-count { opacity:1; transform:translateY(0); }
-
-.arrow { font-size:0.6rem; color:var(--muted); letter-spacing:0.2em; opacity:0; transition:opacity 0.2s; margin-top:0.2rem; }
-.game-card:hover .arrow { opacity:1; }
-
-/* ── FOOTER ────────────────────────────────────────────────────────────────── */
-.footer {
-  font-size:0.55rem; letter-spacing:0.2em;
-  color:rgba(245,234,216,0.2); transition:color 0.6s, opacity 0.4s;
-  min-height:1em;
-}
-body.hover-mus       .footer { color:rgba(123,196,123,0.4); }
-body.hover-caida     .footer { color:rgba(106,176,232,0.4); }
-body.hover-poker     .footer { color:rgba(232,122,122,0.4); }
-body.hover-solitario .footer { color:rgba(192,132,252,0.4); }
-body.hover-chinchon  .footer { color:rgba(201,168,76,0.45); }
-
-/* ── AMBIENT PARTICLES ─────────────────────────────────────────────────────── */
-.particles { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
-.particle  { position:absolute; font-size:0.85rem; opacity:0; animation:floatUp linear infinite; user-select:none; }
-@keyframes floatUp {
-  0%   { transform:translateY(0) rotate(0deg);   opacity:0; }
-  8%   { opacity:0.09; }
-  92%  { opacity:0.05; }
-  100% { transform:translateY(-105vh) rotate(300deg); opacity:0; }
-}
-
-/* ── FALLING CARDS ─────────────────────────────────────────────────────────── */
-.fall-layer { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
-.fall-card {
-  position:absolute; top:-120px; font-size:2.8rem; opacity:0;
-  animation:fallDown ease-in forwards; user-select:none;
-  filter:drop-shadow(0 4px 16px var(--fall-glow, rgba(0,0,0,0.6)));
-}
-@keyframes fallDown {
-  0%   { transform:translateY(0)     rotate(var(--r0)) scale(0.7); opacity:0; }
-  6%   { opacity:var(--peak-opacity); }
-  85%  { opacity:var(--peak-opacity); }
-  100% { transform:translateY(110vh) rotate(var(--r1)) scale(1);   opacity:0; }
-}
-/* ── MOBILE ─────────────────────────────────────────────────────────────────── */
-@media (max-width: 600px) {
-  /* Hide cursor on touch */
-  #cursor { display: none; }
-  body { cursor: auto; }
-  .arcade-back, .game-card, .ctrl-btn { cursor: pointer; }
-
-  .page { gap: 1.4rem; padding: 0 12px; justify-content: center; }
-
-  .suits-row { font-size: 1rem; letter-spacing: 0.4rem; }
-  .title { font-size: clamp(1.6rem, 9vw, 2.8rem); }
-  .subtitle { font-size: 0.6rem; letter-spacing: 0.2em; }
-
-  .divider { width: 200px; }
-  body.hover-mus .divider, body.hover-caida .divider,
-  body.hover-poker .divider, body.hover-solitario .divider { width: 240px; }
-
-  /* 2x2 grid on mobile */
-  .games {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    width: 100%;
-    max-width: 360px;
-  }
-
-  .game-card {
-    width: 100%;
-    padding: 1.1rem 0.8rem 1rem;
-    gap: 0.5rem;
-  }
-
-  .game-icon { font-size: 2rem; }
-  .game-name { font-size: 0.75rem; }
-  .game-desc { font-size: 0.52rem; }
-  .game-players { font-size: 0.48rem; padding: 0.15rem 0.5rem; }
-  .arrow { font-size: 0.5rem; }
-  .online-count { font-size: 0.44rem; }
-
-  /* Disable hover effects on touch — use tap instead */
-  body.hover-mus .card-caida, body.hover-mus .card-poker, body.hover-mus .card-solitario, body.hover-mus .card-uno, body.hover-mus .card-chinchon,
-  body.hover-caida .card-mus, body.hover-caida .card-poker, body.hover-caida .card-solitario, body.hover-caida .card-uno, body.hover-caida .card-chinchon,
-  body.hover-poker .card-mus, body.hover-poker .card-caida, body.hover-poker .card-solitario, body.hover-poker .card-uno, body.hover-poker .card-chinchon,
-  body.hover-solitario .card-mus, body.hover-solitario .card-caida, body.hover-solitario .card-poker, body.hover-solitario .card-uno, body.hover-solitario .card-chinchon,
-  body.hover-uno .card-mus, body.hover-uno .card-caida, body.hover-uno .card-poker, body.hover-uno .card-solitario, body.hover-uno .card-chinchon,
-  body.hover-chinchon .card-mus, body.hover-chinchon .card-caida, body.hover-chinchon .card-poker, body.hover-chinchon .card-solitario, body.hover-chinchon .card-uno {
-    opacity: 1; filter: none; transform: none;
-  }
-  body.hover-mus   .card-mus,
-  body.hover-caida .card-caida,
-  body.hover-poker .card-poker,
-  body.hover-solitario .card-solitario { transform: none; }
-  body.hover-chinchon .card-chinchon { transform: translateY(-8px) scale(1.04) !important; }
-
-  .footer { font-size: 0.46rem; letter-spacing: 0.12em; text-align: center; }
-}
-
-/* ── LEADERBOARD PANEL ────────────────────────────────────────────────────── */
-#lb-toggle {
-  position: fixed;
-  top: 14px;
-  right: 18px;
-  z-index: 500;
-  background: rgba(201,168,76,0.08);
-  border: 1px solid rgba(201,168,76,0.28);
-  border-radius: 6px;
-  padding: 0.3rem 0.75rem;
-  font-family: 'Cinzel', serif;
-  font-size: 0.5rem;
-  letter-spacing: 0.14em;
-  color: var(--gold);
-  cursor: none;
-  transition: all 0.2s;
-}
-#lb-toggle:hover { background: rgba(201,168,76,0.18); border-color: rgba(201,168,76,0.55); }
-
-#lb-panel {
-  position: fixed;
-  top: 0; right: 0;
-  width: min(400px, 100vw);
-  height: 100vh;
-  background: rgba(6,8,9,0.97);
-  border-left: 1px solid rgba(201,168,76,0.18);
-  z-index: 600;
-  display: flex;
-  flex-direction: column;
-  transform: translateX(100%);
-  transition: transform 0.35s cubic-bezier(0.22,1,0.36,1);
-  backdrop-filter: blur(12px);
-}
-#lb-panel.open { transform: translateX(0); }
-
-.lb-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.1rem 1.4rem 0.8rem;
-  border-bottom: 1px solid rgba(201,168,76,0.12);
-  flex-shrink: 0;
-}
-.lb-title {
-  font-family: 'Cinzel Decorative', cursive;
-  font-size: 0.85rem;
-  color: var(--gold2);
-  letter-spacing: 0.22em;
-}
-.lb-close {
-  background: none;
-  border: 1px solid rgba(201,168,76,0.2);
-  border-radius: 4px;
-  color: var(--muted);
-  font-size: 0.65rem;
-  padding: 0.2rem 0.55rem;
-  cursor: none;
-  font-family: 'Cinzel', serif;
-  letter-spacing: 0.1em;
-  transition: all 0.15s;
-}
-.lb-close:hover { border-color: var(--gold); color: var(--gold); }
-
-.lb-tabs-row {
-  display: flex;
-  gap: 0;
-  flex-shrink: 0;
-  border-bottom: 1px solid rgba(201,168,76,0.1);
-}
-.lb-tab {
-  flex: 1;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  padding: 0.55rem 0.5rem;
-  font-family: 'Cinzel', serif;
-  font-size: 0.48rem;
-  letter-spacing: 0.14em;
-  color: var(--muted);
-  cursor: none;
-  transition: all 0.18s;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.15rem;
-}
-.lb-tab .tab-icon { font-size: 0.9rem; }
-.lb-tab.active { color: var(--gold2); border-bottom-color: var(--gold); }
-.lb-tab:hover { color: var(--text); }
-
-.lb-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0.8rem 1.2rem 1.2rem;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(201,168,76,0.2) transparent;
-}
-
-.lb-section-title {
-  font-size: 0.44rem;
-  color: var(--muted);
-  letter-spacing: 0.18em;
-  margin: 0.6rem 0 0.4rem;
-}
-
-.lb-empty {
-  text-align: center;
-  color: var(--muted);
-  font-size: 0.58rem;
-  padding: 2rem 0;
-  letter-spacing: 0.1em;
-}
-
-.lb-row {
-  display: grid;
-  align-items: center;
-  padding: 0.38rem 0.6rem;
-  border-radius: 5px;
-  transition: background 0.12s;
-  gap: 0.3rem;
-}
-.lb-row:hover { background: rgba(201,168,76,0.05); }
-.lb-row.me { background: rgba(201,168,76,0.09); }
-
-/* Solitario: # | name | pts | movs */
-.lb-row-sol { grid-template-columns: 22px 1fr 60px 55px; }
-/* Mus: # | name | wins | losses */
-.lb-row-mus { grid-template-columns: 22px 1fr 52px 52px; }
-/* Caída: # | name | wins | pts */
-.lb-row-cai { grid-template-columns: 22px 1fr 52px 55px; }
-/* Poker: # | name | wins | chips */
-.lb-row-pok { grid-template-columns: 22px 1fr 52px 65px; }
-
-.lb-rank { font-size: 0.78rem; text-align: center; }
-.lb-rank.gold   { filter: drop-shadow(0 0 4px rgba(255,215,0,0.6)); }
-.lb-rank.silver { filter: drop-shadow(0 0 4px rgba(180,180,200,0.5)); }
-.lb-rank.bronze { filter: drop-shadow(0 0 3px rgba(180,120,60,0.5)); }
-
-.lb-name {
-  font-size: 0.6rem;
-  letter-spacing: 0.06em;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.lb-name.me { color: var(--gold2); }
-
-.lb-val {
-  font-size: 0.6rem;
-  text-align: right;
-  color: var(--gold);
-}
-.lb-sub {
-  font-size: 0.5rem;
-  text-align: right;
-  color: var(--muted);
-}
-
-.lb-col-headers {
-  display: grid;
-  align-items: center;
-  padding: 0 0.6rem 0.25rem;
-  gap: 0.3rem;
-}
-.lb-col-headers span {
-  font-size: 0.4rem;
-  color: var(--muted);
-  letter-spacing: 0.13em;
-  text-align: right;
-}
-.lb-col-headers span:first-child { text-align: left; }
-
-.lb-sub-tabs {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.5rem;
-}
-.lb-sub-tab {
-  background: rgba(201,168,76,0.06);
-  border: 1px solid rgba(201,168,76,0.18);
-  border-radius: 4px;
-  color: var(--muted);
-  font-family: 'Cinzel', serif;
-  font-size: 0.44rem;
-  letter-spacing: 0.1em;
-  padding: 0.22rem 0.6rem;
-  cursor: none;
-  transition: all 0.15s;
-}
-.lb-sub-tab.active { background: rgba(201,168,76,0.2); border-color: rgba(201,168,76,0.5); color: var(--gold2); }
-
-#bg-uno {
-  opacity:0;
-  background:
-    radial-gradient(ellipse 50% 60% at 20% 50%, rgba(224,48,48,0.5)   0%, transparent 55%),
-    radial-gradient(ellipse 50% 60% at 80% 50%, rgba(32,96,224,0.5)   0%, transparent 55%),
-    radial-gradient(ellipse 45% 45% at 50% 10%, rgba(224,176,32,0.4)  0%, transparent 50%),
-    radial-gradient(ellipse 45% 45% at 50% 90%, rgba(32,160,64,0.4)   0%, transparent 50%),
-    radial-gradient(ellipse 30% 40% at 50% 50%, rgba(6,4,12,0.5)      0%, transparent 100%);
-}
-#bg-chinchon {
-  opacity:0;
-  background:
-    radial-gradient(ellipse 65% 60% at 50% 65%, rgba(180,130,10,0.55)  0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 15% 25%, rgba(150,100,5,0.30)   0%, transparent 55%),
-    radial-gradient(ellipse 50% 40% at 85% 25%, rgba(150,100,5,0.30)   0%, transparent 55%),
-    radial-gradient(ellipse 40% 30% at 50% 10%, rgba(200,160,20,0.20)  0%, transparent 50%),
-    radial-gradient(ellipse 100% 35% at 50% 100%, rgba(80,55,0,0.6)    0%, transparent 55%);
-}
-#bg-chinchon-ghost {
-  position:fixed; inset:0; pointer-events:none;
-  background: radial-gradient(ellipse 70% 70% at 50% 55%, rgba(180,130,10,0.08) 0%, transparent 65%);
-  opacity:0; transition:opacity 0.9s ease;
-}
-#bg-uno-ghost {
-  position:fixed; inset:0; pointer-events:none;
-  background: radial-gradient(ellipse 70% 80% at 50% 50%,
-    rgba(224,48,48,0.08) 0%, rgba(32,96,224,0.08) 33%,
-    rgba(224,176,32,0.08) 66%, transparent 100%);
-  opacity:0; transition:opacity 0.9s ease;
-}
-.card-uno { animation: fadeSlideUp 0.65s ease both; animation-delay: 1.2s; }
-/* UNO title: Helvetica font + JS-driven color cycling, no CSS animation override */
-body.hover-uno .title {
-  font-family: 'Helvetica Neue', 'Helvetica', 'Arial Black', sans-serif !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.04em !important;
-  animation: none !important;
-  transition: color 0.15s ease, text-shadow 0.15s ease, opacity 0.2s ease, transform 0.2s ease;
-}
-@keyframes unoNomercyPulse {
-  0%,100% { color:#ffffff; text-shadow:0 0 0px transparent; }
-  50%     { color:#e03030; text-shadow:0 0 40px rgba(224,48,48,0.9), 0 0 80px rgba(180,10,10,0.5); }
-}
-body.hover-uno   .card-mus, body.hover-uno   .card-caida, body.hover-uno   .card-poker, body.hover-uno   .card-solitario { opacity:0.35; filter:saturate(0.3); transform:none; }
-body.hover-uno   .card-uno { transform:translateY(-6px) scale(1.025); }
-body.hover-chinchon .card-mus, body.hover-chinchon .card-caida, body.hover-chinchon .card-poker, body.hover-chinchon .card-solitario, body.hover-chinchon .card-uno { opacity:0.35; filter:saturate(0.3); transform:none; }
-body.hover-chinchon .card-chinchon { transform:translateY(-8px) scale(1.04); }
-
+@keyframes barFlow{from{background-position:200% 0}to{background-position:-200% 0}}
 </style>
 </head>
 <body>
+<canvas id="bg"></canvas>
+<canvas id="fx"></canvas>
 
-<!-- Custom cursor -->
-<div id="cursor">♠</div>
-
-<!-- Animated 4-color wave background -->
-<canvas id="bg-canvas"></canvas>
-
-<!-- Background layers -->
-<div id="bg-default"       class="bg-layer"></div>
-<div id="bg-mus"          class="bg-layer"></div>
-<div id="bg-caida"        class="bg-layer"></div>
-<div id="bg-poker"        class="bg-layer"></div>
-<div id="bg-solitario"    class="bg-layer"></div>
-<div id="bg-uno"          class="bg-layer"></div>
-<div id="bg-chinchon"     class="bg-layer"></div>
-<div id="bg-mus-ghost"></div>
-<div id="bg-caida-ghost"></div>
-<div id="bg-poker-ghost"></div>
-<div id="bg-solitario-ghost"></div>
-<div id="bg-uno-ghost"></div>
-<div id="bg-chinchon-ghost"></div>
-<div class="fall-layer" id="fall-layer"></div>
-
-<div class="page">
-  <div class="header">
-    <div class="suits-row"><span>♠</span><span>♥</span><span>♦</span><span>♣</span></div>
-    <div class="title">ARCADE</div>
-    <div class="subtitle">Juegos de cartas · Multijugador</div>
+<div id="ui">
+  <div id="title">ARCADE</div>
+  <div id="divider-wrap">
+    <div id="divider-bar"><div id="divider-inner"></div></div>
   </div>
-
-  <div class="divider"></div>
-
-  <div class="games">
-    <a class="game-card card-mus" href="/mus"
-       onmouseenter="setHover('mus')" onmouseleave="clearHover()">
-      <div class="game-icon">🃏</div>
-      <div class="game-name">MUS</div>
-      <div class="game-desc">El clásico juego vasco.<br>Apuestas, farol y estrategia.</div>
-      <div class="game-players">4 jugadores</div>
-      <div class="online-count"><span class="online-dot"></span><span id="online-mus">— online</span></div>
-      <div class="arrow">JUGAR →</div>
-    </a>
-
-    <a class="game-card card-caida" href="/caida"
-       onmouseenter="setHover('caida')" onmouseleave="clearHover()">
-      <div class="game-icon">🎴</div>
-      <div class="game-name">CAÍDA</div>
-      <div class="game-desc">El juego venezolano<br>de recoger y escalar.</div>
-      <div class="game-players">2 – 4 jugadores</div>
-      <div class="online-count"><span class="online-dot"></span><span id="online-caida">— online</span></div>
-      <div class="arrow">JUGAR →</div>
-    </a>
-
-    <a class="game-card card-poker" href="/poker"
-       onmouseenter="setHover('poker')" onmouseleave="clearHover()">
-      <div class="game-icon">♠️</div>
-      <div class="game-name">PÓKER</div>
-      <div class="game-desc">Texas Hold'em.<br>Fichas virtuales.</div>
-      <div class="game-players">2 – 9 jugadores</div>
-      <div class="online-count"><span class="online-dot"></span><span id="online-poker">— online</span></div>
-      <div class="arrow">JUGAR →</div>
-    </a>
-
-    <a class="game-card card-solitario" href="/solitario"
-       onmouseenter="setHover('solitario')" onmouseleave="clearHover()">
-      <div class="game-icon">🕷️</div>
-      <div class="game-name">SOLITARIO</div>
-      <div class="game-desc">Klondike clásico.<br>1 jugador.</div>
-      <div class="game-players">1 jugador</div>
-      <div class="online-count"><span class="online-dot"></span><span id="online-solitario"></span></div>
-      <div class="arrow">JUGAR →</div>
-    </a>
-
-    <a class="game-card card-uno" href="/uno"
-       onmouseenter="setHover('uno')" onmouseleave="clearHover()">
-      <div class="game-icon" style="font-family:'Helvetica Neue','Helvetica','Arial Black',sans-serif;font-weight:900;font-size:1.6rem;letter-spacing:0.04em;background:linear-gradient(135deg,#e03030,#e0b020,#20a040,#2060e0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">UNO</div>
-      <div class="game-name">UNO</div>
-      <div class="game-desc">Clásico + No Mercy.<br>Apilar, Piedad, Ruleta.</div>
-      <div class="game-players">2 – 6 jugadores</div>
-      <div class="online-count"><span class="online-dot"></span><span id="online-uno">— online</span></div>
-      <div class="arrow">JUGAR →</div>
-    </a>
-
-    <a class="game-card card-chinchon" href="/chinchon"
-       onmouseenter="setHover('chinchon')" onmouseleave="clearHover()">
-      <div class="game-icon">🃏</div>
-      <div class="game-name">CHINCHÓN</div>
-      <div class="game-desc">Rummy español.<br>Series, escaleras y Chinchón.</div>
-      <div class="game-players">2 – 10 jugadores</div>
-      <div class="online-count"><span class="online-dot"></span><span id="online-chinchon">— online</span></div>
-      <div class="arrow">JUGAR →</div>
-    </a>
+  <div id="cards">
+    <div class="card mus"      data-game="mus"      onmouseenter="onHover(this)" onmouseleave="onLeave()"><span class="card-icon">🃏</span><div class="card-name">MUS</div></div>
+    <div class="card caida"    data-game="caida"    onmouseenter="onHover(this)" onmouseleave="onLeave()"><span class="card-icon">🎴</span><div class="card-name">CAÍDA</div></div>
+    <div class="card poker"    data-game="poker"    onmouseenter="onHover(this)" onmouseleave="onLeave()"><span class="card-icon">♠</span><div class="card-name">PÓKER</div></div>
+    <div class="card sol"      data-game="solitario" onmouseenter="onHover(this)" onmouseleave="onLeave()"><span class="card-icon">🕷️</span><div class="card-name">SOLITARIO</div></div>
+    <div class="card uno"      data-game="uno"      onmouseenter="onHover(this)" onmouseleave="onLeave()">
+      <span class="card-icon" style="font-family:'Cinzel Decorative',cursive;font-size:1.3rem;font-weight:900;background:linear-gradient(135deg,#e03030,#e0b020,#20a040,#2060e0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;display:block;margin-bottom:.28rem;position:relative;z-index:1">UNO</span>
+      <div class="card-name">UNO</div>
+    </div>
+    <div class="card chinchon" data-game="chinchon" onmouseenter="onHover(this)" onmouseleave="onLeave()">
+      <span class="card-icon" style="font-size:1.4rem;position:relative;z-index:1;display:block;margin-bottom:.28rem;font-family:'Cinzel Decorative',cursive;color:#e8c97a;text-shadow:0 0 12px rgba(201,168,76,0.7)">7&#9827;</span>
+      <div class="card-name">CHINCHÓN</div>
+    </div>
   </div>
-
-  <div class="footer" id="footer-text">SELECCIONA UN JUEGO PARA COMENZAR</div>
+  <div id="footer">QUE GANE EL MEJOR</div>
 </div>
-
-<div class="particles" id="particles"></div>
 
 <script>
-// ── CUSTOM CURSOR ─────────────────────────────────────────────────────────────
-const cursor = document.getElementById('cursor');
-const cursorSymbols = { mus:'♣', caida:'🎴', poker:'♠', solitario:'🕷️', uno:'🃏', chinchon:'🃏', default:'♠' };
-let cursorGame = 'default';
+// ── CONFIG ──────────────────────────────────────────────────────
+const MODES = {
+  mus:       { name:'MUS',       color:[39,180,80],   titleColor:'#7bc47b', footerColor:'rgba(39,180,80,.4)'  },
+  caida:     { name:'CAÍDA',     color:[60,140,230],  titleColor:'#6ab0e8', footerColor:'rgba(60,140,230,.4)' },
+  poker:     { name:'PÓKER',     color:[220,60,60],   titleColor:'#e87a7a', footerColor:'rgba(220,60,60,.4)'  },
+  solitario: { name:'SOLITARIO', color:[168,85,247],  titleColor:'#c084fc', footerColor:'rgba(168,85,247,.4)' },
+  uno:       { name:'UNO',       color:[220,60,60],   titleColor:'rainbow', footerColor:'rgba(200,60,60,.4)'  },
+  chinchon:  { name:'CHINCHÓN',  color:[201,168,76],  titleColor:'#e8c97a', footerColor:'rgba(201,168,76,.4)' },
+};
 
-document.addEventListener('mousemove', e => {
-  cursor.style.left = e.clientX + 'px';
-  cursor.style.top  = e.clientY + 'px';
-});
+// ── BG CANVAS ───────────────────────────────────────────────────
+const bgC=document.getElementById('bg'), bgX=bgC.getContext('2d');
+let BW,BH;
+function resizeBg(){BW=bgC.width=window.innerWidth;BH=bgC.height=window.innerHeight;}
+window.addEventListener('resize',resizeBg); resizeBg();
 
-// ── BACKGROUND HOVER + FOOTER + CURSOR (unified) ─────────────────────────────
-const layers = { mus:'bg-mus', caida:'bg-caida', poker:'bg-poker', solitario:'bg-solitario', uno:'bg-uno', chinchon:'bg-chinchon' };
-let current = null;
-
-const footerEl = document.getElementById('footer-text');
-const phrases = [
-  'SELECCIONA UN JUEGO PARA COMENZAR',
-  '¿A QUÉ JUEGAS HOY?',
-  'QUE GANE EL MEJOR',
-  'JUEGOS DE CARTAS · MULTIJUGADOR',
-  'FAROL, ESCALERA O FULL HOUSE',
+// Animated background blobs — base + per-mode tint
+const blobs=[
+  {x:.10,y:.45,r:.60,base:[18,140,42], sx:.00044,sy:.00030,ph:0   },
+  {x:.90,y:.42,r:.58,base:[15,80,200], sx:.00034,sy:.00038,ph:1.8 },
+  {x:.50,y:1.0,r:.62,base:[200,20,20], sx:.00028,sy:.00035,ph:3.4 },
+  {x:.50,y:.02,r:.55,base:[130,50,240],sx:.00032,sy:.00042,ph:5.1 },
+  {x:.25,y:.80,r:.42,base:[200,140,10],sx:.00038,sy:.00024,ph:2.8 },
+  {x:.75,y:.78,r:.40,base:[220,80,20], sx:.00030,sy:.00034,ph:4.2 },
 ];
-const hoverPhrases = {
-  chinchon:  ['SERIES Y ESCALERAS', 'EL RUMMY ESPAÑOL', '¿TIENES CHINCHÓN?'],
-  mus:       ['EL CLÁSICO VASCO', 'GRANDE · CHICA · PARES · JUEGO', '¿TIENES MUS?'],
-  caida:     ['RECOGE Y ESCALA', '¡CAÍDA!', 'CANTOS Y ESCALERAS'],
-  poker:     ['ALL IN', "TEXAS HOLD'EM", '¿TIENES EL FAROL?'],
-  solitario: ['UN JUGADOR', 'KLONDIKE CLÁSICO', '¿PUEDES GANAR?'],
-  uno:       ['UNO CLÁSICO · NO MERCY', '¡SALTA, REVERSA, +10!', '¿TIENES EL ÚLTIMO UNO?'],
-};
-let phraseIdx = 0;
-let isHoverPhrase = false;
+// Current tint (lerps toward target)
+let tintR=0,tintG=0,tintB=0,tintA=0;
+let targetR=0,targetG=0,targetB=0,targetA=0;
 
-function setFooter(text) {
-  footerEl.style.opacity = '0';
-  setTimeout(() => { footerEl.textContent = text; footerEl.style.opacity = '1'; }, 250);
-}
+function lerp(a,b,t){return a+(b-a)*t;}
 
-setInterval(() => {
-  if (isHoverPhrase) return;
-  phraseIdx = (phraseIdx + 1) % phrases.length;
-  setFooter(phrases[phraseIdx]);
-}, 3200);
+function bgTick(ts){
+  requestAnimationFrame(bgTick);
+  const t=ts||0;
+  // Lerp tint
+  const sp=0.04;
+  tintR=lerp(tintR,targetR,sp); tintG=lerp(tintG,targetG,sp);
+  tintB=lerp(tintB,targetB,sp); tintA=lerp(tintA,targetA,sp);
 
-const titleEl = document.querySelector('.title');
-const titleNames = { mus: 'MUS', caida: 'CAÍDA', poker: 'PÓKER', solitario: 'SOLITARIO', uno: 'UNO', chinchon: 'CHINCHÓN' };
+  bgX.clearRect(0,0,BW,BH);
+  bgX.fillStyle='#06080f'; bgX.fillRect(0,0,BW,BH);
 
-// ── UNO title cycle ───────────────────────────────────────────────────────────
-// Tracks ALL timers so stopUnoTitle() kills everything cleanly
-const UNO_FONT = "'Helvetica Neue','Helvetica','Arial Black',sans-serif";
-let _unoTimers = [];  // pool of all pending timers for the UNO cycle
+  blobs.forEach(b=>{
+    const ox=Math.sin(t*b.sx+b.ph)*.30;
+    const oy=Math.cos(t*b.sy+b.ph+1.3)*.24;
+    const bx=(b.x+ox)*BW, by=(b.y+oy)*BH;
+    const br=b.r*Math.min(BW,BH);
+    const grd=bgX.createRadialGradient(bx,by,0,bx,by,br);
+    grd.addColorStop(0,`rgba(${b.base},0.55)`);
+    grd.addColorStop(.5,`rgba(${b.base},0.22)`);
+    grd.addColorStop(1,'rgba(0,0,0,0)');
+    bgX.fillStyle=grd; bgX.fillRect(0,0,BW,BH);
+  });
 
-function stopUnoTitle() {
-  _unoTimers.forEach(id => { clearTimeout(id); clearInterval(id); });
-  _unoTimers = [];
-}
-
-// NO MERCY: red→orange→black color cycle, always visible except during 10s fade windows
-// nmColor(t): t in [0,1), maps to red→orange→black→red
-function nmColor(t) {
-  let r, g, b;
-  if (t < 0.35) {
-    const p = t / 0.35;
-    r = Math.round(224 + (255-224)*p);
-    g = Math.round(48  + (96 -48)*p);
-    b = 0;
-  } else if (t < 0.65) {
-    const p = (t - 0.35) / 0.30;
-    r = Math.round(255 + (18 -255)*p);
-    g = Math.round(96  + (8  -96 )*p);
-    b = 0;
-  } else {
-    const p = (t - 0.65) / 0.35;
-    r = Math.round(18  + (224-18 )*p);
-    g = Math.round(8   + (48 -8  )*p);
-    b = 0;
+  // Mode tint overlay
+  if(tintA>0.01){
+    const grd=bgX.createRadialGradient(BW/2,BH/2,0,BW/2,BH/2,Math.max(BW,BH)*.75);
+    grd.addColorStop(0,`rgba(${Math.round(tintR)},${Math.round(tintG)},${Math.round(tintB)},${(tintA*.80).toFixed(3)})`);
+    grd.addColorStop(.55,`rgba(${Math.round(tintR)},${Math.round(tintG)},${Math.round(tintB)},${(tintA*.35).toFixed(3)})`);
+    grd.addColorStop(1,'rgba(0,0,0,0)');
+    bgX.fillStyle=grd; bgX.fillRect(0,0,BW,BH);
   }
-  return `rgb(${r},${g},${b})`;
+
+  // Vignette
+  const vig=bgX.createRadialGradient(BW/2,BH/2,0,BW/2,BH/2,Math.max(BW,BH)*.72);
+  vig.addColorStop(0,'rgba(0,0,0,0)');
+  vig.addColorStop(1,'rgba(0,0,0,0.72)');
+  bgX.fillStyle=vig; bgX.fillRect(0,0,BW,BH);
 }
+bgTick(0);
 
-// Build the title: UNO always white, NO MERCY with current color and opacity
-function buildUnoTitleHTML(nmOpacity, t) {
-  const col  = nmColor(t);
-  const glow = nmColor((t + 0.08) % 1);
-  const op   = nmOpacity.toFixed(3);
-  return `<span style="font-family:${UNO_FONT};font-weight:900;color:#ffffff;letter-spacing:0.04em">UNO</span>` +
-         `<span style="font-family:${UNO_FONT};font-weight:900;color:${col};text-shadow:0 0 22px ${glow},0 0 45px ${glow};letter-spacing:0.04em;font-size:0.55em;display:block;margin-top:-0.05em;opacity:${op};transition:opacity 1.8s ease,color 0s">NO MERCY</span>`;
-}
+// ── FX CANVAS ───────────────────────────────────────────────────
+const fxC=document.getElementById('fx'), fxX=fxC.getContext('2d');
+let FW,FH;
+function resizeFx(){FW=fxC.width=window.innerWidth;FH=fxC.height=window.innerHeight;}
+window.addEventListener('resize',resizeFx); resizeFx();
 
-function startUnoTitle() {
-  stopUnoTitle();
+let currentFx=null, fxParticles=[], fxInterval=null;
+const webPhase={tl:0,tr:0,bl:0,br:0};
 
-  // State
-  let t         = 0;      // color position, advances continuously
-  let nmOpacity = 0;      // starts invisible
-  let phase     = 'hidden'; // 'hidden' | 'fadein' | 'visible' | 'fadeout'
-  let phaseTimer = 0;     // ms spent in current phase
+// ── HOVER LOGIC ─────────────────────────────────────────────────
+const titleEl  = document.getElementById('title');
+const footerEl = document.getElementById('footer');
+const allCards = document.querySelectorAll('.card');
 
-  // Show UNO immediately (white, always visible)
-  titleEl.style.opacity = '1';
-  titleEl.style.transition = 'none';
-  titleEl.innerHTML = buildUnoTitleHTML(0, t);
+function onHover(el){
+  const game = el.dataset.game;
+  if(currentFx===game) return;
+  stopFx();
+  currentFx = game;
 
-  // Single interval drives everything: color + opacity
-  const TICK = 20; // ms per tick
+  // Cards: dim others, activate this
+  allCards.forEach(c=>{
+    c.classList.remove('active','dimmed');
+    if(c===el) c.classList.add('active');
+    else c.classList.add('dimmed');
+  });
 
-  const iv = setInterval(() => {
-    if (current !== 'uno') { stopUnoTitle(); return; }
-
-    // Advance color cycle — full loop in ~5s (0.004 × 250 ticks = 1)
-    t = (t + 0.004) % 1;
-    phaseTimer += TICK;
-
-    // Phase machine
-    switch (phase) {
-      case 'hidden':
-        // Stay invisible for 10s, then start fading in
-        nmOpacity = 0;
-        if (phaseTimer >= 10000) { phase = 'fadein'; phaseTimer = 0; }
-        break;
-
-      case 'fadein':
-        // Fade in over 1.8s (CSS transition handles the smooth part — we just set target)
-        nmOpacity = Math.min(1, phaseTimer / 1800);
-        if (phaseTimer >= 1800) { nmOpacity = 1; phase = 'visible'; phaseTimer = 0; }
-        break;
-
-      case 'visible':
-        // Stay fully visible for 10s
-        nmOpacity = 1;
-        if (phaseTimer >= 10000) { phase = 'fadeout'; phaseTimer = 0; }
-        break;
-
-      case 'fadeout':
-        // Fade out over 1.8s
-        nmOpacity = Math.max(0, 1 - phaseTimer / 1800);
-        if (phaseTimer >= 1800) { nmOpacity = 0; phase = 'hidden'; phaseTimer = 0; }
-        break;
-    }
-
-    titleEl.innerHTML = buildUnoTitleHTML(nmOpacity, t);
-  }, TICK);
-
-  _unoTimers.push(iv);
-}
-
-function setTitle(text, useHtml) {
-  titleEl.style.opacity = '0';
-  titleEl.style.transform = 'translateY(-8px) scale(0.95)';
-  setTimeout(() => {
-    if (useHtml) {
-      titleEl.innerHTML = text;
-    } else {
-      titleEl.textContent = text;
-    }
-    titleEl.style.opacity = '1';
-    titleEl.style.transform = '';
-  }, 220);
-}
-
-function setHover(game) {
-  if (current === game) return;
-  if (current) { document.getElementById(layers[current]).style.opacity = '0'; stopFalling(); }
-  else document.getElementById('bg-default').style.opacity = '0';
-  current = game;
-  document.getElementById(layers[game]).style.opacity = '1';
-  document.body.className = 'hover-' + game;
-  startFalling(game);
-  cursor.textContent = cursorSymbols[game];
-  cursor.classList.add('on-card');
-  isHoverPhrase = true;
-  const pool = hoverPhrases[game];
-  setFooter(pool[Math.floor(Math.random() * pool.length)]);
-  if (game === 'uno') {
-    startUnoTitle();
-  } else {
-    setTitle(titleNames[game]);
+  // Title → game name with color
+  const cfg = MODES[game];
+  titleEl.style.background='none';
+  titleEl.style.webkitTextFillColor=cfg.titleColor;
+  titleEl.style.filter=`drop-shadow(0 0 30px ${cfg.titleColor}) drop-shadow(0 0 60px ${cfg.titleColor}55)`;
+  // UNO special: rainbow title
+  if(cfg.titleColor==='rainbow'){
+    titleEl.style.background='linear-gradient(135deg,#e03030,#e0b020,#20a040,#2060e0)';
+    titleEl.style.webkitBackgroundClip='text';
+    titleEl.style.webkitTextFillColor='transparent';
+    titleEl.style.backgroundClip='text';
+    titleEl.style.filter='drop-shadow(0 0 30px rgba(224,80,30,.7)) drop-shadow(0 0 60px rgba(32,96,224,.4))';
   }
+  titleEl.textContent = cfg.name;
+  footerEl.style.color = cfg.footerColor;
+
+  // BG tint
+  const [r,g,b]=cfg.color;
+  targetR=r; targetG=g; targetB=b; targetA=1;
+  // Bar: transition to mode color
+  const c1=`rgba(${r},${g},${b},1)`;
+  const c2=`rgba(${Math.min(255,r+70)},${Math.min(255,g+70)},${Math.min(255,b+70)},1)`;
+  const c3=`rgba(${Math.max(0,r-50)},${Math.max(0,g-50)},${Math.max(0,b-50)},1)`;
+  document.getElementById('divider-inner').style.background=
+    `linear-gradient(90deg,${c3},${c1},${c2},${c1},${c2},${c1},${c3})`;
+
+  // Start effect
+  if(game==='mus')       initMus();
+  else if(game==='caida')     initCaida();
+  else if(game==='poker')     initPoker();
+  else if(game==='solitario') initSol();
+  else if(game==='uno')       initUno();
+  else if(game==='chinchon')  initChinchon();
 }
 
-function clearHover() {
-  if (!current) return;
-  stopUnoTitle(); // always safe to call
-  document.getElementById(layers[current]).style.opacity = '0';
-  document.getElementById('bg-default').style.opacity = '1';
-  document.body.className = '';
-  stopFalling();
-  current = null;
-  cursor.textContent = cursorSymbols.default;
-  cursor.classList.remove('on-card');
-  isHoverPhrase = false;
-  setFooter(phrases[phraseIdx]);
-  setTitle('ARCADE');
+function onLeave(){
+  stopFx();
+  allCards.forEach(c=>c.classList.remove('active','dimmed'));
+  // Restore title
+  titleEl.style.background='linear-gradient(180deg,#f5d98a,#c9a84c)';
+  titleEl.style.webkitBackgroundClip='text';
+  titleEl.style.webkitTextFillColor='transparent';
+  titleEl.style.backgroundClip='text';
+  titleEl.style.filter='drop-shadow(0 0 28px rgba(201,168,76,.4))';
+  titleEl.textContent='ARCADE';
+  footerEl.style.color='rgba(201,168,76,.3)';
+  targetR=0; targetG=0; targetB=0; targetA=0;
+  document.getElementById('divider-inner').style.background=
+    'linear-gradient(90deg,rgba(39,180,80,1),rgba(60,140,230,1),rgba(220,60,60,1),rgba(168,85,247,1),rgba(224,80,30,1),rgba(201,168,76,1),rgba(39,180,80,1))';
 }
 
-// ── LIVE PLAYER COUNTER ───────────────────────────────────────────────────────
-const SERVER_URL = `wss://${location.host}`;
-let countWs = null;
-
-function connectCounter() {
-  try {
-    countWs = new WebSocket(SERVER_URL);
-    countWs.onmessage = e => {
-      try {
-        const msg = JSON.parse(e.data);
-        if (msg.type === 'online_counts') {
-          updateCount('mus',   msg.mus   || 0);
-          updateCount('caida', msg.caida || 0);
-          updateCount('poker', msg.poker || 0);
-          updateCount('chinchon', msg.chinchon || 0);
-          updateCount('uno',   msg.uno   || 0);
-        }
-      } catch {}
-    };
-    countWs.onopen = () => {
-      countWs.send(JSON.stringify({ type: 'getOnlineCounts' }));
-    };
-    countWs.onclose = () => setTimeout(connectCounter, 8000);
-    countWs.onerror = () => {};
-  } catch {}
+function stopFx(){
+  currentFx=null;
+  clearInterval(fxInterval); fxInterval=null;
+  fxParticles.forEach(p=>p.dying=true);
 }
 
-function updateCount(game, n) {
-  const el = document.getElementById(`online-${game}`);
-  if (!el) return;
-  el.textContent = n === 0 ? 'nadie online' : n === 1 ? '1 jugador online' : `${n} jugadores online`;
-}
+// ── EFFECTS ─────────────────────────────────────────────────────
 
-// Request counts every 15s
-connectCounter();
-setInterval(() => {
-  if (countWs && countWs.readyState === 1) {
-    countWs.send(JSON.stringify({ type: 'getOnlineCounts' }));
+// MUS: letters/words floating up from bottom
+function initMus(){
+  const WORDS=['MUS','GRANDE','CHICA','PARES','JUEGO','ÓRDAGO','3','7','1','K','♣','♠'];
+  const G='rgba(39,180,80,';
+  function spawn(){
+    if(currentFx!=='mus') return;
+    const word=WORDS[Math.floor(Math.random()*WORDS.length)];
+    const ms=3000+Math.random()*3000;
+    fxParticles.push({
+      type:'floatWord', sym:word,
+      x:FW*(.08+Math.random()*.84),
+      y:FH+30,
+      vy:-(FH*(.4+Math.random()*.35))/ms*1000,
+      vx:(Math.random()-.5)*18,
+      sz:.7+Math.random()*1.8,
+      col:G, ms, born:Date.now(), peak:.12+Math.random()*.18, dying:false
+    });
   }
-}, 15000);
-
-// ── FALLING CARDS ─────────────────────────────────────────────────────────────
-const fallLayer = document.getElementById('fall-layer');
-let fallInterval = null;
-
-const fallConfig = {
-  mus:       { logo:'🃏', extras:['♣','♠','♥','♦','7','3','1'], opacity:0.24, glow:'rgba(39,180,80,0.5)' },
-  caida:     { logo:'🎴', extras:['♣','♠','♥','♦','7','3','1'], opacity:0.24, glow:'rgba(60,140,230,0.5)' },
-  poker:     { logo:'♠',  extras:['♥','♦','♣','A','K','Q','J'], opacity:0.28, glow:'rgba(230,60,60,0.5)' },
-  solitario: { logo:'🕷️', extras:['♠','♥','♦','♣','A','K','Q'], opacity:0.26, glow:'rgba(168,85,247,0.5)' },
-  uno:       { logo:'🃏', extras:['🔴','🔵','🟢','🟡','+2','+4','↺'], opacity:0.28, glow:'rgba(224,48,48,0.5)' },
-  chinchon:  { logo:'🪙', extras:['♠','♥','♦','♣','👑','⚔️','7'], opacity:0.30, glow:'rgba(201,168,76,0.6)' },
-};
-
-function pickSymbol(game) {
-  const cfg = fallConfig[game];
-  return Math.random() < 0.1
-    ? cfg.extras[Math.floor(Math.random() * cfg.extras.length)]
-    : cfg.logo;
+  for(let i=0;i<10;i++) setTimeout(spawn,i*160);
+  fxInterval=setInterval(spawn,300);
 }
 
-function spawnCard(game) {
-  const cfg = fallConfig[game];
-  if (!cfg) return;
-  const el  = document.createElement('div');
-  el.className = 'fall-card';
-  const sym    = pickSymbol(game);
-  const isLogo = sym === cfg.logo;
-  el.textContent = sym;
-  const left = 5  + Math.random() * 90;
-  const size = isLogo ? (2.0 + Math.random() * 2.6) : (1.1 + Math.random() * 1.5);
-  const dur  = 4.0 + Math.random() * 5.0;
-  const r0   = -30 + Math.random() * 60;
-  const r1   = r0  + (-90 + Math.random() * 180);
-  const tints = { mus:'#7bc47b', caida:'#6ab0e8', poker:'#e87a7a', solitario:'#c084fc', chinchon:'#e8c97a' };
-  const tint  = isLogo ? '' : `color:${tints[game]};`;
-  el.style.cssText = `left:${left}vw;font-size:${size}rem;animation-duration:${dur}s;--r0:${r0}deg;--r1:${r1}deg;--peak-opacity:${cfg.opacity};--fall-glow:${cfg.glow};${tint}`;
-  fallLayer.appendChild(el);
-  setTimeout(() => el.remove(), (dur + 0.3) * 1000);
+// CAÍDA: water ripples from random spots
+function initCaida(){
+  function spawn(){
+    if(currentFx!=='caida') return;
+    fxParticles.push({
+      type:'ripple',
+      x:FW*(.2+Math.random()*.6), y:FH*(.25+Math.random()*.5),
+      maxR:100+Math.random()*130, ms:1800+Math.random()*600,
+      born:Date.now(), dying:false
+    });
+  }
+  spawn(); spawn();
+  fxInterval=setInterval(spawn,550);
 }
 
-function startFalling(game) {
-  stopFalling();
-  spawnCard(game);
-  setTimeout(() => { if (current === game) spawnCard(game); }, 220);
-  setTimeout(() => { if (current === game) spawnCard(game); }, 500);
-  fallInterval = setInterval(() => { if (current === game) spawnCard(game); }, 480);
-}
-function stopFalling() {
-  clearInterval(fallInterval);
-  fallInterval = null;
-}
-
-// ── AMBIENT PARTICLES ─────────────────────────────────────────────────────────
-const suits  = ['♠','♥','♦','♣'];
-const colors = ['rgba(201,168,76,0.5)','rgba(180,40,40,0.5)','rgba(220,220,220,0.32)'];
-const container = document.getElementById('particles');
-
-for (let i = 0; i < 22; i++) {
-  const el    = document.createElement('div');
-  el.className = 'particle';
-  el.textContent = suits[Math.floor(Math.random() * suits.length)];
-  const size  = 0.6 + Math.random() * 0.9;
-  const left  = Math.random() * 100;
-  const dur   = 18 + Math.random() * 28;
-  const delay = -(Math.random() * dur);
-  const color = colors[Math.floor(Math.random() * colors.length)];
-  el.style.cssText = `left:${left}vw;font-size:${size}rem;color:${color};animation-duration:${dur}s;animation-delay:${delay}s;`;
-  container.appendChild(el);
+// POKER: chips rolling from sides
+function initPoker(){
+  const CHIP_COLS=['#c0392b','#2980b9','#27ae60','#1a1a40','#e8c97a'];
+  function spawn(){
+    if(currentFx!=='poker') return;
+    const fromLeft=Math.random()<.5;
+    const cy=FH*(.3+Math.random()*.45);
+    fxParticles.push({
+      type:'chip',
+      x:fromLeft?-32:FW+32, y:cy,
+      tx:FW/2+(-90+Math.random()*180), ty:cy+(Math.random()-.5)*55,
+      col:CHIP_COLS[Math.floor(Math.random()*CHIP_COLS.length)],
+      sz:17+Math.random()*13, rotSpeed:(Math.random()-.5)*7,
+      ms:1300+Math.random()*600, born:Date.now(), dying:false, fromLeft
+    });
+  }
+  for(let i=0;i<4;i++) setTimeout(spawn,i*150);
+  fxInterval=setInterval(spawn,310);
 }
 
-// ── 4-COLOR ANIMATED WAVE BACKGROUND ─────────────────────────────────────────
-(function(){
-  const canvas = document.getElementById('bg-canvas');
-  const ctx = canvas.getContext('2d');
+// SOLITARIO: webs grow from corners
+function initSol(){
+  fxParticles=[{type:'web',born:Date.now(),ms:99999,dying:false}];
+  Object.keys(webPhase).forEach(k=>webPhase[k]=0);
+}
 
-  // The 4 game colors: green(Mus), blue(Caída), red(Poker), purple(Solitario)
-  const blobs = [
-    { x:0.12, y:0.45, r:0.52, color:[18,110,42],  sx:0.000055, sy:0.000038, phase:0   },
-    { x:0.88, y:0.42, r:0.50, color:[15,55,160],   sx:0.000042, sy:0.000048, phase:1.8 },
-    { x:0.50, y:0.95, r:0.55, color:[155,12,12],   sx:0.000035, sy:0.000044, phase:3.4 },
-    { x:0.50, y:0.10, r:0.48, color:[109,40,217],  sx:0.000040, sy:0.000052, phase:5.1 },
+// UNO: UNO cards fall from top
+function initUno(){
+  const CARD_FACES=[
+    {val:'+2',bg:'#e03030'},{val:'+4',bg:'#1a1a1a'},{val:'↺',bg:'#e0b020'},
+    {val:'⊘',bg:'#20a040'},{val:'7',bg:'#2060e0'},{val:'3',bg:'#e03030'},
+    {val:'1',bg:'#20a040'},{val:'5',bg:'#e0b020'},{val:'9',bg:'#2060e0'},
   ];
-  const blobs2 = [
-    { x:0.30, y:0.70, r:0.30, color:[18,110,42],  sx:0.000048, sy:0.000028, phase:2.2 },
-    { x:0.70, y:0.30, r:0.28, color:[15,55,160],   sx:0.000038, sy:0.000045, phase:4.0 },
-    { x:0.20, y:0.20, r:0.28, color:[155,12,12],   sx:0.000030, sy:0.000050, phase:0.8 },
-    { x:0.80, y:0.80, r:0.32, color:[109,40,217],  sx:0.000045, sy:0.000032, phase:3.0 },
+  function spawn(){
+    if(currentFx!=='uno') return;
+    const face=CARD_FACES[Math.floor(Math.random()*CARD_FACES.length)];
+    fxParticles.push({
+      type:'unoCard',
+      x:FW*(.04+Math.random()*.92), y:-80,
+      vy:130+Math.random()*100,
+      vx:(Math.random()-.5)*30,
+      rot:(-30+Math.random()*60),
+      rotV:(Math.random()-.5)*100,
+      face, w:44, h:64,
+      ms:2800+Math.random()*800,
+      born:Date.now(), dying:false
+    });
+  }
+  for(let i=0;i<12;i++) setTimeout(spawn,i*80);
+  fxInterval=setInterval(spawn,180);
+}
+
+// CHINCHÓN: gold coins rain
+function initChinchon(){
+  const SYMS=['🪙','7','♠','♥','👑','R'];
+  function spawn(){
+    if(currentFx!=='chinchon') return;
+    fxParticles.push({
+      type:'coin',
+      x:FW*(.03+Math.random()*.94), y:-30,
+      vy:90+Math.random()*110, vx:(Math.random()-.5)*38,
+      rot:Math.random()*360, rotV:(Math.random()-.5)*280,
+      scalePhase:Math.random()*Math.PI*2,
+      sz:16+Math.random()*14,
+      sym:SYMS[Math.floor(Math.random()*SYMS.length)],
+      ms:2400+Math.random()*900, born:Date.now(), dying:false
+    });
+  }
+  for(let i=0;i<7;i++) setTimeout(spawn,i*110);
+  fxInterval=setInterval(spawn,230);
+}
+
+// ── MAIN FX TICK ────────────────────────────────────────────────
+function fxTick(){
+  requestAnimationFrame(fxTick);
+  fxX.clearRect(0,0,FW,FH);
+  const now=Date.now();
+
+  // Web growth
+  if(currentFx==='solitario'){
+    Object.keys(webPhase).forEach(k=>{webPhase[k]=Math.min(1,webPhase[k]+.004);});
+  } else {
+    Object.keys(webPhase).forEach(k=>{webPhase[k]=Math.max(0,webPhase[k]-.018);});
+  }
+  const anyWeb=Object.values(webPhase).some(v=>v>0);
+  if(anyWeb) drawWebs();
+
+  // Clean dead
+  fxParticles=fxParticles.filter(p=>{
+    if(p.type==='web') return anyWeb;
+    if(p.dying) return false;
+    const age=Date.now()-p.born;
+    return age<(p.ms+300);
+  });
+
+  fxParticles.forEach(p=>{
+    if(p.type==='web') return;
+    const age=now-p.born;
+    const t=Math.min(1,age/p.ms);
+    if(p.type==='ripple')   drawRipple(p,t);
+    else if(p.type==='chip')     drawChip(p,t,age);
+    else if(p.type==='coin')     drawCoin(p,t,age);
+    else if(p.type==='unoCard')  drawUnoCard(p,t,age);
+    else if(p.type==='floatWord') drawFloatWord(p,t,age);
+  });
+}
+fxTick();
+
+// ── DRAW FUNCTIONS ───────────────────────────────────────────────
+
+function drawFloatWord(p,t,age){
+  const elapsed=age/1000;
+  const x=p.x+p.vx*elapsed;
+  const y=p.y+p.vy*elapsed;
+  const op=t<.12?t/.12:t>.78?(1-t)/.22:1;
+  fxX.save();
+  fxX.globalAlpha=op*p.peak;
+  fxX.font=`bold ${p.sz}rem "Cinzel Decorative",cursive`;
+  fxX.fillStyle=p.col+'0.9)';
+  fxX.textAlign='center'; fxX.textBaseline='middle';
+  fxX.fillText(p.sym,x,y);
+  fxX.restore();
+  if(y<-40) p.dying=true;
+}
+
+function drawRipple(p,t){
+  const r=p.maxR*t;
+  const op=(t<.1?t/.1:1-t)*.6;
+  fxX.save();
+  fxX.globalAlpha=op;
+  fxX.strokeStyle='rgba(60,140,230,0.85)';
+  fxX.lineWidth=2.5*(1-t*.7);
+  fxX.beginPath();
+  fxX.ellipse(p.x,p.y,r,r*.36,0,0,Math.PI*2);
+  fxX.stroke();
+  if(t>0.15){
+    fxX.globalAlpha=op*.4; fxX.lineWidth=1.2;
+    fxX.beginPath();
+    fxX.ellipse(p.x,p.y,r*.55,r*.55*.36,0,0,Math.PI*2);
+    fxX.stroke();
+  }
+  fxX.restore();
+}
+
+function drawChip(p,t,age){
+  const ease=1-Math.pow(1-t,3);
+  const x=p.x+(p.tx-p.x)*ease;
+  const y=p.y+(p.ty-p.y)*ease+Math.sin(t*Math.PI)*-18;
+  const op=t<.1?t/.1:t>.85?(1-t)/.15:1;
+  const rot=(p.rotSpeed*age/1000)%(Math.PI*2);
+  fxX.save();
+  fxX.globalAlpha=op*.88;
+  fxX.translate(x,y); fxX.rotate(rot);
+  fxX.beginPath();
+  fxX.ellipse(0,0,p.sz,p.sz*.38,0,0,Math.PI*2);
+  fxX.fillStyle=p.col; fxX.fill();
+  fxX.strokeStyle='rgba(255,255,255,0.3)'; fxX.lineWidth=1.5; fxX.stroke();
+  fxX.strokeStyle='rgba(255,255,255,0.15)'; fxX.lineWidth=3;
+  for(let i=0;i<3;i++){
+    const a=i/3*Math.PI;
+    fxX.beginPath();
+    fxX.moveTo(Math.cos(a)*p.sz*.6,Math.sin(a)*p.sz*.23);
+    fxX.lineTo(Math.cos(a+Math.PI)*p.sz*.6,Math.sin(a+Math.PI)*p.sz*.23);
+    fxX.stroke();
+  }
+  fxX.restore();
+}
+
+function drawWebs(){
+  const corners=[
+    {cx:0, cy:0, fx:1, fy:1, p:webPhase.tl},
+    {cx:FW,cy:0, fx:-1,fy:1, p:webPhase.tr},
+    {cx:0, cy:FH,fx:1, fy:-1,p:webPhase.bl},
+    {cx:FW,cy:FH,fx:-1,fy:-1,p:webPhase.br},
   ];
+  corners.forEach(({cx,cy,fx,fy,p})=>{
+    if(p<=0) return;
+    const size=Math.min(FW,FH)*.4*p;
+    fxX.save(); fxX.globalAlpha=p*.55;
+    fxX.strokeStyle='rgba(168,85,247,0.75)';
+    [0,18,36,54,72,88].forEach(a=>{
+      const rad=a*Math.PI/180;
+      fxX.lineWidth=.8; fxX.beginPath();
+      fxX.moveTo(cx,cy);
+      fxX.lineTo(cx+Math.cos(rad)*size*fx,cy+Math.sin(rad)*size*fy);
+      fxX.stroke();
+    });
+    [.22,.42,.62,.82,1].forEach(f=>{
+      const pts=[0,18,36,54,72,88].map(a=>{
+        const rad=a*Math.PI/180;
+        return [cx+Math.cos(rad)*size*f*fx, cy+Math.sin(rad)*size*f*fy];
+      });
+      fxX.lineWidth=.6; fxX.beginPath();
+      fxX.moveTo(pts[0][0],pts[0][1]);
+      pts.slice(1).forEach(([x,y])=>fxX.lineTo(x,y));
+      fxX.stroke();
+    });
+    fxX.restore();
+  });
+}
 
-  let W, H;
-  function resize(){
-    W = canvas.width  = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-  }
-  resize();
-  window.addEventListener('resize', resize);
 
-  function drawBlob(blob, t, alpha){
-    // Slow gentle drift using real time in ms
-    const ox = Math.sin(t * blob.sx + blob.phase)       * 0.16;
-    const oy = Math.cos(t * blob.sy + blob.phase + 1.3) * 0.12;
-    const bx = (blob.x + ox) * W;
-    const by = (blob.y + oy) * H;
-    const br = blob.r * Math.min(W, H);
-    // Very slow rotation — full cycle every ~3 minutes
-    const angle = t * 0.0000003;
-    const grad = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-    const [r,g,b] = blob.color;
-    grad.addColorStop(0,    `rgba(${r},${g},${b},${alpha})`);
-    grad.addColorStop(0.50, `rgba(${r},${g},${b},${alpha * 0.45})`);
-    grad.addColorStop(1,    `rgba(${r},${g},${b},0)`);
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.ellipse(bx, by, br * 1.15, br * 0.88, angle, 0, Math.PI * 2);
-    ctx.fill();
-  }
 
-  function draw(ts){
-    const t = ts || 0;
-    ctx.clearRect(0,0,W,H);
-    ctx.fillStyle = '#060809';
-    ctx.fillRect(0,0,W,H);
+function rRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
 
-    [...blobs, ...blobs2].forEach(b => drawBlob(b, t, 0.36));
+function drawUnoCard(p,t,age){
+  const elapsed=age/1000;
+  const x=p.x+p.vx*elapsed;
+  const y=p.y+p.vy*elapsed+.5*160*elapsed*elapsed;
+  const op=t<.08?t/.08:t>.82?(1-t)/.18:1;
+  const rot=(p.rot+p.rotV*elapsed)*Math.PI/180;
+  fxX.save();
+  fxX.globalAlpha=Math.max(0,op)*.92;
+  fxX.translate(x,y); fxX.rotate(rot);
+  const w=p.w, h=p.h;
+  rRect(fxX,-w/2,-h/2,w,h,5);
+  fxX.fillStyle=p.face.bg; fxX.fill();
+  fxX.strokeStyle='rgba(255,255,255,0.75)'; fxX.lineWidth=2; fxX.stroke();
+  // Oval
+  fxX.beginPath();
+  fxX.ellipse(0,0,w*.32,h*.4,Math.PI/4,0,Math.PI*2);
+  fxX.fillStyle='rgba(255,255,255,0.16)'; fxX.fill();
+  // Value
+  fxX.fillStyle='#fff';
+  const vStr=String(p.face.val);
+  fxX.font=`bold ${vStr.length>2?9:vStr.length>1?11:15}px Arial Black,Arial,sans-serif`;
+  fxX.textAlign='center'; fxX.textBaseline='middle';
+  fxX.fillText(vStr,0,0);
+  fxX.font='bold 8px Arial,sans-serif';
+  fxX.fillText(vStr,-w/2+7,-h/2+8);
+  fxX.restore();
+  if(y>FH+80) p.dying=true;
+}
 
-    // Vignette
-    const vig = ctx.createRadialGradient(W/2,H/2,0, W/2,H/2,Math.max(W,H)*0.72);
-    vig.addColorStop(0,   'rgba(0,0,0,0)');
-    vig.addColorStop(0.55,'rgba(0,0,0,0.08)');
-    vig.addColorStop(1,   'rgba(0,0,0,0.58)');
-    ctx.fillStyle = vig;
-    ctx.fillRect(0,0,W,H);
-
-    requestAnimationFrame(draw);
-  }
-  requestAnimationFrame(draw);
-})();
+function drawCoin(p,t,age){
+  const elapsed=age/1000;
+  const gravity=200;
+  const x=p.x+p.vx*elapsed;
+  const y=p.y+p.vy*elapsed+.5*gravity*elapsed*elapsed;
+  const op=t<.08?t/.08:t>.82?(1-t)/.18:1;
+  const flipScale=Math.cos(p.scalePhase+elapsed*5.5);
+  const rot=(p.rot+p.rotV*elapsed)*Math.PI/180;
+  fxX.save();
+  fxX.globalAlpha=op*.92;
+  fxX.translate(x,y); fxX.rotate(rot);
+  fxX.scale(Math.abs(flipScale)||.01,1);
+  fxX.beginPath();
+  fxX.arc(0,0,p.sz,0,Math.PI*2);
+  const grd=fxX.createRadialGradient(-p.sz*.3,-p.sz*.3,0,0,0,p.sz);
+  grd.addColorStop(0,'#f5d98a');
+  grd.addColorStop(.55,'#c9a84c');
+  grd.addColorStop(1,'#7a5010');
+  fxX.fillStyle=grd; fxX.fill();
+  fxX.strokeStyle='rgba(255,220,100,0.45)'; fxX.lineWidth=1.5; fxX.stroke();
+  fxX.fillStyle='rgba(60,30,0,0.75)';
+  fxX.font=`bold ${p.sz*.9}px serif`;
+  fxX.textAlign='center'; fxX.textBaseline='middle';
+  fxX.fillText(p.sym,0,0);
+  fxX.restore();
+  if(y>FH+50) p.dying=true;
+}
 </script>
-
-<!-- ── LEADERBOARD TOGGLE BUTTON ── -->
-<button id="lb-toggle" onclick="lbOpen()">🏆 RANKING</button>
-
-<!-- ── LEADERBOARD PANEL ── -->
-<div id="lb-panel">
-  <div class="lb-header">
-    <div class="lb-title">🏆 RANKING</div>
-    <button class="lb-close" onclick="lbClose()">✕ CERRAR</button>
-  </div>
-  <div class="lb-tabs-row">
-    <button class="lb-tab active" onclick="lbSetTab('sol')" id="lbt-sol">
-      <span class="tab-icon">🕷️</span>SOLITARIO
-    </button>
-    <button class="lb-tab" onclick="lbSetTab('mus')" id="lbt-mus">
-      <span class="tab-icon">🃏</span>MUS
-    </button>
-    <button class="lb-tab" onclick="lbSetTab('cai')" id="lbt-cai">
-      <span class="tab-icon">🎴</span>CAÍDA
-    </button>
-    <button class="lb-tab" onclick="lbSetTab('pok')" id="lbt-pok">
-      <span class="tab-icon">♠️</span>PÓKER
-    </button>
-    <button class="lb-tab" onclick="lbSetTab('uno')" id="lbt-uno">
-      <span class="tab-icon">🃏</span>UNO
-    </button>
-  </div>
-  <div class="lb-body" id="lb-body">
-    <div class="lb-empty">Cargando ranking…</div>
-  </div>
-</div>
-
 </body>
 </html>
