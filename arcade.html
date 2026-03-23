@@ -293,11 +293,16 @@ body.hover-solitario .card-solitario { transform:translateY(-8px) scale(1.04); }
 .card-caida { border-color:rgba(30,80,160,0.3); }
 .card-poker { border-color:rgba(160,30,30,0.3); }
 .card-solitario { border-color:rgba(109,40,217,0.3); animation: fadeSlideUp 0.65s ease both; animation-delay: 1.2s; }
-.card-chinchon { border-color:rgba(30,120,30,0.3); animation: fadeSlideUp 0.65s ease both; animation-delay: 1.35s; }
+.card-chinchon { border-color:rgba(180,130,10,0.3); animation: fadeSlideUp 0.65s ease both; animation-delay: 1.35s; }
+.card-uno      { border-color:rgba(200,40,40,0.3);  animation: fadeSlideUp 0.65s ease both; animation-delay: 1.50s; }
+.card-ajedrez  { border-color:rgba(160,160,160,0.2); animation: fadeSlideUp 0.65s ease both; animation-delay: 1.65s; }
 .card-mus:hover      { border-color:rgba(39,200,80,0.7);   box-shadow:0 14px 55px rgba(18,110,42,0.45),  0 0 0 1px rgba(39,200,80,0.25); }
 .card-caida:hover    { border-color:rgba(60,140,230,0.7);  box-shadow:0 14px 55px rgba(15,55,160,0.45),  0 0 0 1px rgba(60,140,230,0.25); }
 .card-poker:hover    { border-color:rgba(230,60,60,0.7);   box-shadow:0 14px 55px rgba(155,12,12,0.45),  0 0 0 1px rgba(230,60,60,0.25); }
 .card-solitario:hover{ border-color:rgba(168,85,247,0.7);  box-shadow:0 14px 55px rgba(109,40,217,0.5),  0 0 0 1px rgba(168,85,247,0.25); }
+.card-chinchon:hover { border-color:rgba(232,201,122,0.7); box-shadow:0 14px 55px rgba(180,130,10,0.45), 0 0 0 1px rgba(232,201,122,0.25); }
+.card-uno:hover      { border-color:rgba(232,122,122,0.7); box-shadow:0 14px 55px rgba(200,40,40,0.45),  0 0 0 1px rgba(232,122,122,0.25); }
+.card-ajedrez:hover  { border-color:rgba(200,200,200,0.6); box-shadow:0 14px 55px rgba(160,160,160,0.35),0 0 0 1px rgba(200,200,200,0.2); }
 
 .game-icon { font-size:2.8rem; line-height:1; filter:drop-shadow(0 2px 8px rgba(0,0,0,0.5)); transition:transform 0.3s; }
 .game-card:hover .game-icon { transform:scale(1.12); }
@@ -308,6 +313,8 @@ body.hover-solitario .card-solitario { transform:translateY(-8px) scale(1.04); }
 .card-poker     .game-name { color:#e87a7a; }
 .card-solitario .game-name { color:#c084fc; }
 .card-chinchon  .game-name { color:#e8c97a; }
+.card-uno       .game-name { color:#e87a7a; }
+.card-ajedrez   .game-name { color:#d0d0d0; }
 
 .game-desc { font-size:0.6rem; color:var(--muted); text-align:center; line-height:1.5; letter-spacing:0.05em; }
 
@@ -322,6 +329,8 @@ body.hover-solitario .card-solitario { transform:translateY(-8px) scale(1.04); }
 .card-poker     .game-players { background:rgba(160,30,30,0.2);   color:#e87a7a; border:1px solid rgba(160,30,30,0.3); }
 .card-solitario .game-players { background:rgba(109,40,217,0.2);  color:#c084fc; border:1px solid rgba(109,40,217,0.3); }
 .card-chinchon  .game-players { background:rgba(180,130,10,0.18); color:#e8c97a; border:1px solid rgba(180,130,10,0.35); }
+.card-uno       .game-players { background:rgba(200,40,40,0.18);  color:#e87a7a; border:1px solid rgba(200,40,40,0.35); }
+.card-ajedrez   .game-players { background:rgba(180,180,180,0.12);color:#c8c8c8; border:1px solid rgba(180,180,180,0.25); }
 
 /* Online counter */
 .online-count {
@@ -339,6 +348,8 @@ body.hover-solitario .card-solitario { transform:translateY(-8px) scale(1.04); }
 .card-poker     .online-dot { background:#e87a7a; box-shadow:0 0 5px rgba(232,122,122,0.7); }
 .card-solitario .online-dot { background:#c084fc; box-shadow:0 0 5px rgba(192,132,252,0.7); }
 .card-chinchon  .online-dot { background:#e8c97a; box-shadow:0 0 5px rgba(232,201,122,0.8); }
+.card-uno       .online-dot { background:#e87a7a; box-shadow:0 0 5px rgba(232,122,122,0.7); }
+.card-ajedrez   .online-dot { background:#c8c8c8; box-shadow:0 0 5px rgba(200,200,200,0.6); }
 @keyframes dotPulse {
   0%,100% { opacity:1; transform:scale(1); }
   50%     { opacity:0.4; transform:scale(0.75); }
@@ -359,6 +370,8 @@ body.hover-caida     .footer { color:rgba(106,176,232,0.4); }
 body.hover-poker     .footer { color:rgba(232,122,122,0.4); }
 body.hover-solitario .footer { color:rgba(192,132,252,0.4); }
 body.hover-chinchon  .footer { color:rgba(201,168,76,0.45); }
+body.hover-uno       .footer { color:rgba(232,122,122,0.4); }
+body.hover-ajedrez   .footer { color:rgba(200,200,200,0.35); }
 
 /* ── AMBIENT PARTICLES ─────────────────────────────────────────────────────── */
 .particles { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
@@ -697,9 +710,6 @@ body.hover-poker  .card-poker    { animation:rgbBorderPok  2.5s linear infinite;
 body.hover-solitario .card-solitario { animation:rgbBorderSol 2.5s linear infinite; }
 body.hover-uno    .card-uno      { animation:rgbBorderUno  2s   linear infinite; }
 body.hover-chinchon .card-chinchon { animation:rgbBorderCh  2.5s linear infinite; }
-body.hover-ajedrez  .game-card:not(.card-ajedrez){ opacity:0.32 !important; filter:saturate(0.2) !important; }
-body.hover-ajedrez  .card-ajedrez  { animation:rgbBorderAj  2.5s linear infinite; }
-@keyframes rgbBorderAj { 0%,100%{box-shadow:0 0 0 2px rgba(200,200,200,.8),0 14px 48px rgba(200,200,200,.2),0 0 24px rgba(200,200,200,.3)} 50%{box-shadow:0 0 0 2px rgba(255,255,255,1),0 14px 60px rgba(255,255,255,.35),0 0 40px rgba(255,255,255,.4)} }
 
 @keyframes rgbBorderMus { 0%,100%{box-shadow:0 0 0 2px rgba(39,180,80,.9),0 14px 48px rgba(39,180,80,.35),0 0 24px rgba(39,180,80,.4)} 50%{box-shadow:0 0 0 2px rgba(100,240,100,1),0 14px 60px rgba(39,180,80,.55),0 0 40px rgba(39,180,80,.6)} }
 @keyframes rgbBorderCai { 0%,100%{box-shadow:0 0 0 2px rgba(60,140,230,.9),0 14px 48px rgba(60,140,230,.35),0 0 24px rgba(60,140,230,.4)} 50%{box-shadow:0 0 0 2px rgba(120,180,255,1),0 14px 60px rgba(60,140,230,.55),0 0 40px rgba(60,140,230,.6)} }
@@ -740,16 +750,11 @@ body.hover-ajedrez  .card-ajedrez  { animation:rgbBorderAj  2.5s linear infinite
   <div class="header">
     <div class="suits-row"><span>♠</span><span>♥</span><span>♦</span><span>♣</span></div>
     <div class="title">ARCADE</div>
-    <div class="subtitle">Juegos de cartas · Multijugador</div>
+    <div class="subtitle">Juegos · Multijugador</div>
   </div>
 
-  <div style="display:flex;flex-direction:column;gap:5px;width:min(580px,88vw)">
-    <div id="div-bar" style="height:3px;border-radius:2px;position:relative;overflow:hidden;background:rgba(255,255,255,0.05)">
-      <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(39,180,80,1),rgba(60,140,230,1),rgba(220,60,60,1),rgba(168,85,247,1),rgba(224,80,30,1),rgba(201,168,76,1),rgba(39,180,80,1));background-size:200% 100%;animation:arcadeBarFlow 4s linear infinite"></div>
-    </div>
-    <div id="mode-bar" style="height:3px;border-radius:2px;position:relative;overflow:hidden;background:rgba(255,255,255,0.03);opacity:0;transition:opacity .5s">
-      <div id="mode-bar-inner" style="position:absolute;inset:0;background-size:200% 100%;animation:arcadeBarFlow 1.8s linear infinite;border-radius:2px"></div>
-    </div>
+  <div style="width:min(620px,90vw);height:4px;border-radius:2px;position:relative;overflow:hidden;background:rgba(255,255,255,0.05)">
+    <div id="arcade-bar-inner" style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(39,180,80,1),rgba(60,140,230,1),rgba(220,60,60,1),rgba(168,85,247,1),rgba(224,80,30,1),rgba(201,168,76,1),rgba(39,180,80,1));background-size:200% 100%;animation:arcadeBarFlow 4s linear infinite;transition:opacity .4s"></div>
   </div>
 
   <div class="games">
@@ -1012,21 +1017,22 @@ function setHover(game) {
   // Tint
   const [r,g,b] = MODE_COLORS[game]||[0,0,0];
   if(window._setArcadeTint) window._setArcadeTint(r,g,b,1);
-  // Title color
+  // Title color — use text-shadow + color only, don't fight gradient clip
   if(MODE_TITLE_COLORS[game]) {
-    titleEl.style.webkitTextFillColor = MODE_TITLE_COLORS[game];
+    const tc = MODE_TITLE_COLORS[game];
+    titleEl.style.webkitTextFillColor = tc;
+    titleEl.style.webkitBackgroundClip = 'unset';
     titleEl.style.backgroundImage = 'none';
-    titleEl.style.filter = `drop-shadow(0 0 30px ${MODE_TITLE_COLORS[game]}) drop-shadow(0 0 60px ${MODE_TITLE_COLORS[game]}55)`;
+    titleEl.style.filter = `drop-shadow(0 0 30px ${tc}aa) drop-shadow(0 0 60px ${tc}55)`;
   }
-  // Mode bar
-  const mb = document.getElementById('mode-bar');
-  const mbi = document.getElementById('mode-bar-inner');
-  if(mb && mbi) {
-    mb.style.opacity = '1';
+  // Single bar: switch to mode color gradient
+  const barInner = document.getElementById('arcade-bar-inner');
+  if(barInner) {
     const c1=`rgba(${r},${g},${b},1)`;
-    const c2=`rgba(${Math.min(255,r+60)},${Math.min(255,g+60)},${Math.min(255,b+60)},1)`;
-    const c3=`rgba(${Math.max(0,r-40)},${Math.max(0,g-40)},${Math.max(0,b-40)},1)`;
-    mbi.style.background = `linear-gradient(90deg,${c3},${c1},${c2},${c1},${c2},${c1},${c3})`;
+    const c2=`rgba(${Math.min(255,r+70)},${Math.min(255,g+70)},${Math.min(255,b+70)},1)`;
+    const c3=`rgba(${Math.max(0,r-50)},${Math.max(0,g-50)},${Math.max(0,b-50)},1)`;
+    barInner.style.background = `linear-gradient(90deg,${c3},${c1},${c2},${c1},${c2},${c1},${c3})`;
+    barInner.style.animationDuration = '1.8s';
   }
 }
 
@@ -1047,12 +1053,19 @@ function clearHover() {
   setGhostMode('idle');
   if(window._clearArcadeTint) window._clearArcadeTint();
   // Restore title style
-  titleEl.style.webkitTextFillColor = 'transparent';
+  titleEl.style.webkitTextFillColor = '';
+  titleEl.style.webkitBackgroundClip = '';
+  titleEl.style.backgroundClip = '';
   titleEl.style.backgroundImage = '';
+  titleEl.style.color = '';
   titleEl.style.filter = '';
-  // Hide mode bar
-  const mb = document.getElementById('mode-bar');
-  if(mb) mb.style.opacity = '0';
+  titleEl.style.textShadow = '';
+  // Restore bar to full rainbow
+  const barInner = document.getElementById('arcade-bar-inner');
+  if(barInner) {
+    barInner.style.background = 'linear-gradient(90deg,rgba(39,180,80,1),rgba(60,140,230,1),rgba(220,60,60,1),rgba(168,85,247,1),rgba(224,80,30,1),rgba(201,168,76,1),rgba(39,180,80,1))';
+    barInner.style.animationDuration = '4s';
+  }
 }
 
 // ── LIVE PLAYER COUNTER ───────────────────────────────────────────────────────
