@@ -18,7 +18,7 @@ const httpServer = http.createServer((req, res) => {
     res.end(JSON.stringify(lbDB));
     return;
   }
-  const routes = { '/': 'arcade.html', '/mus': 'mus.html', '/caida': 'caida.html', '/poker': 'poker.html', '/solitario': 'solitario.html', '/uno': 'uno.html', '/chinchon': 'chinchon.html' };
+  const routes = { '/': 'arcade.html', '/mus': 'mus.html', '/caida': 'caida.html', '/poker': 'poker.html', '/solitario': 'solitario.html', '/uno': 'uno.html', '/chinchon': 'chinchon.html', '/ajedrez': 'ajedrez.html' };
   const file = routes[req.url] || null;
   if (!file) { res.writeHead(404); res.end('Not found'); return; }
   fs.readFile(path.join(__dirname, file), (err, data) => {
@@ -3815,7 +3815,301 @@ wss.on('connection', (ws) => {
       chHandleMessage(playerRoom, playerData, msg);
     }
 
+    // ── AJEDREZ MESSAGES ──────────────────────────────────────────────────────
+    if (playerGame === 'ajedrez' && playerRoom && playerData) {
+      chessHandleMessage(playerRoom, playerData, msg);
+    }
+
   }); // end ws.on message
+
+
+// ═══════════════════════════════════════════════════════════════
+// AJEDREZ — Chess Online
+// ═══════════════════════════════════════════════════════════════
+const chessRooms = {};
+
+function chessBroadcast(room, msg) {
+  const s = JSON.stringify(msg);
+  room.players.forEach(p => { if (p.ws && p.ws.readyState === 1) p.ws.send(s); });
+}
+
+function chessSendState(room) {
+  room.players.forEach(p => {
+    if (!p.ws || p.ws.readyState !== 1) return;
+    p.ws.send(JSON.stringify({
+      type: 'chess_state',
+      board: room.board,
+      turn: room.turn,
+      status: room.status,
+      check: room.inCheck,
+      lastMove: room.lastMove,
+      captured: room.captured,
+      players: room.players.map(pl => ({ name: pl.name, color: pl.color })),
+      yourColor: p.color,
+      roomCode: room.code,
+      moveCount: room.moveCount || 0,
+      pgn: room.pgn || []
+    }));
+  });
+}
+
+// Initial board setup
+function chessInitBoard() {
+  const b = Array(8).fill(null).map(() => Array(8).fill(null));
+  const order = ['R','N','B','Q','K','B','N','R'];
+  for (let c = 0; c < 8; c++) {
+    b[0][c] = { piece: order[c], color: 'black' };
+    b[1][c] = { piece: 'P', color: 'black' };
+    b[6][c] = { piece: 'P', color: 'white' };
+    b[7][c] = { piece: order[c], color: 'white' };
+  }
+  return b;
+}
+
+function chessHandleMessage(room, player, msg) {
+  if (msg.type === 'chess_move') {
+    if (room.status !== 'playing') return;
+    if (player.color !== room.turn) return;
+    const { from, to, promotion } = msg;
+    const result = chessApplyMove(room, from, to, promotion);
+    if (!result.valid) {
+      player.ws.send(JSON.stringify({ type: 'chess_invalid', reason: result.reason }));
+      return;
+    }
+    chessSendState(room);
+  }
+  if (msg.type === 'chess_resign') {
+    if (room.status !== 'playing') return;
+    room.status = 'ended';
+    room.result = player.color === 'white' ? 'black_win' : 'white_win';
+    room.resultReason = 'resign';
+    chessBroadcast(room, { type: 'chess_end', result: room.result, reason: 'resign', by: player.name });
+    chessSendState(room);
+  }
+  if (msg.type === 'chess_draw_offer') {
+    const opp = room.players.find(p => p.color !== player.color);
+    if (opp && opp.ws) opp.ws.send(JSON.stringify({ type: 'chess_draw_offer', from: player.name }));
+  }
+  if (msg.type === 'chess_draw_accept') {
+    room.status = 'ended';
+    room.result = 'draw';
+    chessBroadcast(room, { type: 'chess_end', result: 'draw', reason: 'agreement' });
+    chessSendState(room);
+  }
+  if (msg.type === 'chess_rematch') {
+    room.rematchVotes = (room.rematchVotes || 0) + 1;
+    if (room.rematchVotes >= 2) {
+      // Reset
+      room.board = chessInitBoard();
+      room.turn = 'white';
+      room.status = 'playing';
+      room.inCheck = false;
+      room.lastMove = null;
+      room.captured = { white: [], black: [] };
+      room.pgn = [];
+      room.moveCount = 0;
+      room.rematchVotes = 0;
+      room.castlingRights = { white: { kSide: true, qSide: true }, black: { kSide: true, qSide: true } };
+      room.enPassant = null;
+      // Swap colors
+      room.players.forEach(p => { p.color = p.color === 'white' ? 'black' : 'white'; });
+      chessBroadcast(room, { type: 'chess_rematch_start' });
+      chessSendState(room);
+    } else {
+      const opp = room.players.find(p => p !== player);
+      if (opp && opp.ws) opp.ws.send(JSON.stringify({ type: 'chess_rematch_offer', from: player.name }));
+    }
+  }
+}
+
+// ── CHESS MOVE VALIDATION ──────────────────────────────────────────────────
+function chessApplyMove(room, from, to, promotion) {
+  const b = room.board;
+  const [fr, fc] = from;
+  const [tr, tc] = to;
+  const piece = b[fr][fc];
+  if (!piece || piece.color !== room.turn) return { valid: false, reason: 'not your piece' };
+
+  const moves = chessLegalMoves(room, fr, fc);
+  const legal = moves.find(m => m[0] === tr && m[1] === tc);
+  if (!legal) return { valid: false, reason: 'illegal move' };
+
+  // Record captured
+  const captured = b[tr][tc];
+  if (captured) room.captured[room.turn].push(captured.piece);
+
+  // En passant capture
+  if (piece.piece === 'P' && fc !== tc && !captured) {
+    // en passant
+    const epRow = room.turn === 'white' ? tr + 1 : tr - 1;
+    const epPiece = b[epRow][tc];
+    if (epPiece) room.captured[room.turn].push(epPiece.piece);
+    b[epRow][tc] = null;
+  }
+
+  // Move piece
+  b[tr][tc] = { ...piece };
+  b[fr][fc] = null;
+
+  // Promotion
+  if (piece.piece === 'P' && (tr === 0 || tr === 7)) {
+    b[tr][tc].piece = promotion || 'Q';
+  }
+
+  // Castling
+  if (piece.piece === 'K') {
+    if (fc === 4 && tc === 6) { // kingside
+      b[fr][7] = null; b[fr][5] = { piece: 'R', color: piece.color };
+    }
+    if (fc === 4 && tc === 2) { // queenside
+      b[fr][0] = null; b[fr][3] = { piece: 'R', color: piece.color };
+    }
+    room.castlingRights[piece.color].kSide = false;
+    room.castlingRights[piece.color].qSide = false;
+  }
+  if (piece.piece === 'R') {
+    if (fc === 0) room.castlingRights[piece.color].qSide = false;
+    if (fc === 7) room.castlingRights[piece.color].kSide = false;
+  }
+
+  // En passant target
+  room.enPassant = null;
+  if (piece.piece === 'P' && Math.abs(tr - fr) === 2) {
+    room.enPassant = [(fr + tr) >> 1, fc];
+  }
+
+  room.lastMove = { from, to, piece: piece.piece };
+  room.moveCount = (room.moveCount || 0) + 1;
+  room.pgn = room.pgn || [];
+  room.pgn.push({ from, to, piece: piece.piece, color: room.turn });
+
+  // Switch turn
+  room.turn = room.turn === 'white' ? 'black' : 'white';
+
+  // Check / checkmate / stalemate
+  const oppColor = room.turn;
+  room.inCheck = chessIsInCheck(b, oppColor);
+  const oppMoves = chessAllLegalMoves(room, oppColor);
+  if (oppMoves.length === 0) {
+    room.status = 'ended';
+    if (room.inCheck) {
+      room.result = oppColor === 'white' ? 'black_win' : 'white_win';
+      room.resultReason = 'checkmate';
+      chessBroadcast(room, { type: 'chess_end', result: room.result, reason: 'checkmate' });
+    } else {
+      room.result = 'draw';
+      room.resultReason = 'stalemate';
+      chessBroadcast(room, { type: 'chess_end', result: 'draw', reason: 'stalemate' });
+    }
+  }
+
+  // 50-move rule (simplified)
+  if (room.moveCount > 100 && !room.inCheck) {
+    // could add 50-move draw here
+  }
+
+  return { valid: true };
+}
+
+function chessIsInCheck(board, color) {
+  // Find king
+  let kr = -1, kc = -1;
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const p = board[r][c];
+    if (p && p.piece === 'K' && p.color === color) { kr = r; kc = c; }
+  }
+  if (kr < 0) return false;
+  // Check if any opponent piece attacks king
+  const opp = color === 'white' ? 'black' : 'white';
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const p = board[r][c];
+    if (p && p.color === opp) {
+      const atk = chessRawMoves(board, r, c, null, null);
+      if (atk.some(([ar, ac]) => ar === kr && ac === kc)) return true;
+    }
+  }
+  return false;
+}
+
+function chessAllLegalMoves(room, color) {
+  const all = [];
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const p = room.board[r][c];
+    if (p && p.color === color) {
+      const moves = chessLegalMoves(room, r, c);
+      moves.forEach(m => all.push({ from: [r, c], to: m }));
+    }
+  }
+  return all;
+}
+
+function chessLegalMoves(room, r, c) {
+  const b = room.board;
+  const piece = b[r][c];
+  if (!piece) return [];
+  const raw = chessRawMoves(b, r, c, room.enPassant, room.castlingRights);
+  // Filter moves that leave own king in check
+  return raw.filter(([tr, tc]) => {
+    const copy = b.map(row => row.map(cell => cell ? { ...cell } : null));
+    // En passant
+    if (piece.piece === 'P' && c !== tc && !copy[tr][tc]) {
+      const epRow = piece.color === 'white' ? tr + 1 : tr - 1;
+      copy[epRow][tc] = null;
+    }
+    copy[tr][tc] = { ...piece };
+    copy[r][c] = null;
+    // Castling: also move rook
+    if (piece.piece === 'K' && c === 4 && tc === 6) { copy[r][7] = null; copy[r][5] = { piece:'R', color:piece.color }; }
+    if (piece.piece === 'K' && c === 4 && tc === 2) { copy[r][0] = null; copy[r][3] = { piece:'R', color:piece.color }; }
+    return !chessIsInCheck(copy, piece.color);
+  });
+}
+
+function chessRawMoves(board, r, c, enPassant, castlingRights) {
+  const p = board[r][c];
+  if (!p) return [];
+  const { piece, color } = p;
+  const opp = color === 'white' ? 'black' : 'white';
+  const moves = [];
+  const add = (tr, tc) => {
+    if (tr < 0 || tr > 7 || tc < 0 || tc > 7) return false;
+    const t = board[tr][tc];
+    if (t && t.color === color) return false;
+    moves.push([tr, tc]);
+    return !t; // can continue sliding if square was empty
+  };
+  const slide = (dr, dc) => { let rr = r + dr, cc = c + dc; while (rr >= 0 && rr < 8 && cc >= 0 && cc < 8) { if (!add(rr, cc)) break; rr += dr; cc += dc; } };
+
+  if (piece === 'P') {
+    const dir = color === 'white' ? -1 : 1;
+    const start = color === 'white' ? 6 : 1;
+    if (!board[r + dir]?.[c]) {
+      moves.push([r + dir, c]);
+      if (r === start && !board[r + 2 * dir]?.[c]) moves.push([r + 2 * dir, c]);
+    }
+    // Captures
+    [[r + dir, c - 1],[r + dir, c + 1]].forEach(([tr, tc]) => {
+      if (tr < 0 || tr > 7 || tc < 0 || tc > 7) return;
+      if (board[tr][tc]?.color === opp) moves.push([tr, tc]);
+      if (enPassant && enPassant[0] === tr && enPassant[1] === tc) moves.push([tr, tc]);
+    });
+  }
+  if (piece === 'R' || piece === 'Q') { [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dr,dc]) => slide(dr,dc)); }
+  if (piece === 'B' || piece === 'Q') { [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([dr,dc]) => slide(dr,dc)); }
+  if (piece === 'N') { [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dc]) => add(r+dr, c+dc)); }
+  if (piece === 'K') {
+    [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(([dr,dc]) => add(r+dr, c+dc));
+    // Castling
+    if (castlingRights) {
+      const cr = castlingRights[color];
+      const backRank = color === 'white' ? 7 : 0;
+      if (cr.kSide && r === backRank && c === 4 && !board[r][5] && !board[r][6] && board[r][7]?.piece === 'R') moves.push([r, 6]);
+      if (cr.qSide && r === backRank && c === 4 && !board[r][3] && !board[r][2] && !board[r][1] && board[r][0]?.piece === 'R') moves.push([r, 2]);
+    }
+  }
+  return moves;
+}
+
 
   ws.on('close', () => {
     if (!playerRoom || !playerData) return;
@@ -3850,6 +4144,13 @@ wss.on('connection', (ws) => {
       else playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
       if (playerRoom.players.length === 0) { delete chinchonRooms[playerRoom.code]; return; }
       chSendState(playerRoom);
+    } else if (playerGame === 'ajedrez') {
+      if (playerRoom.players.length <= 1) { delete chessRooms[playerRoom.code]; return; }
+      playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
+      if (playerRoom.status === 'playing') {
+        playerRoom.status = 'ended';
+        chessBroadcast(playerRoom, { type: 'chess_opponent_left', name: playerData.name });
+      }
     }
   });
 }); // end wss.on connection
@@ -3858,6 +4159,7 @@ wss.on('connection', (ws) => {
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🎮 Arcade Server — puerto ${PORT}`);
   console.log('  /       → Lobby');
+  console.log('  /ajedrez → Ajedrez');
   console.log('  /mus    → Mus');
   console.log('  /caida  → Caída');
   console.log('  /poker  → Poker\n');

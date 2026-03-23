@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ajedrez · Arcade</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Playfair+Display+SC:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:#0a0a0a; --paper:#f8f5ef; --mid:#888; --light:#e8e4dc;
+  --sq-light:#f0ebe0; --sq-dark:#2a2a2a;
+  --accent:#c9a84c; --danger:#c0392b;
+  --sz:min(8.8vw,8.8vh,64px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--ink);color:var(--paper);
+  font-family:'EB Garamond',serif;overflow:hidden;}
+
+/* ── BACKGROUND ── */
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 60% at 20% 30%, rgba(255,255,255,0.03) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 80% 70%, rgba(201,168,76,0.04) 0%, transparent 55%),
+    repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.01) 40px, rgba(255,255,255,0.01) 41px),
+    repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,0.01) 40px, rgba(255,255,255,0.01) 41px);
+}
+
+#app{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+
+/* ══════════════════════════════
+   LOBBY
+══════════════════════════════ */
+#lobby{display:flex;flex-direction:column;align-items:center;gap:1.8rem;padding:2rem 1rem;max-width:460px;width:100%;}
+#lobby.hidden{display:none;}
+
+.chess-logo{text-align:center;}
+.chess-logo h1{
+  font-family:'Playfair Display SC',serif;font-weight:700;
+  font-size:clamp(3rem,12vw,5.5rem);letter-spacing:.06em;
+  background:linear-gradient(180deg,#fff 0%,#c8c0b0 50%,#888 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 2px 30px rgba(255,255,255,0.15));
+  animation:logoBreath 5s ease-in-out infinite;
+}
+@keyframes logoBreath{
+  0%,100%{filter:drop-shadow(0 2px 20px rgba(255,255,255,.1));}
+  50%{filter:drop-shadow(0 2px 50px rgba(255,255,255,.28));}
+}
+.chess-logo .pieces-row{font-size:1.6rem;letter-spacing:.5rem;color:rgba(255,255,255,.25);margin:.3rem 0;}
+.chess-logo p{font-style:italic;font-size:.85rem;color:rgba(255,255,255,.35);letter-spacing:.15em;}
+
+/* Divider */
+.logo-div{width:180px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);}
+
+/* Panel */
+.panel{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:6px;padding:1.8rem 2rem;
+  width:100%;max-width:380px;
+  display:flex;flex-direction:column;gap:1rem;
+  animation:panelGlow 4s ease-in-out infinite;
+}
+@keyframes panelGlow{
+  0%,100%{box-shadow:0 0 0 1px rgba(255,255,255,.08),0 20px 50px rgba(0,0,0,.7);}
+  50%{box-shadow:0 0 0 1px rgba(255,255,255,.18),0 20px 60px rgba(0,0,0,.8),0 0 40px rgba(255,255,255,.04);}
+}
+.panel h2{font-family:'Playfair Display',serif;font-size:1rem;letter-spacing:.12em;
+  color:rgba(255,255,255,.5);text-align:center;text-transform:uppercase;}
+
+.fg label{display:block;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;
+  color:rgba(255,255,255,.35);margin-bottom:.3rem;}
+.fg input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  border-radius:3px;color:var(--paper);font-family:'EB Garamond',serif;font-size:1rem;
+  padding:.55rem .8rem;outline:none;transition:border-color .2s,box-shadow .2s;}
+.fg input:focus{border-color:rgba(255,255,255,.35);box-shadow:0 0 0 2px rgba(255,255,255,.06);}
+
+.btn{font-family:'Playfair Display SC',serif;font-size:.72rem;letter-spacing:.12em;
+  padding:.7rem 1.4rem;border:none;border-radius:3px;cursor:pointer;
+  width:100%;transition:all .2s;text-transform:uppercase;}
+.btn-white{background:var(--paper);color:var(--ink);}
+.btn-white:hover{background:#fff;box-shadow:0 4px 20px rgba(255,255,255,.2);}
+.btn-outline{background:transparent;border:1px solid rgba(255,255,255,.22);color:rgba(255,255,255,.7);}
+.btn-outline:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.4);}
+.btn-danger{background:rgba(180,30,30,.7);color:#ffd0d0;border:1px solid rgba(200,50,50,.4);}
+.btn-danger:hover{background:rgba(200,40,40,.85);}
+
+.div-or{text-align:center;font-size:.7rem;color:rgba(255,255,255,.22);letter-spacing:.2em;position:relative;}
+.div-or::before,.div-or::after{content:'';position:absolute;top:50%;width:38%;height:1px;background:rgba(255,255,255,.1);}
+.div-or::before{left:0;}.div-or::after{right:0;}
+
+/* Waiting room */
+#waiting{display:none;flex-direction:column;align-items:center;gap:1.2rem;padding:2rem 1rem;}
+#waiting.vis{display:flex;}
+.code-display{font-family:'Playfair Display SC',serif;font-size:3rem;letter-spacing:.4em;
+  color:var(--accent);text-shadow:0 0 30px rgba(201,168,76,.4);text-align:center;}
+.wait-info{font-style:italic;color:rgba(255,255,255,.35);font-size:.88rem;text-align:center;letter-spacing:.05em;}
+.wait-dots::after{content:'';animation:dots 1.5s steps(4,end) infinite;}
+@keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}100%{content:''}}
+
+/* ══════════════════════════════
+   GAME
+══════════════════════════════ */
+#game{display:none;width:100%;height:100%;flex-direction:column;align-items:center;justify-content:center;gap:.6rem;padding:.5rem;}
+#game.vis{display:flex;}
+
+.game-layout{display:flex;gap:1rem;align-items:flex-start;justify-content:center;width:100%;max-width:900px;}
+
+/* Player strips */
+.player-strip{display:flex;align-items:center;gap:.6rem;padding:.4rem .7rem;
+  border-radius:4px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);}
+.player-strip.active-turn{border-color:var(--accent);background:rgba(201,168,76,.06);
+  box-shadow:0 0 12px rgba(201,168,76,.1);}
+.strip-piece{font-size:1.4rem;line-height:1;}
+.strip-name{font-family:'Playfair Display',serif;font-size:.85rem;flex:1;}
+.strip-clock{font-family:'Playfair Display SC',serif;font-size:.9rem;letter-spacing:.05em;
+  color:rgba(255,255,255,.5);}
+.captured-row{display:flex;flex-wrap:wrap;gap:1px;font-size:.65rem;opacity:.45;min-height:.8rem;}
+
+/* Board wrapper */
+.board-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.board-row-labels{display:flex;flex-direction:column;justify-content:space-around;
+  height:calc(var(--sz)*8);font-size:.55rem;color:rgba(255,255,255,.25);
+  font-family:'Playfair Display SC',serif;letter-spacing:.05em;padding:.5px 0;}
+.board-col-labels{display:flex;justify-content:space-around;
+  width:calc(var(--sz)*8);font-size:.55rem;color:rgba(255,255,255,.25);
+  font-family:'Playfair Display SC',serif;padding:0 .5px;}
+.board-and-labels{display:flex;gap:3px;}
+
+/* Board */
+#board{
+  display:grid;grid-template-columns:repeat(8,var(--sz));grid-template-rows:repeat(8,var(--sz));
+  border:1px solid rgba(255,255,255,.15);
+  box-shadow:0 8px 50px rgba(0,0,0,.8),0 0 0 4px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.05);
+  position:relative;
+}
+
+.sq{
+  width:var(--sz);height:var(--sz);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;cursor:pointer;transition:background .12s;
+  user-select:none;-webkit-tap-highlight-color:transparent;
+}
+.sq.light{background:var(--sq-light);}
+.sq.dark{background:var(--sq-dark);}
+.sq.selected{background:rgba(201,168,76,.55) !important;}
+.sq.legal{background:rgba(201,168,76,.2) !important;}
+.sq.legal::after{content:'';position:absolute;width:32%;height:32%;border-radius:50%;background:rgba(201,168,76,.5);}
+.sq.legal.occupied::after{content:'';position:absolute;inset:0;border-radius:0;
+  background:transparent;box-shadow:inset 0 0 0 3px rgba(201,168,76,.6);}
+.sq.last-from{background:rgba(100,150,255,.25) !important;}
+.sq.last-to{background:rgba(100,150,255,.35) !important;}
+.sq.in-check{background:rgba(200,30,30,.55) !important;}
+
+/* Pieces */
+.piece{
+  font-size:calc(var(--sz)*.72);line-height:1;
+  transition:transform .08s;pointer-events:none;
+  filter:drop-shadow(0 1px 3px rgba(0,0,0,.6));
+  position:relative;z-index:1;
+}
+.sq.light .piece.white{filter:drop-shadow(0 1px 2px rgba(0,0,0,.5));}
+.sq.dark  .piece.white{filter:drop-shadow(0 0 3px rgba(255,255,255,.3)) drop-shadow(0 1px 2px rgba(0,0,0,.8));}
+.sq.light .piece.black{filter:drop-shadow(0 1px 2px rgba(0,0,0,.7));}
+.sq.dark  .piece.black{filter:drop-shadow(0 0 2px rgba(0,0,0,.4));}
+
+/* Sidebar */
+.sidebar{display:flex;flex-direction:column;gap:.7rem;width:180px;min-width:150px;}
+.move-log{flex:1;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+  border-radius:4px;padding:.5rem;overflow-y:auto;max-height:calc(var(--sz)*8 - 80px);min-height:80px;}
+.move-log h3{font-family:'Playfair Display SC',serif;font-size:.6rem;letter-spacing:.15em;
+  color:rgba(255,255,255,.3);margin-bottom:.4rem;text-transform:uppercase;}
+.move-pair{display:flex;gap:.4rem;font-size:.75rem;padding:.15rem 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.move-num{color:rgba(255,255,255,.25);width:1.2rem;flex-shrink:0;}
+.move-w,.move-b{flex:1;font-family:'Playfair Display SC',serif;letter-spacing:.04em;
+  color:rgba(255,255,255,.6);cursor:default;}
+.move-w:hover,.move-b:hover{color:var(--accent);}
+
+.status-bar{text-align:center;font-style:italic;font-size:.82rem;color:rgba(255,255,255,.4);
+  min-height:1.2rem;letter-spacing:.04em;}
+.status-bar.check{color:#f08080;font-style:normal;font-weight:600;}
+.status-bar.your-turn{color:var(--accent);}
+
+.side-btns{display:flex;flex-direction:column;gap:.4rem;}
+.side-btns .btn{font-size:.56rem;padding:.45rem .6rem;}
+
+/* Promotion modal */
+#promo-modal{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.75);backdrop-filter:blur(4px);}
+#promo-modal.vis{display:flex;}
+.promo-box{background:#1a1a1a;border:1px solid rgba(255,255,255,.15);border-radius:8px;
+  padding:1.5rem;text-align:center;}
+.promo-box h3{font-family:'Playfair Display',serif;margin-bottom:1rem;color:rgba(255,255,255,.7);font-size:.9rem;letter-spacing:.1em;}
+.promo-pieces{display:flex;gap:.5rem;justify-content:center;}
+.promo-piece{font-size:2.8rem;cursor:pointer;padding:.3rem .5rem;border-radius:4px;
+  transition:background .15s;border:1px solid transparent;}
+.promo-piece:hover{background:rgba(201,168,76,.2);border-color:rgba(201,168,76,.4);}
+
+/* End overlay */
+#end-overlay{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.8);backdrop-filter:blur(6px);}
+#end-overlay.vis{display:flex;}
+.end-box{text-align:center;display:flex;flex-direction:column;align-items:center;gap:1.2rem;padding:2.5rem 3rem;
+  background:rgba(20,20,20,.9);border:1px solid rgba(255,255,255,.12);border-radius:8px;
+  box-shadow:0 20px 80px rgba(0,0,0,.9);}
+.end-king{font-size:4rem;animation:endKing .8s ease-out both;}
+@keyframes endKing{from{transform:scale(0) rotate(-20deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+.end-title{font-family:'Playfair Display',serif;font-size:2rem;color:#fff;letter-spacing:.06em;}
+.end-sub{font-style:italic;color:rgba(255,255,255,.4);font-size:.9rem;}
+.end-btns{display:flex;gap:.8rem;flex-wrap:wrap;justify-content:center;}
+.end-btns .btn{width:auto;padding:.6rem 1.4rem;font-size:.65rem;}
+
+/* Notice toast */
+#notice{position:fixed;top:1rem;left:50%;transform:translateX(-50%) translateY(-80px);
+  z-index:200;background:rgba(20,20,20,.95);border:1px solid rgba(255,255,255,.15);
+  border-radius:4px;padding:.6rem 1.2rem;font-size:.82rem;letter-spacing:.06em;
+  transition:transform .3s ease;pointer-events:none;white-space:nowrap;}
+#notice.show{transform:translateX(-50%) translateY(0);}
+
+/* Back button */
+.back-btn{position:fixed;top:10px;left:12px;z-index:300;font-family:'Playfair Display SC',serif;
+  font-size:.52rem;letter-spacing:.12em;color:rgba(255,255,255,.35);text-decoration:none;
+  padding:4px 8px;border:1px solid rgba(255,255,255,.12);border-radius:3px;
+  background:rgba(0,0,0,.4);transition:all .2s;}
+.back-btn:hover{color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.3);}
+
+/* ── RESPONSIVE MOBILE ── */
+@media(max-width:680px){
+  :root{--sz:min(10.5vw,10.5vh,54px);}
+  .game-layout{flex-direction:column;align-items:center;gap:.4rem;}
+  .sidebar{width:calc(var(--sz)*8);flex-direction:row;flex-wrap:wrap;min-width:unset;}
+  .move-log{max-height:80px;min-height:60px;flex:2;}
+  .side-btns{flex-direction:row;flex:1;}
+  .side-btns .btn{flex:1;}
+  #board{border-width:.5px;}
+}
+@media(max-height:600px){
+  :root{--sz:min(10vw,9vh,50px);}
+  #game{padding:.3rem;}
+  .game-layout{gap:.4rem;}
+}
+</style>
+</head>
+<body>
+<a class="back-btn" href="/">← ARCADE</a>
+<div id="notice"></div>
+
+<div id="app">
+
+<!-- ── LOBBY ── -->
+<div id="lobby">
+  <div class="chess-logo">
+    <div class="pieces-row">♜ ♛ ♚ ♞ ♝ ♟</div>
+    <h1>AJEDREZ</h1>
+    <div class="logo-div" style="margin:.5rem auto"></div>
+    <p>Multijugador · En línea</p>
+  </div>
+
+  <div class="panel">
+    <h2>Nueva partida</h2>
+    <div class="fg"><label>Tu nombre</label>
+      <input type="text" id="pname" placeholder="Jugador..." maxlength="16" autocomplete="off">
+    </div>
+    <button class="btn btn-white" onclick="createRoom()">♔ Crear sala</button>
+    <div class="div-or">o</div>
+    <div class="fg"><label>Código de sala</label>
+      <input type="text" id="rcode" placeholder="ZXXX" maxlength="4" style="text-transform:uppercase;letter-spacing:.2em" onkeydown="if(event.key==='Enter')joinRoom()">
+    </div>
+    <button class="btn btn-outline" onclick="joinRoom()">♟ Unirse</button>
+  </div>
+</div>
+
+<!-- ── WAITING ── -->
+<div id="waiting">
+  <div class="chess-logo" style="margin-bottom:.5rem">
+    <h1 style="font-size:clamp(2rem,8vw,3.5rem)">SALA CREADA</h1>
+  </div>
+  <div class="code-display" id="w-code">—</div>
+  <p class="wait-info">Comparte este código con tu rival<br>Esperando conexión<span class="wait-dots"></span></p>
+  <div style="font-size:1.8rem;color:rgba(255,255,255,.12)">♔ vs ♚</div>
+  <button class="btn btn-danger" style="max-width:200px" onclick="exitToLobby()">Cancelar</button>
+</div>
+
+<!-- ── GAME ── -->
+<div id="game">
+  <!-- Top player (opponent) -->
+  <div id="strip-top" class="player-strip" style="width:calc(var(--sz)*8 + 20px);max-width:100%">
+    <span class="strip-piece" id="piece-top">♚</span>
+    <span class="strip-name" id="name-top">—</span>
+    <div class="captured-row" id="cap-top"></div>
+  </div>
+
+  <div class="game-layout">
+    <!-- Board -->
+    <div class="board-wrap">
+      <div class="status-bar" id="status-bar">—</div>
+      <div class="board-and-labels">
+        <div class="board-row-labels" id="row-labels"></div>
+        <div>
+          <div id="board"></div>
+          <div class="board-col-labels" id="col-labels"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="move-log">
+        <h3>Movimientos</h3>
+        <div id="move-list"></div>
+      </div>
+      <div class="side-btns">
+        <button class="btn btn-outline" onclick="offerDraw()">½ Tablas</button>
+        <button class="btn btn-danger" onclick="resign()">⚑ Rendirse</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom player (me) -->
+  <div id="strip-bot" class="player-strip" style="width:calc(var(--sz)*8 + 20px);max-width:100%">
+    <span class="strip-piece" id="piece-bot">♔</span>
+    <span class="strip-name" id="name-bot">—</span>
+    <div class="captured-row" id="cap-bot"></div>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<!-- Promotion modal -->
+<div id="promo-modal">
+  <div class="promo-box">
+    <h3>PROMOCIÓN — Elige pieza</h3>
+    <div class="promo-pieces" id="promo-pieces"></div>
+  </div>
+</div>
+
+<!-- End overlay -->
+<div id="end-overlay">
+  <div class="end-box">
+    <div class="end-king" id="end-king">♔</div>
+    <div class="end-title" id="end-title">—</div>
+    <div class="end-sub" id="end-sub">—</div>
+    <div class="end-btns">
+      <button class="btn btn-white" onclick="requestRematch()">Revancha</button>
+      <button class="btn btn-outline" onclick="exitToLobby()">Salir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// PIECES
+// ══════════════════════════════════════════════════════════════
+const GLYPHS = {
+  white: { K:'♔', Q:'♛', R:'♖', B:'♗', N:'♘', P:'♙' },
+  black: { K:'♚', Q:'♛', R:'♜', B:'♝', N:'♞', P:'♟' },
+};
+// Use filled glyphs for both, differentiate by color CSS
+const PIECE_GLYPH = {
+  white: { K:'♔', Q:'♕', R:'♖', B:'♗', N:'♘', P:'♙' },
+  black: { K:'♚', Q:'♛', R:'♜', B:'♝', N:'♞', P:'♟' },
+};
+const PIECE_NAMES = { K:'Rey', Q:'Reina', R:'Torre', B:'Alfil', N:'Caballo', P:'Peón' };
+const COL_LETTERS = ['a','b','c','d','e','f','g','h'];
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+let ws = null;
+let myColor = null, myName = '', roomCode = '';
+let board = null, turn = null, gameStatus = 'waiting';
+let selected = null, legalSquares = [];
+let lastMove = null, inCheck = false;
+let pendingPromo = null;
+let flipped = false; // board orientation
+let pgn = [];
+
+// ══════════════════════════════════════════════════════════════
+// WEBSOCKET
+// ══════════════════════════════════════════════════════════════
+function connect(cb) {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}`);
+  ws.onopen = () => cb && cb();
+  ws.onmessage = e => handleMsg(JSON.parse(e.data));
+  ws.onclose = () => { showNotice('Desconectado del servidor'); };
+}
+
+function send(obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); }
+
+// ══════════════════════════════════════════════════════════════
+// LOBBY ACTIONS
+// ══════════════════════════════════════════════════════════════
+function createRoom() {
+  const name = document.getElementById('pname').value.trim() || 'Jugador';
+  myName = name;
+  connect(() => send({ type: 'chess_create', name }));
+}
+
+function joinRoom() {
+  const name = document.getElementById('pname').value.trim() || 'Jugador';
+  const code = document.getElementById('rcode').value.trim().toUpperCase();
+  if (!code || code.length < 3) { showNotice('Introduce un código de sala'); return; }
+  myName = name;
+  connect(() => send({ type: 'chess_join', name, code }));
+}
+
+function exitToLobby() {
+  if (ws) { ws.close(); ws = null; }
+  document.getElementById('lobby').classList.remove('hidden');
+  document.getElementById('waiting').classList.remove('vis');
+  document.getElementById('game').classList.remove('vis');
+  document.getElementById('end-overlay').classList.remove('vis');
+  selected = null; legalSquares = [];
+  board = null; myColor = null; roomCode = '';
+}
+
+// ══════════════════════════════════════════════════════════════
+// MESSAGE HANDLER
+// ══════════════════════════════════════════════════════════════
+function handleMsg(msg) {
+  if (msg.type === 'chess_created') {
+    myColor = 'white';
+    roomCode = msg.code;
+    document.getElementById('lobby').classList.add('hidden');
+    document.getElementById('w-code').textContent = msg.code;
+    document.getElementById('waiting').classList.add('vis');
+  }
+  if (msg.type === 'chess_joined') {
+    myColor = 'black';
+    roomCode = msg.code;
+    flipped = true;
+    document.getElementById('lobby').classList.add('hidden');
+    document.getElementById('waiting').classList.remove('vis');
+  }
+  if (msg.type === 'chess_start') {
+    document.getElementById('waiting').classList.remove('vis');
+    document.getElementById('game').classList.add('vis');
+    const opp = msg.players.find(p => p.color !== myColor);
+    const me  = msg.players.find(p => p.color === myColor);
+    document.getElementById('name-top').textContent = opp?.name || '—';
+    document.getElementById('name-bot').textContent = me?.name  || myName;
+    document.getElementById('piece-top').textContent = opp?.color === 'white' ? '♔' : '♚';
+    document.getElementById('piece-bot').textContent = myColor === 'white' ? '♔' : '♚';
+    flipped = myColor === 'black';
+    buildLabels();
+    showNotice('¡Partida comenzada!');
+  }
+  if (msg.type === 'chess_state') {
+    board = msg.board;
+    turn  = msg.turn;
+    gameStatus = msg.status;
+    inCheck = msg.check;
+    lastMove = msg.lastMove;
+    pgn = msg.pgn || [];
+    renderBoard();
+    renderStatus();
+    renderMoves();
+    renderCaptured(msg.captured);
+  }
+  if (msg.type === 'chess_invalid') {
+    showNotice('Movimiento inválido');
+    selected = null; legalSquares = []; renderBoard();
+  }
+  if (msg.type === 'chess_end') {
+    showEndOverlay(msg.result, msg.reason, msg.by);
+  }
+  if (msg.type === 'chess_draw_offer') {
+    if (confirm(`${msg.from} te ofrece tablas. ¿Aceptas?`)) {
+      send({ type: 'chess_draw_accept' });
+    }
+  }
+  if (msg.type === 'chess_rematch_offer') {
+    showNotice(`${msg.from} propone revancha`);
+  }
+  if (msg.type === 'chess_rematch_start') {
+    document.getElementById('end-overlay').classList.remove('vis');
+    pgn = []; renderMoves();
+    showNotice('¡Revancha! Los colores se intercambian');
+  }
+  if (msg.type === 'chess_opponent_left') {
+    showNotice(`${msg.name} abandonó la partida`);
+    setTimeout(exitToLobby, 3000);
+  }
+  if (msg.type === 'error') {
+    showNotice('⚠️ ' + msg.msg);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// BOARD RENDERING
+// ══════════════════════════════════════════════════════════════
+function buildLabels() {
+  const rows = document.getElementById('row-labels');
+  const cols = document.getElementById('col-labels');
+  rows.innerHTML = '';
+  cols.innerHTML = '';
+  for (let i = 0; i < 8; i++) {
+    const r = flipped ? i + 1 : 8 - i;
+    const d = document.createElement('div');
+    d.textContent = r;
+    rows.appendChild(d);
+  }
+  for (let i = 0; i < 8; i++) {
+    const c = flipped ? 7 - i : i;
+    const d = document.createElement('div');
+    d.textContent = COL_LETTERS[c];
+    cols.appendChild(d);
+  }
+}
+
+function renderBoard() {
+  const el = document.getElementById('board');
+  el.innerHTML = '';
+  for (let vi = 0; vi < 8; vi++) {
+    for (let vj = 0; vj < 8; vj++) {
+      const r = flipped ? 7 - vi : vi;
+      const c = flipped ? 7 - vj : vj;
+      const sq = document.createElement('div');
+      const light = (r + c) % 2 === 0;
+      sq.className = `sq ${light ? 'light' : 'dark'}`;
+      sq.dataset.r = r;
+      sq.dataset.c = c;
+
+      // Highlights
+      if (selected && selected[0] === r && selected[1] === c) sq.classList.add('selected');
+      if (legalSquares.some(([lr,lc]) => lr === r && lc === c)) {
+        sq.classList.add('legal');
+        if (board[r][c]) sq.classList.add('occupied');
+      }
+      if (lastMove) {
+        if (lastMove.from[0] === r && lastMove.from[1] === c) sq.classList.add('last-from');
+        if (lastMove.to[0]   === r && lastMove.to[1]   === c) sq.classList.add('last-to');
+      }
+      if (inCheck && board[r][c]?.piece === 'K' && board[r][c]?.color === turn) sq.classList.add('in-check');
+
+      // Piece
+      const cell = board[r][c];
+      if (cell) {
+        const p = document.createElement('span');
+        p.className = `piece ${cell.color}`;
+        p.textContent = PIECE_GLYPH[cell.color][cell.piece];
+        sq.appendChild(p);
+      }
+
+      sq.addEventListener('click', () => onSquareClick(r, c));
+      sq.addEventListener('touchend', e => { e.preventDefault(); onSquareClick(r, c); });
+      el.appendChild(sq);
+    }
+  }
+}
+
+function onSquareClick(r, c) {
+  if (gameStatus !== 'playing') return;
+  if (turn !== myColor) { showNotice('Es el turno de tu rival'); return; }
+
+  const cell = board[r][c];
+
+  // If a piece is selected and we click a legal square → move
+  if (selected && legalSquares.some(([lr, lc]) => lr === r && lc === c)) {
+    const [fr, fc] = selected;
+    const movingPiece = board[fr][fc];
+    // Check promotion
+    if (movingPiece?.piece === 'P' && (r === 0 || r === 7)) {
+      pendingPromo = { from: [fr, fc], to: [r, c] };
+      showPromoModal(myColor);
+      return;
+    }
+    doMove(selected, [r, c]);
+    return;
+  }
+
+  // Select own piece
+  if (cell && cell.color === myColor) {
+    selected = [r, c];
+    legalSquares = getClientLegalMoves(r, c);
+    renderBoard();
+    return;
+  }
+
+  // Deselect
+  selected = null;
+  legalSquares = [];
+  renderBoard();
+}
+
+function doMove(from, to, promotion) {
+  selected = null; legalSquares = [];
+  send({ type: 'chess_move', from, to, promotion });
+  renderBoard();
+}
+
+// ══════════════════════════════════════════════════════════════
+// CLIENT-SIDE LEGAL MOVES (preview only — server validates)
+// ══════════════════════════════════════════════════════════════
+function getClientLegalMoves(r, c) {
+  if (!board[r][c]) return [];
+  const piece = board[r][c];
+  const color = piece.color;
+  const opp = color === 'white' ? 'black' : 'white';
+  const moves = [];
+  const add = (tr, tc) => {
+    if (tr < 0 || tr > 7 || tc < 0 || tc > 7) return false;
+    const t = board[tr][tc];
+    if (t && t.color === color) return false;
+    moves.push([tr, tc]);
+    return !t;
+  };
+  const slide = (dr, dc) => {
+    let rr = r + dr, cc = c + dc;
+    while (rr >= 0 && rr < 8 && cc >= 0 && cc < 8) { if (!add(rr, cc)) break; rr += dr; cc += dc; }
+  };
+
+  if (piece.piece === 'P') {
+    const dir = color === 'white' ? -1 : 1;
+    const start = color === 'white' ? 6 : 1;
+    if (r + dir >= 0 && r + dir < 8 && !board[r + dir][c]) {
+      moves.push([r + dir, c]);
+      if (r === start && !board[r + 2 * dir][c]) moves.push([r + 2 * dir, c]);
+    }
+    [[r + dir, c - 1],[r + dir, c + 1]].forEach(([tr, tc]) => {
+      if (tr < 0 || tr > 7 || tc < 0 || tc > 7) return;
+      if (board[tr][tc]?.color === opp) moves.push([tr, tc]);
+    });
+  }
+  if (piece.piece === 'R' || piece.piece === 'Q') [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dr,dc])=>slide(dr,dc));
+  if (piece.piece === 'B' || piece.piece === 'Q') [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([dr,dc])=>slide(dr,dc));
+  if (piece.piece === 'N') [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dc])=>add(r+dr,c+dc));
+  if (piece.piece === 'K') {
+    [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(([dr,dc])=>add(r+dr,c+dc));
+    // Castling hints
+    const back = color === 'white' ? 7 : 0;
+    if (r === back && c === 4) {
+      if (!board[r][5] && !board[r][6]) moves.push([r, 6]);
+      if (!board[r][3] && !board[r][2] && !board[r][1]) moves.push([r, 2]);
+    }
+  }
+  return moves;
+}
+
+// ══════════════════════════════════════════════════════════════
+// STATUS + MOVES LOG
+// ══════════════════════════════════════════════════════════════
+function renderStatus() {
+  const sb = document.getElementById('status-bar');
+  sb.className = 'status-bar';
+  if (gameStatus === 'waiting') { sb.textContent = 'Esperando rival...'; return; }
+  if (gameStatus === 'ended')   { sb.textContent = ''; return; }
+  // Active strips
+  document.getElementById('strip-top').classList.toggle('active-turn',
+    (flipped && turn === 'white') || (!flipped && turn === 'black'));
+  document.getElementById('strip-bot').classList.toggle('active-turn',
+    (flipped && turn === 'black') || (!flipped && turn === 'white'));
+
+  if (inCheck && turn === myColor) {
+    sb.textContent = '¡JAQUE!'; sb.classList.add('check');
+  } else if (turn === myColor) {
+    sb.textContent = 'Tu turno'; sb.classList.add('your-turn');
+  } else {
+    sb.textContent = 'Turno del rival';
+  }
+}
+
+function renderMoves() {
+  const list = document.getElementById('move-list');
+  list.innerHTML = '';
+  const pairs = [];
+  for (let i = 0; i < pgn.length; i += 2) {
+    pairs.push({ w: pgn[i], b: pgn[i + 1] });
+  }
+  pairs.forEach((pair, idx) => {
+    const div = document.createElement('div');
+    div.className = 'move-pair';
+    div.innerHTML = `<span class="move-num">${idx+1}.</span>
+      <span class="move-w">${formatMove(pair.w)}</span>
+      <span class="move-b">${pair.b ? formatMove(pair.b) : ''}</span>`;
+    list.appendChild(div);
+  });
+  list.scrollTop = list.scrollHeight;
+}
+
+function formatMove(m) {
+  if (!m) return '';
+  const from = COL_LETTERS[m.from[1]] + (8 - m.from[0]);
+  const to   = COL_LETTERS[m.to[1]]   + (8 - m.to[0]);
+  const sym  = m.piece !== 'P' ? m.piece : '';
+  return sym + to;
+}
+
+function renderCaptured(captured) {
+  if (!captured) return;
+  const topColor  = flipped ? 'white' : 'black';
+  const botColor  = flipped ? 'black' : 'white';
+  const capByTop  = captured[topColor  === 'white' ? 'white' : 'black'] || [];
+  const capByBot  = captured[botColor  === 'white' ? 'white' : 'black'] || [];
+  document.getElementById('cap-top').innerHTML = capByTop.map(p => `<span>${PIECE_GLYPH[topColor === 'white' ? 'black' : 'white'][p]}</span>`).join('');
+  document.getElementById('cap-bot').innerHTML = capByBot.map(p => `<span>${PIECE_GLYPH[botColor === 'white' ? 'black' : 'white'][p]}</span>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// PROMOTION MODAL
+// ══════════════════════════════════════════════════════════════
+function showPromoModal(color) {
+  const pieces = ['Q','R','B','N'];
+  const pp = document.getElementById('promo-pieces');
+  pp.innerHTML = '';
+  pieces.forEach(p => {
+    const btn = document.createElement('div');
+    btn.className = 'promo-piece';
+    btn.textContent = PIECE_GLYPH[color][p];
+    btn.onclick = () => {
+      document.getElementById('promo-modal').classList.remove('vis');
+      doMove(pendingPromo.from, pendingPromo.to, p);
+      pendingPromo = null;
+    };
+    pp.appendChild(btn);
+  });
+  document.getElementById('promo-modal').classList.add('vis');
+}
+
+// ══════════════════════════════════════════════════════════════
+// END OVERLAY
+// ══════════════════════════════════════════════════════════════
+function showEndOverlay(result, reason, by) {
+  const ov = document.getElementById('end-overlay');
+  const title = document.getElementById('end-title');
+  const sub   = document.getElementById('end-sub');
+  const king  = document.getElementById('end-king');
+
+  if (result === 'draw') {
+    king.textContent = '½';
+    title.textContent = 'TABLAS';
+    sub.textContent = reason === 'stalemate' ? 'Ahogado' : reason === 'agreement' ? 'De mutuo acuerdo' : 'Tablas';
+  } else {
+    const winColor = result === 'white_win' ? 'white' : 'black';
+    const iWon = winColor === myColor;
+    king.textContent = winColor === 'white' ? '♔' : '♚';
+    title.textContent = iWon ? '¡VICTORIA!' : 'DERROTA';
+    sub.textContent = reason === 'checkmate' ? 'Por jaque mate' :
+                      reason === 'resign'    ? (by ? `${by} se rindió` : 'Por rendición') : reason;
+  }
+  ov.classList.add('vis');
+}
+
+// ══════════════════════════════════════════════════════════════
+// GAME ACTIONS
+// ══════════════════════════════════════════════════════════════
+function offerDraw() {
+  if (gameStatus !== 'playing') return;
+  if (confirm('¿Ofrecer tablas al rival?')) send({ type: 'chess_draw_offer' });
+}
+
+function resign() {
+  if (gameStatus !== 'playing') return;
+  if (confirm('¿Rendirse? Perderás la partida.')) send({ type: 'chess_resign' });
+}
+
+function requestRematch() {
+  send({ type: 'chess_rematch' });
+  showNotice('Revancha solicitada...');
+  document.getElementById('end-overlay').classList.remove('vis');
+}
+
+// ══════════════════════════════════════════════════════════════
+// NOTICE
+// ══════════════════════════════════════════════════════════════
+let noticeTimer = null;
+function showNotice(text, dur = 2800) {
+  const el = document.getElementById('notice');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(noticeTimer);
+  noticeTimer = setTimeout(() => el.classList.remove('show'), dur);
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+buildLabels();
+
+// Keyboard: Escape deselects
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { selected = null; legalSquares = []; renderBoard(); }
+});
+</script>
+</body>
+</html>
