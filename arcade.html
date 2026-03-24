@@ -177,6 +177,7 @@ body::before {
 .card-mus    { animation: fadeSlideUp 0.65s ease both;  animation-delay: 0.75s; }
 .card-caida  { animation: fadeSlideUp 0.65s ease both;  animation-delay: 0.9s;  }
 .card-poker  { animation: fadeSlideUp 0.65s ease both;  animation-delay: 1.05s; }
+/* Note: solitario/chinchon/uno/ajedrez use JS-applied entrance to avoid animation conflict */
 .footer      { animation: fadeIn 0.8s ease both;        animation-delay: 1.2s;  }
 
 @keyframes fadeSlideDown {
@@ -292,10 +293,12 @@ body.hover-solitario .card-solitario { transform:translateY(-8px) scale(1.04); }
 .card-mus   { border-color:rgba(39,120,60,0.3); }
 .card-caida { border-color:rgba(30,80,160,0.3); }
 .card-poker { border-color:rgba(160,30,30,0.3); }
-.card-solitario { border-color:rgba(109,40,217,0.3); animation: fadeSlideUp 0.65s ease both; animation-delay: 1.2s; }
-.card-chinchon { border-color:rgba(180,130,10,0.3); animation: fadeSlideUp 0.65s ease both; animation-delay: 1.35s; }
-.card-uno      { border-color:rgba(200,40,40,0.3);  animation: fadeSlideUp 0.65s ease both; animation-delay: 1.50s; }
-.card-ajedrez  { border-color:rgba(160,160,160,0.2); animation: fadeSlideUp 0.65s ease both; animation-delay: 1.65s; }
+.card-solitario { border-color:rgba(109,40,217,0.3); }
+.card-chinchon  { border-color:rgba(180,130,10,0.3); }
+.card-uno       { border-color:rgba(200,40,40,0.3); }
+.card-ajedrez   { border-color:rgba(160,160,160,0.2); }
+/* Entrance animations via data-delay — applied once on load, removed after */
+.card-entering  { animation: fadeSlideUp 0.65s ease both; }
 .card-mus:hover      { border-color:rgba(39,200,80,0.7);   box-shadow:0 14px 55px rgba(18,110,42,0.45),  0 0 0 1px rgba(39,200,80,0.25); }
 .card-caida:hover    { border-color:rgba(60,140,230,0.7);  box-shadow:0 14px 55px rgba(15,55,160,0.45),  0 0 0 1px rgba(60,140,230,0.25); }
 .card-poker:hover    { border-color:rgba(230,60,60,0.7);   box-shadow:0 14px 55px rgba(155,12,12,0.45),  0 0 0 1px rgba(230,60,60,0.25); }
@@ -415,15 +418,25 @@ body.hover-ajedrez   .footer { color:rgba(200,200,200,0.35); }
 
   /* 2x2 grid on mobile */
   .games {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
     gap: 10px;
     width: 100%;
-    max-width: 360px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 12px 12px;
+    scrollbar-width: none;
+    max-width: 100vw;
+    justify-content: flex-start;
   }
+  .games::-webkit-scrollbar { display: none; }
 
   .game-card {
-    width: 100%;
+    min-width: 140px;
+    width: 140px;
+    flex-shrink: 0;
     padding: 1.1rem 0.8rem 1rem;
     gap: 0.5rem;
   }
@@ -675,7 +688,7 @@ body.hover-ajedrez   .footer { color:rgba(200,200,200,0.35); }
     rgba(224,176,32,0.08) 66%, transparent 100%);
   opacity:0; transition:opacity 0.9s ease;
 }
-.card-uno { animation: fadeSlideUp 0.65s ease both; animation-delay: 1.2s; }
+/* card-uno entrance: handled by JS */
 /* UNO title: Helvetica font + JS-driven color cycling, no CSS animation override */
 body.hover-uno .title {
   font-family: 'Helvetica Neue', 'Helvetica', 'Arial Black', sans-serif !important;
@@ -792,7 +805,7 @@ body.hover-chinchon .card-chinchon { animation:rgbBorderCh  2.5s linear infinite
        onmouseenter="setHover('solitario')" onmouseleave="clearHover()">
       <div class="game-icon">🕷️</div>
       <div class="game-name">SOLITARIO</div>
-      <div class="game-desc">Klondike clásico.<br>1 jugador.</div>
+      <div class="game-desc">Klondike · Spider.<br>1 jugador.</div>
       <div class="game-players">1 jugador</div>
       <div class="online-count"><span class="online-dot"></span><span id="online-solitario"></span></div>
       <div class="arrow">JUGAR →</div>
@@ -800,8 +813,7 @@ body.hover-chinchon .card-chinchon { animation:rgbBorderCh  2.5s linear infinite
 
     <a class="game-card card-uno" href="/uno"
        onmouseenter="setHover('uno')" onmouseleave="clearHover()">
-      <div class="game-icon" style="font-family:'Helvetica Neue','Helvetica','Arial Black',sans-serif;font-weight:900;font-size:1.6rem;letter-spacing:0.04em;background:linear-gradient(135deg,#e03030,#e0b020,#20a040,#2060e0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">UNO</div>
-      <div class="game-name">UNO</div>
+      <div class="game-icon" style="font-family:'Helvetica Neue','Helvetica','Arial Black',sans-serif;font-weight:900;font-size:1.8rem;letter-spacing:0.04em;background:linear-gradient(135deg,#e03030,#e0b020,#20a040,#2060e0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">UNO</div>
       <div class="game-desc">Clásico + No Mercy.<br>Apilar, Piedad, Ruleta.</div>
       <div class="game-players">2 – 6 jugadores</div>
       <div class="online-count"><span class="online-dot"></span><span id="online-uno">— online</span></div>
@@ -810,11 +822,21 @@ body.hover-chinchon .card-chinchon { animation:rgbBorderCh  2.5s linear infinite
 
     <a class="game-card card-chinchon" href="/chinchon"
        onmouseenter="setHover('chinchon')" onmouseleave="clearHover()">
-      <div class="game-icon">🃏</div>
+      <div class="game-icon" style="font-family:'Cinzel Decorative',cursive;font-size:1.5rem;color:#e8c97a;text-shadow:0 0 10px rgba(201,168,76,0.5)">7♣</div>
       <div class="game-name">CHINCHÓN</div>
       <div class="game-desc">Rummy español.<br>Series, escaleras y Chinchón.</div>
       <div class="game-players">2 – 10 jugadores</div>
       <div class="online-count"><span class="online-dot"></span><span id="online-chinchon">— online</span></div>
+      <div class="arrow">JUGAR →</div>
+    </a>
+
+    <a class="game-card card-ajedrez" href="/ajedrez"
+       onmouseenter="setHover('ajedrez')" onmouseleave="clearHover()">
+      <div class="game-icon" style="font-size:2.6rem;filter:drop-shadow(0 2px 8px rgba(200,200,200,0.4))">♔</div>
+      <div class="game-name">AJEDREZ</div>
+      <div class="game-desc">Tablero 8×8.<br>Estrategia clásica.</div>
+      <div class="game-players">2 jugadores</div>
+      <div class="online-count"><span class="online-dot"></span><span id="online-ajedrez">— online</span></div>
       <div class="arrow">JUGAR →</div>
     </a>
   </div>
@@ -825,6 +847,29 @@ body.hover-chinchon .card-chinchon { animation:rgbBorderCh  2.5s linear infinite
 <div class="particles" id="particles"></div>
 
 <script>
+// ── CARD ENTRANCE ANIMATIONS (applied once, then removed) ────────────────────
+window.addEventListener('load', () => {
+  const delays = {
+    'card-solitario': 1200, 'card-chinchon': 1350,
+    'card-uno': 1500, 'card-ajedrez': 1650
+  };
+  Object.entries(delays).forEach(([cls, delay]) => {
+    const el = document.querySelector('.' + cls);
+    if (!el) return;
+    el.style.opacity = '0';
+    setTimeout(() => {
+      el.classList.add('card-entering');
+      el.style.animationDelay = '0ms';
+      el.style.opacity = '';
+      // Remove the entering class once animation completes
+      setTimeout(() => {
+        el.classList.remove('card-entering');
+        el.style.animationDelay = '';
+      }, 700);
+    }, delay);
+  });
+});
+
 // ── CUSTOM CURSOR ─────────────────────────────────────────────────────────────
 const cursor = document.getElementById('cursor');
 const cursorSymbols = { mus:'♣', caida:'🎴', poker:'♠', solitario:'🕷️', uno:'🃏', chinchon:'🃏', ajedrez:'♔', default:'♠' };
@@ -987,11 +1032,12 @@ function setTitle(text, useHtml) {
 
 const MODE_COLORS = {
   mus:[39,180,80], caida:[60,140,230], poker:[220,60,60],
-  solitario:[168,85,247], uno:[224,48,48], chinchon:[201,168,76]
+  solitario:[168,85,247], uno:[224,48,48], chinchon:[201,168,76],
+  ajedrez:[200,200,200]
 };
 const MODE_TITLE_COLORS = {
   mus:'#7bc47b', caida:'#6ab0e8', poker:'#e87a7a',
-  solitario:'#c084fc', chinchon:'#e8c97a', uno:null
+  solitario:'#c084fc', chinchon:'#e8c97a', uno:null, ajedrez:'#e8e8e8'
 };
 
 function setHover(game) {
@@ -1017,13 +1063,22 @@ function setHover(game) {
   // Tint
   const [r,g,b] = MODE_COLORS[game]||[0,0,0];
   if(window._setArcadeTint) window._setArcadeTint(r,g,b,1);
-  // Title color — use text-shadow + color only, don't fight gradient clip
+  // Title color
   if(MODE_TITLE_COLORS[game]) {
     const tc = MODE_TITLE_COLORS[game];
-    titleEl.style.webkitTextFillColor = tc;
-    titleEl.style.webkitBackgroundClip = 'unset';
-    titleEl.style.backgroundImage = 'none';
-    titleEl.style.filter = `drop-shadow(0 0 30px ${tc}aa) drop-shadow(0 0 60px ${tc}55)`;
+    if(game === 'ajedrez') {
+      // Chess: half white half black diagonal gradient
+      titleEl.style.background = 'linear-gradient(135deg, #ffffff 0%, #ffffff 45%, #888888 55%, #444444 100%)';
+      titleEl.style.webkitBackgroundClip = 'text';
+      titleEl.style.webkitTextFillColor = 'transparent';
+      titleEl.style.backgroundClip = 'text';
+      titleEl.style.filter = 'drop-shadow(0 0 30px rgba(255,255,255,0.35)) drop-shadow(0 0 60px rgba(200,200,200,0.2))';
+    } else {
+      titleEl.style.webkitTextFillColor = tc;
+      titleEl.style.webkitBackgroundClip = 'unset';
+      titleEl.style.backgroundImage = 'none';
+      titleEl.style.filter = `drop-shadow(0 0 30px ${tc}aa) drop-shadow(0 0 60px ${tc}55)`;
+    }
   }
   // Single bar: switch to mode color gradient
   const barInner = document.getElementById('arcade-bar-inner');
