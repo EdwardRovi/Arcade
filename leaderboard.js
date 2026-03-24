@@ -1,12 +1,11 @@
 /**
- * leaderboard.js — Persistent leaderboard for Render.com
- * Guarda en memoria + env var LEADERBOARD_DATA via Render API (opcional).
- * Sin credenciales: dura mientras el servidor está vivo.
- *
- * Para persistencia real: añadir en Render → Environment:
- *   RENDER_API_KEY   = tu API key de Render (render.com → Account → API Keys)
- *   RENDER_SERVICE_ID = el ID de tu servicio (render.com → tu servicio → URL: .../services/srv-XXXX)
+ * leaderboard.js — Persistent leaderboard via JSON file on disk
+ * Survives server restarts on Render (file persists in /opt/render/project/src/)
  */
+const fs   = require('fs');
+const path = require('path');
+
+const FILE = path.join(__dirname, 'leaderboard_data.json');
 
 const DEFAULT = () => ({
   solitario: { score: [], moves: [] },
@@ -14,51 +13,39 @@ const DEFAULT = () => ({
   caida:     { top: [] },
   poker:     { top: [] },
   uno:       { top: [] },
+  chinchon:  { top: [] },
+  ajedrez:   { top: [] },
 });
 
 let db = DEFAULT();
 
+// Load from disk on startup
 try {
-  if (process.env.LEADERBOARD_DATA) {
-    db = Object.assign(DEFAULT(), JSON.parse(process.env.LEADERBOARD_DATA));
-    console.log('[leaderboard] Cargado desde env var LEADERBOARD_DATA');
+  if (fs.existsSync(FILE)) {
+    const raw = fs.readFileSync(FILE, 'utf8');
+    db = Object.assign(DEFAULT(), JSON.parse(raw));
+    console.log('[leaderboard] Loaded from disk ✅');
+  } else {
+    console.log('[leaderboard] No file found, starting fresh');
   }
-} catch(e) { console.error('[leaderboard] Error al parsear env var:', e.message); }
-
-const RENDER_KEY = process.env.RENDER_API_KEY;
-const SERVICE_ID = process.env.RENDER_SERVICE_ID;
-
-let saveTimer = null;
-async function persistToRender() {
-  if (!RENDER_KEY || !SERVICE_ID) return;
-  try {
-    const res = await fetch(`https://api.render.com/v1/services/${SERVICE_ID}/env-vars`, {
-      method: 'PUT',
-      headers: { 'Authorization': `Bearer ${RENDER_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify([{ key: 'LEADERBOARD_DATA', value: JSON.stringify(db) }]),
-    });
-    if (res.ok) console.log('[leaderboard] Guardado en Render');
-    else console.warn('[leaderboard] Render API error:', res.status);
-  } catch(e) { console.error('[leaderboard] Error al guardar:', e.message); }
+} catch(e) {
+  console.error('[leaderboard] Error loading:', e.message);
+  db = DEFAULT();
 }
 
+let saveTimer = null;
 function scheduleSave() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(persistToRender, 3000);
+  saveTimer = setTimeout(() => {
+    try {
+      fs.writeFileSync(FILE, JSON.stringify(db), 'utf8');
+    } catch(e) {
+      console.error('[leaderboard] Error saving:', e.message);
+    }
+  }, 2000);
 }
 
 function load() { return db; }
-
-function unoRecordWin(lbDB, name, points) {
-  if (!lbDB.uno) lbDB.uno = { top: [] };
-  const lb = lbDB.uno;
-  let p = lb.top.find(e => e.name === name);
-  if (!p) { p = { name, wins: 1, bestPoints: points }; lb.top.push(p); }
-  else { p.wins++; if (points > p.bestPoints) p.bestPoints = points; }
-  lb.top.sort((a,b) => b.wins - a.wins || b.bestPoints - a.bestPoints);
-  lb.top = lb.top.slice(0, 20);
-  scheduleSave();
-}
 
 function solSubmit(lbDB, name, score, moves) {
   const lb = lbDB.solitario;
@@ -109,4 +96,34 @@ function pokerRecordWin(lbDB, winnerName, chips) {
   scheduleSave();
 }
 
-module.exports = { load, solSubmit, musRecordWin, caidaRecordWin, pokerRecordWin, unoRecordWin };
+function unoRecordWin(lbDB, name, points) {
+  const lb = lbDB.uno;
+  let p = lb.top.find(e => e.name === name);
+  if (!p) { p = { name, wins: 1, bestPoints: points }; lb.top.push(p); }
+  else { p.wins++; if (points > p.bestPoints) p.bestPoints = points; }
+  lb.top.sort((a,b) => b.wins - a.wins || b.bestPoints - a.bestPoints);
+  lb.top = lb.top.slice(0, 20);
+  scheduleSave();
+}
+
+function chinchonRecordWin(lbDB, name, score) {
+  const lb = lbDB.chinchon;
+  let p = lb.top.find(e => e.name === name);
+  if (!p) { p = { name, wins: 1, bestScore: score }; lb.top.push(p); }
+  else { p.wins++; if (score < p.bestScore) p.bestScore = score; } // lower = better in chinchon
+  lb.top.sort((a,b) => b.wins - a.wins || a.bestScore - b.bestScore);
+  lb.top = lb.top.slice(0, 20);
+  scheduleSave();
+}
+
+function ajedrezRecordWin(lbDB, name) {
+  const lb = lbDB.ajedrez;
+  let p = lb.top.find(e => e.name === name);
+  if (!p) { p = { name, wins: 1 }; lb.top.push(p); }
+  else p.wins++;
+  lb.top.sort((a,b) => b.wins - a.wins);
+  lb.top = lb.top.slice(0, 20);
+  scheduleSave();
+}
+
+module.exports = { load, solSubmit, musRecordWin, caidaRecordWin, pokerRecordWin, unoRecordWin, chinchonRecordWin, ajedrezRecordWin };

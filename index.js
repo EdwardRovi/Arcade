@@ -3461,49 +3461,6 @@ function chessRawMoves(board, r, c, enPassant, castlingRights) {
 }
 
 
-  ws.on('close', () => {
-    if (!playerRoom || !playerData) return;
-    if (playerGame === 'mus') {
-      musBroadcast(playerRoom, { type: 'log', msg: `⚠️ ${playerData.name} se desconectó` });
-      playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
-      if (playerRoom.players.length === 0) { delete musRooms[playerRoom.code]; return; }
-      musSendState(playerRoom);
-    } else if (playerGame === 'caida') {
-      caidaBroadcast(playerRoom, { type: 'log', msg: `⚠️ ${playerData.name} se desconectó` });
-      playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
-      if (playerRoom.players.length === 0) { delete caidaRooms[playerRoom.code]; return; }
-      const n = playerRoom.players.length;
-      if (playerRoom.currentTurn !== undefined && playerRoom.currentTurn >= n)
-        playerRoom.currentTurn = playerRoom.currentTurn % n;
-      caidaSendState(playerRoom);
-    } else if (playerGame === 'poker') {
-      pokerBroadcast(playerRoom, { type: 'log', msg: `⚠️ ${playerData.name} se fue` });
-      playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
-      if (playerRoom.players.length === 0) { delete pokerRooms[playerRoom.code]; return; }
-      if (playerRoom.currentTurn >= playerRoom.players.length) playerRoom.currentTurn = 0;
-      pokerSendState(playerRoom);
-    } else if (playerGame === 'uno') {
-      unoBroadcast(playerRoom, { type: 'log', msg: `⚠️ ${playerData.name} se desconectó` });
-      if (playerRoom.state === 'playing') playerData.eliminated = true;
-      else playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
-      if (playerRoom.players.length === 0) { delete unoRooms[playerRoom.code]; return; }
-      unoSendState(playerRoom);
-    } else if (playerGame === 'chinchon') {
-      chBroadcast(playerRoom, { type: 'log', msg: `⚠️ ${playerData.name} se desconectó` });
-      if (playerRoom.state === 'playing') playerData.eliminated = true;
-      else playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
-      if (playerRoom.players.length === 0) { delete chinchonRooms[playerRoom.code]; return; }
-      chSendState(playerRoom);
-    } else if (playerGame === 'ajedrez') {
-      if (playerRoom.players.length <= 1) { delete chessRooms[playerRoom.code]; return; }
-      playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
-      if (playerRoom.status === 'playing') {
-        playerRoom.status = 'ended';
-        chessBroadcast(playerRoom, { type: 'chess_opponent_left', name: playerData.name });
-      }
-    }
-  });
-
 wss.on('connection', (ws) => {
   const playerId = `p${++globalCounter}`;
   let playerRoom = null;
@@ -4189,6 +4146,49 @@ wss.on('connection', (ws) => {
 
   }); // end ws.on message
 
+
+  ws.on('close', () => {
+    if (!playerRoom || !playerData) return;
+    if (playerGame === 'mus') {
+      musBroadcast(playerRoom, { type: 'log', msg: `⚠️ ${playerData.name} se desconectó` });
+      playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
+      if (playerRoom.players.length === 0) { delete musRooms[playerRoom.code]; return; }
+      musSendState(playerRoom);
+    } else if (playerGame === 'caida') {
+      caidaBroadcast(playerRoom, { type: 'log', msg: `⚠️ ${playerData.name} se desconectó` });
+      playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
+      if (playerRoom.players.length === 0) { delete caidaRooms[playerRoom.code]; return; }
+      const n = playerRoom.players.length;
+      if (playerRoom.currentTurn !== undefined && playerRoom.currentTurn >= n)
+        playerRoom.currentTurn = playerRoom.currentTurn % n;
+      caidaSendState(playerRoom);
+    } else if (playerGame === 'poker') {
+      pokerBroadcast(playerRoom, { type: 'log', msg: `⚠️ ${playerData.name} se fue` });
+      playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
+      if (playerRoom.players.length === 0) { delete pokerRooms[playerRoom.code]; return; }
+      if (playerRoom.currentTurn >= playerRoom.players.length) playerRoom.currentTurn = 0;
+      pokerSendState(playerRoom);
+    } else if (playerGame === 'uno') {
+      unoBroadcast(playerRoom, { type: 'log', msg: `⚠️ ${playerData.name} se desconectó` });
+      if (playerRoom.state === 'playing') playerData.eliminated = true;
+      else playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
+      if (playerRoom.players.length === 0) { delete unoRooms[playerRoom.code]; return; }
+      unoSendState(playerRoom);
+    } else if (playerGame === 'chinchon') {
+      chBroadcast(playerRoom, { type: 'log', msg: `⚠️ ${playerData.name} se desconectó` });
+      if (playerRoom.state === 'playing') playerData.eliminated = true;
+      else playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
+      if (playerRoom.players.length === 0) { delete chinchonRooms[playerRoom.code]; return; }
+      chSendState(playerRoom);
+    } else if (playerGame === 'ajedrez') {
+      if (playerRoom.players.length <= 1) { delete chessRooms[playerRoom.code]; return; }
+      playerRoom.players = playerRoom.players.filter(p => p.id !== playerId);
+      if (playerRoom.status === 'playing') {
+        playerRoom.status = 'ended';
+        chessBroadcast(playerRoom, { type: 'chess_opponent_left', name: playerData.name });
+      }
+    }
+  });
 
 }); // end wss.on connection
 
