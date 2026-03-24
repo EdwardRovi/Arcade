@@ -899,6 +899,7 @@ const hoverPhrases = {
   poker:     ['ALL IN', "TEXAS HOLD'EM", '¿TIENES EL FAROL?'],
   solitario: ['UN JUGADOR', 'KLONDIKE CLÁSICO', '¿PUEDES GANAR?'],
   uno:       ['UNO CLÁSICO · NO MERCY', '¡SALTA, REVERSA, +10!', '¿TIENES EL ÚLTIMO UNO?'],
+  ajedrez:   ['EL REY DE LOS JUEGOS', 'JAQUE MATE', '64 CASILLAS · INFINITAS POSIBILIDADES'],
 };
 let phraseIdx = 0;
 let isHoverPhrase = false;
@@ -1063,23 +1064,26 @@ function setHover(game) {
   // Tint
   const [r,g,b] = MODE_COLORS[game]||[0,0,0];
   if(window._setArcadeTint) window._setArcadeTint(r,g,b,1);
-  // Title color
-  if(MODE_TITLE_COLORS[game]) {
-    const tc = MODE_TITLE_COLORS[game];
-    if(game === 'ajedrez') {
-      // Chess: half white half black diagonal gradient
-      titleEl.style.background = 'linear-gradient(135deg, #ffffff 0%, #ffffff 45%, #888888 55%, #444444 100%)';
-      titleEl.style.webkitBackgroundClip = 'text';
-      titleEl.style.webkitTextFillColor = 'transparent';
-      titleEl.style.backgroundClip = 'text';
-      titleEl.style.filter = 'drop-shadow(0 0 30px rgba(255,255,255,0.35)) drop-shadow(0 0 60px rgba(200,200,200,0.2))';
-    } else {
-      titleEl.style.webkitTextFillColor = tc;
-      titleEl.style.webkitBackgroundClip = 'unset';
-      titleEl.style.backgroundImage = 'none';
-      titleEl.style.filter = `drop-shadow(0 0 30px ${tc}aa) drop-shadow(0 0 60px ${tc}55)`;
+  // Title color — applied after setTitle's 220ms fade-in delay
+  const _titleGame = game;
+  const _tc = MODE_TITLE_COLORS[game];
+  setTimeout(() => {
+    if(current !== _titleGame) return; // user already moved away
+    if(_tc) {
+      if(_titleGame === 'ajedrez') {
+        titleEl.style.background = 'linear-gradient(135deg,#ffffff 0%,#cccccc 40%,#888888 60%,#444444 100%)';
+        titleEl.style.webkitBackgroundClip = 'text';
+        titleEl.style.webkitTextFillColor = 'transparent';
+        titleEl.style.backgroundClip = 'text';
+        titleEl.style.filter = 'drop-shadow(0 0 28px rgba(255,255,255,0.4))';
+      } else {
+        titleEl.style.webkitTextFillColor = _tc;
+        titleEl.style.webkitBackgroundClip = 'unset';
+        titleEl.style.backgroundImage = 'none';
+        titleEl.style.filter = `drop-shadow(0 0 30px ${_tc}aa) drop-shadow(0 0 60px ${_tc}55)`;
+      }
     }
-  }
+  }, 240);
   // Single bar: switch to mode color gradient
   const barInner = document.getElementById('arcade-bar-inner');
   if(barInner) {
@@ -1175,6 +1179,7 @@ const fallConfig = {
   solitario: { logo:'🕷️', extras:['♠','♥','♦','♣','A','K','Q'], opacity:0.26, glow:'rgba(168,85,247,0.5)' },
   uno:       { logo:'🃏', extras:['🔴','🔵','🟢','🟡','+2','+4','↺'], opacity:0.28, glow:'rgba(224,48,48,0.5)' },
   chinchon:  { logo:'🪙', extras:['♠','♥','♦','♣','👑','⚔️','7'], opacity:0.30, glow:'rgba(201,168,76,0.6)' },
+  ajedrez:   { logo:'♔', extras:['♚','♛','♜','♝','♞','♟','♙'], opacity:0.28, glow:'rgba(220,220,220,0.5)' },
 };
 
 function pickSymbol(game) {
@@ -1205,6 +1210,7 @@ function spawnCard(game) {
 }
 
 function startFalling(game) {
+  if (!fallConfig[game]) return; // no config for this game
   stopFalling();
   spawnCard(game);
   setTimeout(() => { if (current === game) spawnCard(game); }, 220);

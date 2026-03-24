@@ -3815,6 +3815,39 @@ wss.on('connection', (ws) => {
       chHandleMessage(playerRoom, playerData, msg);
     }
 
+    // ── AJEDREZ CREATE ────────────────────────────────────────────────────────
+    if (msg.type === 'chess_create') {
+      const code = 'Z' + Math.random().toString(36).substr(2,3).toUpperCase();
+      const room = {
+        code, players: [], board: chessInitBoard(), turn: 'white',
+        status: 'waiting', inCheck: false, lastMove: null,
+        captured: { white: [], black: [] }, pgn: [], moveCount: 0,
+        castlingRights: { white: { kSide:true, qSide:true }, black: { kSide:true, qSide:true } },
+        enPassant: null, rematchVotes: 0
+      };
+      chessRooms[code] = room;
+      const pdata = { id: playerId, name: msg.name || 'Jugador', color: 'white', ws };
+      room.players.push(pdata);
+      playerRoom = room; playerData = pdata; playerGame = 'ajedrez';
+      ws.send(JSON.stringify({ type: 'chess_created', code, color: 'white', name: pdata.name }));
+      return;
+    }
+
+    // ── AJEDREZ JOIN ──────────────────────────────────────────────────────────
+    if (msg.type === 'chess_join') {
+      const room = chessRooms[msg.code];
+      if (!room) { ws.send(JSON.stringify({ type: 'error', msg: 'Sala no encontrada' })); return; }
+      if (room.players.length >= 2) { ws.send(JSON.stringify({ type: 'error', msg: 'Sala llena' })); return; }
+      const pdata = { id: playerId, name: msg.name || 'Jugador', color: 'black', ws };
+      room.players.push(pdata);
+      playerRoom = room; playerData = pdata; playerGame = 'ajedrez';
+      room.status = 'playing';
+      ws.send(JSON.stringify({ type: 'chess_joined', code: room.code, color: 'black', name: pdata.name }));
+      chessBroadcast(room, { type: 'chess_start', players: room.players.map(p => ({ name: p.name, color: p.color })) });
+      chessSendState(room);
+      return;
+    }
+
     // ── AJEDREZ MESSAGES ──────────────────────────────────────────────────────
     if (playerGame === 'ajedrez' && playerRoom && playerData) {
       chessHandleMessage(playerRoom, playerData, msg);
