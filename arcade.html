@@ -39,9 +39,10 @@ body { cursor: none; }
 #bg-ajedrez {
   opacity:0;
   background:
-    radial-gradient(ellipse 90% 90% at 50% 50%, rgba(200,200,200,0.12) 0%, transparent 65%),
-    radial-gradient(ellipse 60% 50% at 20% 30%, rgba(255,255,255,0.08) 0%, transparent 55%),
-    radial-gradient(ellipse 60% 50% at 80% 70%, rgba(80,80,80,0.15)   0%, transparent 55%);
+    radial-gradient(ellipse 90% 80% at 50% 50%,  rgba(200,200,200,0.45) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 55% at 15% 35%,  rgba(255,255,255,0.22) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 55% at 85% 65%,  rgba(60,60,60,0.35)   0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 50% 100%, rgba(20,20,20,0.5)    0%, transparent 60%);
 }
 #bg-default {
   opacity:1;
@@ -1034,63 +1035,68 @@ function setTitle(text, useHtml) {
 const MODE_COLORS = {
   mus:[39,180,80], caida:[60,140,230], poker:[220,60,60],
   solitario:[168,85,247], uno:[224,48,48], chinchon:[201,168,76],
-  ajedrez:[200,200,200]
+  ajedrez:[210,210,210]
 };
 const MODE_TITLE_COLORS = {
   mus:'#7bc47b', caida:'#6ab0e8', poker:'#e87a7a',
   solitario:'#c084fc', chinchon:'#e8c97a', uno:null, ajedrez:'#e8e8e8'
 };
 
+function applyTitleColor(game) {
+  const tc = MODE_TITLE_COLORS[game];
+  if (!tc) return;
+  if (game === 'ajedrez') {
+    titleEl.style.cssText += ';background:linear-gradient(135deg,#fff 0%,#ccc 40%,#888 65%,#333 100%) !important;-webkit-background-clip:text !important;-webkit-text-fill-color:transparent !important;background-clip:text !important;filter:drop-shadow(0 0 28px rgba(255,255,255,0.45)) !important';
+  } else {
+    titleEl.style.webkitTextFillColor = tc;
+    titleEl.style.webkitBackgroundClip = '';
+    titleEl.style.backgroundImage = 'none';
+    titleEl.style.filter = `drop-shadow(0 0 30px ${tc}bb) drop-shadow(0 0 60px ${tc}55)`;
+  }
+}
+
 function setHover(game) {
   if (current === game) return;
-  if (current) { document.getElementById(layers[current]).style.opacity = '0'; stopFalling(); }
+  if (current) { document.getElementById(layers[current]).style.opacity = '0'; stopFalling(); stopFx(); }
   else document.getElementById('bg-default').style.opacity = '0';
   current = game;
   document.getElementById(layers[game]).style.opacity = '1';
   document.body.className = 'hover-' + game;
-  startFalling(game);
+
+  // Start effects
+  if (fallConfig[game]) startFalling(game);
   startFx(game);
-  cursor.textContent = cursorSymbols[game];
+  setGhostMode(game);
+
+  // Cursor
+  cursor.textContent = cursorSymbols[game] || '♠';
   cursor.classList.add('on-card');
+
+  // Footer
   isHoverPhrase = true;
-  const pool = hoverPhrases[game];
+  const pool = hoverPhrases[game] || [''];
   setFooter(pool[Math.floor(Math.random() * pool.length)]);
+
+  // Title
   if (game === 'uno') {
     startUnoTitle();
   } else {
     setTitle(titleNames[game]);
   }
-  setGhostMode(game);
-  // Tint
-  const [r,g,b] = MODE_COLORS[game]||[0,0,0];
-  if(window._setArcadeTint) window._setArcadeTint(r,g,b,1);
-  // Title color — applied after setTitle's 220ms fade-in delay
-  const _titleGame = game;
-  const _tc = MODE_TITLE_COLORS[game];
-  setTimeout(() => {
-    if(current !== _titleGame) return; // user already moved away
-    if(_tc) {
-      if(_titleGame === 'ajedrez') {
-        titleEl.style.background = 'linear-gradient(135deg,#ffffff 0%,#cccccc 40%,#888888 60%,#444444 100%)';
-        titleEl.style.webkitBackgroundClip = 'text';
-        titleEl.style.webkitTextFillColor = 'transparent';
-        titleEl.style.backgroundClip = 'text';
-        titleEl.style.filter = 'drop-shadow(0 0 28px rgba(255,255,255,0.4))';
-      } else {
-        titleEl.style.webkitTextFillColor = _tc;
-        titleEl.style.webkitBackgroundClip = 'unset';
-        titleEl.style.backgroundImage = 'none';
-        titleEl.style.filter = `drop-shadow(0 0 30px ${_tc}aa) drop-shadow(0 0 60px ${_tc}55)`;
-      }
-    }
-  }, 240);
-  // Single bar: switch to mode color gradient
+  // Apply title color after setTitle's fade-in (220ms)
+  setTimeout(() => { if (current === game) applyTitleColor(game); }, 250);
+
+  // BG tint
+  const [r,g,b] = MODE_COLORS[game] || [200,200,200];
+  if (window._setArcadeTint) window._setArcadeTint(r, g, b, 1);
+
+  // Bar color
   const barInner = document.getElementById('arcade-bar-inner');
-  if(barInner) {
-    const c1=`rgba(${r},${g},${b},1)`;
-    const c2=`rgba(${Math.min(255,r+70)},${Math.min(255,g+70)},${Math.min(255,b+70)},1)`;
-    const c3=`rgba(${Math.max(0,r-50)},${Math.max(0,g-50)},${Math.max(0,b-50)},1)`;
-    barInner.style.background = `linear-gradient(90deg,${c3},${c1},${c2},${c1},${c2},${c1},${c3})`;
+  if (barInner) {
+    const lo = `rgba(${Math.max(0,r-60)},${Math.max(0,g-60)},${Math.max(0,b-60)},1)`;
+    const hi = `rgba(${Math.min(255,r+80)},${Math.min(255,g+80)},${Math.min(255,b+80)},1)`;
+    const mid = `rgba(${r},${g},${b},1)`;
+    barInner.style.background = `linear-gradient(90deg,${lo},${mid},${hi},${mid},${hi},${mid},${lo})`;
     barInner.style.animationDuration = '1.8s';
   }
 }
@@ -1111,14 +1117,8 @@ function clearHover() {
   setTitle('ARCADE');
   setGhostMode('idle');
   if(window._clearArcadeTint) window._clearArcadeTint();
-  // Restore title style
-  titleEl.style.webkitTextFillColor = '';
-  titleEl.style.webkitBackgroundClip = '';
-  titleEl.style.backgroundClip = '';
-  titleEl.style.backgroundImage = '';
-  titleEl.style.color = '';
-  titleEl.style.filter = '';
-  titleEl.style.textShadow = '';
+  // Restore title — clear all inline styles
+  titleEl.removeAttribute('style');
   // Restore bar to full rainbow
   const barInner = document.getElementById('arcade-bar-inner');
   if(barInner) {

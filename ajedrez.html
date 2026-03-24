@@ -378,12 +378,25 @@ let pgn = [];
 // ══════════════════════════════════════════════════════════════
 // WEBSOCKET
 // ══════════════════════════════════════════════════════════════
+let _pingInterval = null;
 function connect(cb) {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   ws = new WebSocket(`${proto}://${location.host}`);
-  ws.onopen = () => cb && cb();
-  ws.onmessage = e => handleMsg(JSON.parse(e.data));
-  ws.onclose = () => { showNotice('Desconectado del servidor'); };
+  ws.onopen = () => {
+    // Heartbeat to keep Render connection alive (drops after 55s idle)
+    _pingInterval = setInterval(() => {
+      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'ping' }));
+    }, 25000);
+    cb && cb();
+  };
+  ws.onmessage = e => {
+    try { handleMsg(JSON.parse(e.data)); } catch(err) { console.error('WS parse error:', err); }
+  };
+  ws.onerror = (e) => { console.error('WS error:', e); showNotice('Error de conexión'); };
+  ws.onclose = () => {
+    clearInterval(_pingInterval);
+    showNotice('Desconectado del servidor');
+  };
 }
 
 function send(obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); }
@@ -394,7 +407,11 @@ function send(obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj))
 function createRoom() {
   const name = document.getElementById('pname').value.trim() || 'Jugador';
   myName = name;
-  connect(() => send({ type: 'chess_create', name }));
+  showNotice('Conectando...', 3000);
+  connect(() => {
+    console.log('WS open, sending chess_create for:', name);
+    send({ type: 'chess_create', name });
+  });
 }
 
 function joinRoom() {
@@ -402,7 +419,11 @@ function joinRoom() {
   const code = document.getElementById('rcode').value.trim().toUpperCase();
   if (!code || code.length < 3) { showNotice('Introduce un código de sala'); return; }
   myName = name;
-  connect(() => send({ type: 'chess_join', name, code }));
+  showNotice('Conectando...', 3000);
+  connect(() => {
+    console.log('WS open, sending chess_join for:', name, code);
+    send({ type: 'chess_join', name, code });
+  });
 }
 
 function exitToLobby() {
@@ -422,16 +443,21 @@ function handleMsg(msg) {
   if (msg.type === 'chess_created') {
     myColor = 'white';
     roomCode = msg.code;
+    console.log('Room created:', msg.code, 'color: white');
     document.getElementById('lobby').classList.add('hidden');
     document.getElementById('w-code').textContent = msg.code;
     document.getElementById('waiting').classList.add('vis');
+    showNotice('Sala creada: ' + msg.code, 3000);
+    return;
   }
   if (msg.type === 'chess_joined') {
     myColor = 'black';
     roomCode = msg.code;
     flipped = true;
+    console.log('Joined room:', msg.code, 'color: black');
     document.getElementById('lobby').classList.add('hidden');
     document.getElementById('waiting').classList.remove('vis');
+    return;
   }
   if (msg.type === 'chess_start') {
     document.getElementById('waiting').classList.remove('vis');
@@ -483,8 +509,15 @@ function handleMsg(msg) {
     setTimeout(exitToLobby, 3000);
   }
   if (msg.type === 'error') {
-    showNotice('⚠️ ' + msg.msg);
+    showNotice('⚠️ ' + msg.msg, 4000);
+    // If error during lobby phase, re-show lobby
+    if (!document.getElementById('game').classList.contains('vis')) {
+      document.getElementById('lobby').classList.remove('hidden');
+      document.getElementById('waiting').classList.remove('vis');
+    }
+    return;
   }
+  if (msg.type === 'pong' || msg.type === 'ping') return; // heartbeat
 }
 
 // ══════════════════════════════════════════════════════════════
