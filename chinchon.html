@@ -7,8 +7,13 @@
 <meta name="theme-color" content="#050a05">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
 <style>
+@property --border-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
 :root {
-  --bg:#08060100; --amber:#c9a84c; --amber2:#e8c97a; --amber3:#f5d98a;
+  --bg:#080601; --amber:#c9a84c; --amber2:#e8c97a; --amber3:#f5d98a;
   --red:#c03030; --text:#f5ead8; --muted:rgba(245,234,216,0.45); --border:rgba(201,168,76,0.28);
   --gold:#c9a84c; --gold2:#e8c97a;
 }
@@ -124,6 +129,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .fg select option { background:#100c04; }
 
 /* ── VARIANT BUTTONS ── */
+.variant-btn {
   border:1px solid rgba(201,168,76,0.18); border-radius:6px; padding:0.55rem 0.4rem;
   text-align:center; cursor:pointer; background:rgba(201,168,76,0.04);
   transition:all 0.18s; position:relative; overflow:hidden;
@@ -418,11 +424,6 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 @keyframes rotateBorder {
   from { --border-angle: 0deg; }
   to   { --border-angle: 360deg; }
-}
-@property --border-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
 }
 
 /* ── BUTTON GOLD RGB ── */

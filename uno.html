@@ -178,7 +178,7 @@ body::before {
   position:relative;
 }
 .card-tl { position:absolute; top:4px; left:5px; font-size:0.62rem; line-height:1.1; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.5); }
-.card-br { position:absolute; bottom:4px; right:5px; font-size:0.62rem; line-height:1.1; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.5); transform:rotate(180deg); }
+.card-br { position:absolute; bottom:4px; right:5px; font-size:0.62rem; line-height:1.1; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.5); rotate:180deg; }
 .card-center { font-size:1.5rem; color:#fff; text-shadow:0 2px 6px rgba(0,0,0,0.4); }
 
 /* Seats around the table */
@@ -186,7 +186,7 @@ body::before {
 .seat-name { font-size:0.5rem; letter-spacing:0.08em; padding:2px 8px; border-radius:3px; white-space:nowrap; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.1); }
 .seat-name.is-turn { border-color:var(--gold); color:var(--gold2); box-shadow:0 0 10px rgba(201,168,76,0.4); }
 .seat-name.is-you { font-style:italic; }
-.seat-cards { display:flex; gap:-4px; }
+.seat-cards { display:flex; margin-left:-4px; }
 .card-count-badge { font-size:0.6rem; color:var(--muted); }
 .uno-cry { font-size:0.55rem; color:#ff6060; font-family:'Cinzel Decorative',cursive; animation:pulse-uno 0.8s ease-in-out infinite; }
 @keyframes pulse-uno { 0%,100%{transform:scale(1)} 50%{transform:scale(1.2)} }
